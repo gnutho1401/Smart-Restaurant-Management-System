@@ -7,6 +7,8 @@ using SmartRestaurant.AIEngine;
 using SmartRestaurant.Core.Interfaces;
 using SmartRestaurant.Data;
 using SmartRestaurant.Services;
+using SmartRestaurant.WPF.ViewModels;
+using SmartRestaurant.WPF.Views;
 
 namespace SmartRestaurant.WPF;
 
@@ -59,7 +61,18 @@ public partial class App : Application
         services.AddScoped<IAiService, LmStudioService>();
         services.AddScoped<AiAnalyticsEngine>();
 
-        // 4. Windows
+        // 4. ViewModels
+        services.AddSingleton<FloorPlanViewModel>();
+        services.AddSingleton<PosOrderViewModel>();
+        services.AddSingleton<KitchenKdsViewModel>();
+        services.AddSingleton<MenuViewModel>();
+        services.AddTransient<BillingViewModel>();
+        services.AddTransient<AiChatViewModel>();
+        services.AddSingleton<MainViewModel>();
+
+        // 5. Views & Windows
         services.AddTransient<MainWindow>();
+        services.AddTransient<AiChatWindow>();
+        services.AddTransient<BillingDialog>();
     }
 }

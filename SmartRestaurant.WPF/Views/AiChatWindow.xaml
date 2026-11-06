@@ -1,0 +1,143 @@
+<Window x:Class="SmartRestaurant.WPF.Views.AiChatWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:SmartRestaurant.WPF.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance vm:AiChatViewModel}"
+        Title="Trợ Lý Ảo GenAI Nhà Hàng (Mistral-7B via LM Studio:1234) - SmartRestaurant" 
+        Height="720" Width="800" WindowStartupLocation="CenterScreen" Background="#F4F6F9">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <!-- 1. Header & AI Quick Analytics Buttons -->
+            <RowDefinition Height="Auto"/>
+            <!-- 2. Chat Conversation History -->
+            <RowDefinition Height="*"/>
+            <!-- 3. Query Input Bar -->
+            <RowDefinition Height="Auto"/>
+            <!-- 4. Status Bar -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 1. Header & Quick Action Buttons -->
+        <Border Grid.Row="0" Background="#FFFFFF" CornerRadius="8" Padding="14" Margin="0,0,0,14">
+            <StackPanel>
+                <DockPanel Margin="0,0,0,10">
+                    <TextBlock Text="🤖 TRỢ LÝ GENAI CỤC BỘ (LOCAL MISTRAL-7B)" FontSize="17" FontWeight="Bold" Foreground="#8E44AD"/>
+                    <TextBlock Text="Cổng: localhost:1234/v1 | Anti-Hallucination Grounding" FontSize="12" Foreground="#7F8C8D" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                </DockPanel>
+
+                <TextBlock Text="Kịch bản phân tích kinh doanh nhanh:" FontSize="12" FontWeight="SemiBold" Foreground="#7F8C8D" Margin="0,0,0,6"/>
+                <WrapPanel Orientation="Horizontal">
+                    <Button Content="📊 Ma Trận Thực Đơn BCG" Command="{Binding RunBcgCommand}" 
+                            Background="#3498DB" Foreground="#FFFFFF" FontWeight="SemiBold" Height="32" Padding="12,0" Margin="0,0,8,6" Cursor="Hand" BorderThickness="0"/>
+                    <Button Content="📈 Phân Tích Giờ Cao Điểm" Command="{Binding RunPeakHoursCommand}" 
+                            Background="#E67E22" Foreground="#FFFFFF" FontWeight="SemiBold" Height="32" Padding="12,0" Margin="0,0,8,6" Cursor="Hand" BorderThickness="0"/>
+                    <Button Content="📦 Dự Báo Nhập Kho 7 Ngày" Command="{Binding RunReorderCommand}" 
+                            Background="#27AE60" Foreground="#FFFFFF" FontWeight="SemiBold" Height="32" Padding="12,0" Margin="0,0,8,6" Cursor="Hand" BorderThickness="0"/>
+                    <Button Content="💰 Phân Tích Xu Hướng Doanh Thu" Command="{Binding RunRevenueTrendCommand}" 
+                            Background="#9B59B6" Foreground="#FFFFFF" FontWeight="SemiBold" Height="32" Padding="12,0" Margin="0,0,8,6" Cursor="Hand" BorderThickness="0"/>
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- 2. Chat Conversation History -->
+        <Border Grid.Row="1" Background="#FFFFFF" CornerRadius="8" Padding="14" Margin="0,0,0,12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Messages}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,6" CornerRadius="8" Padding="12" MaxWidth="680"
+                                    HorizontalAlignment="{Binding IsUser, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='Invert'}"
+                                    Background="{Binding IsUser, Converter={StaticResource TableStatusToBrushConverter}}">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsUser}" Value="True">
+                                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                <Setter Property="Background" Value="#2980B9"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsUser}" Value="False">
+                                                <Setter Property="HorizontalAlignment" Value="Left"/>
+                                                <Setter Property="Background" Value="#F8F9FA"/>
+                                                <Setter Property="BorderBrush" Value="#E0E6ED"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+
+                                    <StackPanel>
+                                        <DockPanel Margin="0,0,0,4">
+                                            <TextBlock Text="{Binding Sender, StringFormat='👤 {0}'}" FontWeight="Bold" FontSize="12">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="#2C3E50"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsUser}" Value="True">
+                                                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="10" HorizontalAlignment="Right">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="#7F8C8D"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsUser}" Value="True">
+                                                                <Setter Property="Foreground" Value="#E0E0E0"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </DockPanel>
+
+                                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap" FontSize="14" LineHeight="20">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="#2C3E50"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsUser}" Value="True">
+                                                            <Setter Property="Foreground" Value="#FFFFFF"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+
+        <!-- 3. Query Input Bar -->
+        <Border Grid.Row="2" Background="#FFFFFF" CornerRadius="8" Padding="8" Margin="0,0,0,6">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="Gửi 💬" Command="{Binding SendQueryCommand}"
+                        Background="#8E44AD" Foreground="#FFFFFF" FontWeight="Bold" FontSize="14" Width="90" Height="40" Margin="8,0,0,0" Cursor="Hand" BorderThickness="0">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="6"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+
+                <TextBox Text="{Binding InputQuery, UpdateSourceTrigger=PropertyChanged}" 
+                         Height="40" FontSize="14" VerticalContentAlignment="Center" Padding="10,0" BorderThickness="0">
+                    <TextBox.InputBindings>
+                        <KeyBinding Key="Enter" Command="{Binding SendQueryCommand}"/>
+                    </TextBox.InputBindings>
+                </TextBox>
+            </DockPanel>
+        </Border>
+
+        <!-- 4. Status Bar -->
+        <TextBlock Grid.Row="3" Text="{Binding StatusInfo}" FontSize="11" Foreground="#7F8C8D" Margin="4,0,0,0"/>
+    </Grid>
+</Window>
