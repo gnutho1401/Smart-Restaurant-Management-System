@@ -19,4 +19,5 @@ public class Order
 
     public virtual DiningTable? Table { get; set; }
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+    public virtual Invoice? Invoice { get; set; }
 }
