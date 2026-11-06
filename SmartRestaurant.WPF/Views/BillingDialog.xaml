@@ -1,0 +1,156 @@
+<Window x:Class="SmartRestaurant.WPF.Views.BillingDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:SmartRestaurant.WPF.ViewModels"
+        xmlns:coreEnums="clr-namespace:SmartRestaurant.Core.Enums;assembly=SmartRestaurant.Core"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance vm:BillingViewModel}"
+        Title="Quyết Toán Hóa Đơn VAT 8% - SmartRestaurant" 
+        Height="700" Width="850" WindowStartupLocation="CenterScreen" Background="#ECEFF1">
+    <Grid Margin="16">
+        <Grid.ColumnDefinitions>
+            <!-- Left: Paper Receipt Print Preview (52%) -->
+            <ColumnDefinition Width="52*"/>
+            <!-- Right: Tender Payment Controls (48%) -->
+            <ColumnDefinition Width="48*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ================= LEFT: RECEIPT PREVIEW ================= -->
+        <Border Grid.Column="0" Background="#FFFFFF" CornerRadius="8" Padding="20" Margin="0,0,12,0" x:Name="ReceiptPrintArea">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="10" ShadowDepth="2" Direction="270" Color="#B0BEC5" Opacity="0.4"/>
+            </Border.Effect>
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <!-- Receipt Header -->
+                    <TextBlock Text="SMART RESTAURANT" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Foreground="#1A252F"/>
+                    <TextBlock Text="Đại học FPT - Hệ Thống PRN212 Nhóm 6" FontSize="11" HorizontalAlignment="Center" Foreground="#7F8C8D" Margin="0,2,0,8"/>
+                    <TextBlock Text="PHIẾU THANH TOÁN (VAT 8%)" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center" Foreground="#E67E22" Margin="0,0,0,14"/>
+
+                    <!-- Meta info -->
+                    <DockPanel Margin="0,2">
+                        <TextBlock Text="{Binding TableName, StringFormat='Vị trí: {0}'}" FontWeight="Bold" FontSize="13" Foreground="#2C3E50"/>
+                        <TextBlock Text="{Binding OrderId, StringFormat='Số Đơn: #{0:D4}'}" HorizontalAlignment="Right" Foreground="#7F8C8D"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,2,0,10">
+                        <TextBlock Text="{Binding InvoiceCode, StringFormat='Số HĐ: {0}'}" FontSize="12" Foreground="#7F8C8D"/>
+                        <TextBlock Text="{Binding CurrentFormattedDate}" 
+                                   HorizontalAlignment="Right" FontSize="12" Foreground="#7F8C8D"/>
+                    </DockPanel>
+
+                    <Separator Background="#2C3E50" Margin="0,4"/>
+
+                    <!-- Line items -->
+                    <ItemsControl ItemsSource="{Binding OrderItems}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding MenuItem.Name}" FontSize="13" Foreground="#2C3E50"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Quantity, StringFormat='x{0}'}" FontSize="13" Margin="10,0" Foreground="#7F8C8D"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding UnitPrice, Converter={StaticResource CurrencyFormatConverter}}" 
+                                               FontSize="13" FontWeight="SemiBold" Foreground="#2C3E50" TextAlignment="Right" Width="80"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Separator Background="#BDC3C7" Margin="0,10"/>
+
+                    <!-- Financial Summary Breakdown -->
+                    <DockPanel Margin="0,3">
+                        <TextBlock Text="Tạm tính (SubTotal):" Foreground="#7F8C8D" FontSize="13"/>
+                        <TextBlock Text="{Binding SubTotal, Converter={StaticResource CurrencyFormatConverter}}" HorizontalAlignment="Right" FontSize="13" FontWeight="SemiBold"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,3">
+                        <TextBlock Text="Chiết khấu (Voucher):" Foreground="#7F8C8D" FontSize="13"/>
+                        <TextBlock Text="{Binding DiscountAmount, Converter={StaticResource CurrencyFormatConverter}}" HorizontalAlignment="Right" FontSize="13" Foreground="#C0392B"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,3">
+                        <TextBlock Text="Tiền chịu thuế:" Foreground="#7F8C8D" FontSize="13"/>
+                        <TextBlock Text="{Binding TaxableAmount, Converter={StaticResource CurrencyFormatConverter}}" HorizontalAlignment="Right" FontSize="13" FontWeight="SemiBold"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,3">
+                        <TextBlock Text="Thuế GTGT (VAT 8% luật định):" Foreground="#7F8C8D" FontSize="13"/>
+                        <TextBlock Text="{Binding VatAmount, Converter={StaticResource CurrencyFormatConverter}}" HorizontalAlignment="Right" FontSize="13" FontWeight="SemiBold" Foreground="#2980B9"/>
+                    </DockPanel>
+
+                    <Separator Background="#2C3E50" Margin="0,8"/>
+
+                    <DockPanel Margin="0,4">
+                        <TextBlock Text="TỔNG TIỀN PHẢI TRẢ:" FontSize="16" FontWeight="Bold" Foreground="#1A252F"/>
+                        <TextBlock Text="{Binding TotalDue, Converter={StaticResource CurrencyFormatConverter}}" FontSize="20" FontWeight="Bold" Foreground="#E74C3C" HorizontalAlignment="Right"/>
+                    </DockPanel>
+
+                    <Separator Background="#BDC3C7" Margin="0,12"/>
+
+                    <!-- Footer message -->
+                    <TextBlock Text="Cảm ơn Quý khách &amp; Hẹn gặp lại!" FontStyle="Italic" HorizontalAlignment="Center" Foreground="#7F8C8D" FontSize="12"/>
+                    <TextBlock Text="VAT Included in accordance with Law" HorizontalAlignment="Center" Foreground="#BDC3C7" FontSize="10" Margin="0,2,0,0"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- ================= RIGHT: PAYMENT TENDER ================= -->
+        <Border Grid.Column="1" Background="#FFFFFF" CornerRadius="8" Padding="18">
+            <StackPanel>
+                <TextBlock Text="💳 PHƯƠNG THỨC THANH TOÁN" FontSize="16" FontWeight="Bold" Foreground="#2C3E50" Margin="0,0,0,16"/>
+
+                <!-- Method Selector -->
+                <TextBlock Text="Hình thức thanh toán:" FontWeight="SemiBold" Foreground="#7F8C8D" Margin="0,0,0,6"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <RadioButton Content="Tiền Mặt (Cash)" IsChecked="True" GroupName="PayMethod" 
+                                 FontWeight="SemiBold" Foreground="#2C3E50" Margin="0,0,14,0" VerticalAlignment="Center"/>
+                    <RadioButton Content="Thẻ (Card)" GroupName="PayMethod" 
+                                 FontWeight="SemiBold" Foreground="#2C3E50" Margin="0,0,14,0" VerticalAlignment="Center"/>
+                    <RadioButton Content="VietQR (Chuyển khoản)" GroupName="PayMethod" 
+                                 FontWeight="SemiBold" Foreground="#2C3E50" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Discount Input -->
+                <TextBlock Text="Chiết khấu voucher (VND):" FontWeight="SemiBold" Foreground="#7F8C8D" Margin="0,0,0,4"/>
+                <TextBox Text="{Binding DiscountAmount, UpdateSourceTrigger=PropertyChanged}" Height="34" VerticalContentAlignment="Center" Padding="8,0" Margin="0,0,0,14"/>
+
+                <!-- Amount Paid Input -->
+                <TextBlock Text="Tiền khách đưa (VND):" FontWeight="SemiBold" Foreground="#7F8C8D" Margin="0,0,0,4"/>
+                <TextBox Text="{Binding AmountPaid, UpdateSourceTrigger=PropertyChanged}" Height="38" FontSize="16" FontWeight="Bold" 
+                         VerticalContentAlignment="Center" Padding="8,0" Margin="0,0,0,14" Foreground="#27AE60"/>
+
+                <!-- Change Due -->
+                <DockPanel Margin="0,0,0,20">
+                    <TextBlock Text="Tiền thừa trả khách:" FontSize="15" FontWeight="SemiBold" Foreground="#7F8C8D"/>
+                    <TextBlock Text="{Binding ChangeDue, Converter={StaticResource CurrencyFormatConverter}}" FontSize="18" FontWeight="Bold" Foreground="#2980B9" HorizontalAlignment="Right"/>
+                </DockPanel>
+
+                <!-- Feedback -->
+                <TextBlock Text="{Binding StatusMessage}" FontWeight="SemiBold" Foreground="#27AE60" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                <!-- Settle Button -->
+                <Button Content="✅ HOÀN TẤT THANH TOÁN" Command="{Binding SettlePaymentCommand}"
+                        Background="#27AE60" Foreground="#FFFFFF" FontWeight="Bold" FontSize="16" Height="48" Margin="0,0,0,12" Cursor="Hand" BorderThickness="0">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="8"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+
+                <!-- Print Receipt Button (WPF PrintDialog) -->
+                <Button Content="🖨️ IN BIÊN LAI HÓA ĐƠN" Click="PrintReceipt_Click"
+                        Background="#34495E" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="14" Height="42" Cursor="Hand" BorderThickness="0">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="8"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
