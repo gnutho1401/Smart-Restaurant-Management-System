@@ -19,4 +19,5 @@ public class DiningTable
     public byte[]? RowVersion { get; set; }
 
     public virtual DiningArea? Area { get; set; }
+    public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 }
