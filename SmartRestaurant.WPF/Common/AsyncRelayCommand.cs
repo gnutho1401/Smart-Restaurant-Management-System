@@ -4,10 +4,20 @@ using System.Windows.Input;
 
 namespace SmartRestaurant.WPF.Common;
 
+public interface IAsyncRelayCommand : ICommand
+{
+    bool IsExecuting { get; }
+}
+
+public interface IAsyncRelayCommand<in T> : ICommand
+{
+    bool IsExecuting { get; }
+}
+
 /// <summary>
 /// Asynchronous ICommand preventing UI thread freezes during non-blocking operations.
 /// </summary>
-public class AsyncRelayCommand : ICommand
+public class AsyncRelayCommand : IAsyncRelayCommand
 {
     private readonly Func<Task> _execute;
     private readonly Func<bool>? _canExecute;
@@ -54,7 +64,7 @@ public class AsyncRelayCommand : ICommand
     }
 }
 
-public class AsyncRelayCommand<T> : ICommand
+public class AsyncRelayCommand<T> : IAsyncRelayCommand<T>
 {
     private readonly Func<T?, Task> _execute;
     private readonly Func<T?, bool>? _canExecute;
