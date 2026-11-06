@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 
 namespace SmartRestaurant.AIEngine;
@@ -17,7 +18,12 @@ public static class ContextGroundingHelper
 
     public static string BuildGroundedSystemPrompt(object snapshotData, string specializedInstruction)
     {
-        string json = JsonSerializer.Serialize(snapshotData, new JsonSerializerOptions { WriteIndented = false });
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = false,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+        string json = JsonSerializer.Serialize(snapshotData, options);
         return $"{NegativeConstraintWarning}\n\n[DỮ LIỆU CSDL NỘI BỘ THỜI GIAN THỰC]:\n{json}\n\n[CHỈ THỊ CHUYÊN BIỆT]:\n{specializedInstruction}";
     }
 }

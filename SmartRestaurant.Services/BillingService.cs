@@ -35,15 +35,16 @@ public class BillingService : IBillingService
             throw new KeyNotFoundException($"Order ID {orderId} không tồn tại.");
         }
 
-        if (discountAmount < 0 || discountAmount > order.SubTotal)
+        // Financial Invariant Computation
+        decimal subTotal = order.OrderItems.Sum(oi => oi.UnitPrice * oi.Quantity);
+
+        if (discountAmount < 0 || discountAmount > subTotal)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(discountAmount),
-                $"Số tiền chiết khấu không hợp lệ: {discountAmount:N0} VND (Tạm tính: {order.SubTotal:N0} VND).");
+                $"Số tiền chiết khấu không hợp lệ: {discountAmount:N0} VND (Tạm tính: {subTotal:N0} VND).");
         }
 
-        // Financial Invariant Computation
-        decimal subTotal = order.OrderItems.Sum(oi => oi.UnitPrice * oi.Quantity);
         decimal taxableAmount = Math.Max(0, subTotal - discountAmount);
         decimal vatAmount = Math.Round(taxableAmount * 0.0800m, 2, MidpointRounding.AwayFromZero);
         decimal totalDue = taxableAmount + vatAmount;
