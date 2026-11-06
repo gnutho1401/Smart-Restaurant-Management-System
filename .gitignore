@@ -1,0 +1,40 @@
+## Visual Studio / .NET / C#
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+TestResults/
+coverage.cobertura.xml
+*.trx
+
+## Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+## JetBrains Rider
+.idea/
+
+## OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## NuGet Packages
+*.nupkg
+packages/
+
