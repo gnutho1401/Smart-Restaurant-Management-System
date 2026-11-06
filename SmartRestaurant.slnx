@@ -1,3 +1,8 @@
 <Solution>
+  <Project Path="SmartRestaurant.AIEngine/SmartRestaurant.AIEngine.csproj" />
   <Project Path="SmartRestaurant.Core/SmartRestaurant.Core.csproj" />
+  <Project Path="SmartRestaurant.Data/SmartRestaurant.Data.csproj" />
+  <Project Path="SmartRestaurant.Services/SmartRestaurant.Services.csproj" />
+  <Project Path="SmartRestaurant.Tests/SmartRestaurant.Tests.csproj" />
+  <Project Path="SmartRestaurant.WPF/SmartRestaurant.WPF.csproj" />
 </Solution>
