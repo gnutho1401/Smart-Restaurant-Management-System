@@ -38,3 +38,8 @@ desktop.ini
 *.nupkg
 packages/
 
+
+## Publish Output
+publish/
+Publish/
+*.appinstaller
