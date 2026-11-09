@@ -42,14 +42,15 @@ jobs:
       - name: Build Solution in Release Configuration
         run: dotnet build SmartRestaurant.sln --no-restore --configuration ${{ env.CONFIGURATION }}
 
-      - name: Execute 32 Unit Tests with Coverage Collection
+      - name: Execute Automated xUnit Unit Tests with Code Coverage
         run: >
           dotnet test SmartRestaurant.Tests/SmartRestaurant.Tests.csproj
           --no-build
           --configuration ${{ env.CONFIGURATION }}
           --collect:"XPlat Code Coverage"
           --results-directory ./TestResults
-          --logger "console;verbosity=detailed"
+          --logger "console;verbosity=normal"
+          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
 
       - name: Quality Gate Verification (Coverage >= 70%)
         shell: pwsh
@@ -57,21 +58,22 @@ jobs:
           Write-Host "=== SmartRestaurant Automated Quality Gate ==="
           $coverageFiles = Get-ChildItem -Path ./TestResults -Filter "coverage.cobertura.xml" -Recurse
           if ($coverageFiles.Count -eq 0) {
-            Write-Warning "No coverage.cobertura.xml report found, skipping line coverage check."
-          } else {
-            $xmlPath = $coverageFiles[0].FullName
-            Write-Host "Inspecting coverage report: $xmlPath"
-            [xml]$xml = Get-Content $xmlPath
-            $rate = [double]$xml.coverage.'line-rate'
-            $percentage = [math]::Round($rate * 100, 2)
-            Write-Host "Total Line Coverage: $percentage %"
-            if ($percentage -lt 70.0) {
-              Write-Host "Warning: Coverage ($percentage%) is below standard target (70%), but build passed."
-            } else {
-              Write-Host "Quality Gate Passed: Coverage meets or exceeds 70% threshold ($percentage%)."
-            }
+            Write-Error "No coverage report generated. Build failed."
+            exit 1
           }
-          Write-Host "All 32 xUnit unit tests executed successfully."
+          $xmlPath = $coverageFiles[0].FullName
+          Write-Host "Inspecting coverage report: $xmlPath"
+          [xml]$xml = Get-Content $xmlPath
+          $branchRate = [double]$xml.coverage.'branch-rate' * 100
+          $lineRate = [double]$xml.coverage.'line-rate' * 100
+          Write-Host ("Overall Line Coverage:   {0:N2}%" -f $lineRate)
+          Write-Host ("Overall Branch Coverage: {0:N2}%" -f $branchRate)
+          if ($branchRate -lt 70.0 -or $lineRate -lt 70.0) {
+            Write-Error ("Quality Gate FAILED: Required >= 70% threshold (Line: {0:N2}%, Branch: {1:N2}%)" -f $lineRate, $branchRate)
+            exit 1
+          }
+          Write-Host "Quality Gate Passed: Coverage meets and exceeds 70% threshold."
+          Write-Host "All automated xUnit unit tests executed successfully."
 
       - name: Upload Test & Coverage Results Artifact
         uses: actions/upload-artifact@v4
