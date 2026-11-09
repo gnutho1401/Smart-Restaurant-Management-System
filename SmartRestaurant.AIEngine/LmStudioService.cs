@@ -19,8 +19,14 @@ public class LmStudioService : IAiService
 {
     private readonly HttpClient _httpClient;
     private readonly RestaurantDbContext _context;
-    private const string LmStudioEndpoint = "http://localhost:1234/v1/chat/completions";
-    private const string TargetModel = "mistral-7b-instruct-v0.2.Q4_K_M.gguf";
+    private static readonly string[] CandidateEndpoints = new[]
+    {
+        "http://localhost:1234/v1/chat/completions",
+        "http://localhost:1235/v1/chat/completions"
+    };
+
+    private static string _activeEndpoint = CandidateEndpoints[0];
+    private static string _targetModel = "mistral-7b-instruct-v0.3";
 
     public LmStudioService(HttpClient httpClient, RestaurantDbContext context)
     {
@@ -251,7 +257,7 @@ public class LmStudioService : IAiService
     {
         var payload = new
         {
-            model = TargetModel,
+            model = _targetModel,
             temperature = temperature, // Dynamic temperature: 0.3 for factual grounding, 0.5 for culinary copywriting
             messages = new[]
             {
@@ -265,12 +271,53 @@ public class LmStudioService : IAiService
             Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         };
         string jsonPayload = JsonSerializer.Serialize(payload, options);
-        var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+        // Try active endpoint first, fallback to alternatives (ports 1234 / 1235) if connection fails
+        var endpointsToTry = new List<string> { _activeEndpoint };
+        endpointsToTry.AddRange(CandidateEndpoints.Where(e => e != _activeEndpoint));
+
+        HttpResponseMessage? response = null;
+        Exception? lastEx = null;
 
         try
         {
-            var response = await _httpClient.PostAsync(LmStudioEndpoint, content);
-            response.EnsureSuccessStatusCode();
+            foreach (var endpoint in endpointsToTry)
+            {
+                try
+                {
+                    var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                    var candidateResponse = await _httpClient.PostAsync(endpoint, content);
+                    if (candidateResponse.IsSuccessStatusCode)
+                    {
+                        _activeEndpoint = endpoint;
+                        response = candidateResponse;
+                        break;
+                    }
+                    else
+                    {
+                        response = candidateResponse;
+                    }
+                }
+                catch (HttpRequestException ex)
+                {
+                    lastEx = ex;
+                }
+                catch (TaskCanceledException ex)
+                {
+                    lastEx = ex;
+                }
+            }
+
+            if (response == null || !response.IsSuccessStatusCode)
+            {
+                if (lastEx is TaskCanceledException)
+                {
+                    return "⚠️ [Hết thời gian chờ] LM Studio phản hồi quá lâu (> 15 giây). Vui lòng kiểm tra tải GPU/CPU của máy tính.";
+                }
+
+                return "⚠️ [Chế độ Ngoại tuyến] Máy chủ LM Studio chưa được khởi động trên cổng 1234 hoặc 1235. " +
+                       "Vui lòng mở ứng dụng LM Studio, tải mô hình 'Mistral-7B-Instruct' và bật Local Server để sử dụng tính năng AI.";
+            }
 
             string responseJson = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(responseJson);
@@ -286,15 +333,6 @@ public class LmStudioService : IAiService
             }
 
             return "Định dạng phản hồi từ LM Studio không hợp lệ.";
-        }
-        catch (HttpRequestException)
-        {
-            return "⚠️ [Chế độ Ngoại tuyến] Máy chủ LM Studio chưa được khởi động trên cổng 1234. " +
-                   "Vui lòng mở ứng dụng LM Studio, tải mô hình 'Mistral-7B-Instruct' và bật Local Server tại port 1234 để sử dụng tính năng AI.";
-        }
-        catch (TaskCanceledException)
-        {
-            return "⚠️ [Hết thời gian chờ] LM Studio phản hồi quá lâu (> 15 giây). Vui lòng kiểm tra tải GPU/CPU của máy tính.";
         }
         catch (Exception ex)
         {

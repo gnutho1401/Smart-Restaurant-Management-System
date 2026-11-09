@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Script kiểm tra và thiết lập môi trường Local Generative AI (LM Studio & Mistral-7B) cho SmartRestaurant.
 .DESCRIPTION
@@ -52,30 +52,48 @@ if ($lmsCmd) {
     Write-Host "     3. Chuyển sang tab 'Local Server' (<-> icon), chọn cổng $Port và bấm 'Start Server'" -ForegroundColor White
 }
 
-# 3. Kiểm tra kết nối cổng Localhost:1234
+# 3. Kiểm tra kết nối cổng Localhost (1234 hoặc 1235)
 Write-Host ""
-Write-Host "[3/4] Kiểm tra cổng lắng nghe localhost:$Port..." -ForegroundColor Yellow
+Write-Host "[3/4] Kiểm tra cổng lắng nghe localhost (1234 / 1235)..." -ForegroundColor Yellow
+$activePort = $Port
 $tcpTest = Test-NetConnection -ComputerName localhost -Port $Port -WarningAction SilentlyContinue
+if (-not $tcpTest.TcpTestSucceeded) {
+    # Thử cổng 1235 (LM Studio 0.3)
+    $tcpTest2 = Test-NetConnection -ComputerName localhost -Port 1235 -WarningAction SilentlyContinue
+    if ($tcpTest2.TcpTestSucceeded) {
+        $activePort = 1235
+        $tcpTest = $tcpTest2
+    }
+}
+
 if ($tcpTest.TcpTestSucceeded) {
-    Write-Host "  -> Cổng $Port ĐANG HOẠT ĐỘNG và sẵn sàng kết nối!" -ForegroundColor Green
+    Write-Host "  -> Cổng $activePort ĐANG HOẠT ĐỘNG và sẵn sàng kết nối!" -ForegroundColor Green
 } else {
-    Write-Warning "  -> Cổng $Port CHƯA MỞ."
+    Write-Warning "  -> Cổng 1234 và 1235 đều CHƯA MỞ."
     Write-Host "  -> Bạn có thể khởi động LM Studio hoặc dùng script chạy Mock Server thử nghiệm:" -ForegroundColor Cyan
-    Write-Host "     pwsh -File .\scripts\start_mock_llm.ps1" -ForegroundColor Yellow
+    Write-Host "     powershell -ExecutionPolicy Bypass -File .\scripts\start_mock_llm.ps1" -ForegroundColor Yellow
 }
 
 # 4. Kiểm tra gửi API chat completion thử nghiệm (nếu server đang chạy)
 if ($tcpTest.TcpTestSucceeded) {
     Write-Host ""
-    Write-Host "[4/4] Gửi prompt thử nghiệm Context Grounding đến LM Studio..." -ForegroundColor Yellow
+    Write-Host "[4/4] Gửi prompt thử nghiệm Context Grounding đến LM Studio (port $activePort)..." -ForegroundColor Yellow
     try {
+        # Phát hiện model đang được load trên server
+        $modelsResponse = Invoke-RestMethod -Uri "http://localhost:$activePort/v1/models" -Method Get -TimeoutSec 5 -ErrorAction SilentlyContinue
+        $detectedModel = $ModelName
+        if ($modelsResponse -and $modelsResponse.data -and $modelsResponse.data.Count -gt 0) {
+            $detectedModel = $modelsResponse.data[0].id
+            Write-Host "  -> Đã nhận diện model đang chạy: $detectedModel" -ForegroundColor Cyan
+        }
+
         $payload = @{
-            model = $ModelName
+            model = $detectedModel
             temperature = 0.3
             messages = @(
                 @{
                     role = "system"
-                    content = "Bạn là trợ lý ảo SmartRestaurant. Hãy xác nhận kết nối thành công ngắn gọn trong 1 câu."
+                    content = "Bạn là trợ lý ảo SmartRestaurant. Hãy xác nhận kết nối thành công ngắn gọn trong 1 câu tiếng Việt."
                 },
                 @{
                     role = "user"
@@ -84,7 +102,7 @@ if ($tcpTest.TcpTestSucceeded) {
             )
         } | ConvertTo-Json -Depth 5
 
-        $response = Invoke-RestMethod -Uri "http://localhost:$Port/v1/chat/completions" -Method Post -Body $payload -ContentType "application/json" -TimeoutSec 10
+        $response = Invoke-RestMethod -Uri "http://localhost:$activePort/v1/chat/completions" -Method Post -Body $payload -ContentType "application/json" -TimeoutSec 15
         $answer = $response.choices[0].message.content
         Write-Host "  -> AI Phản hồi thành công:" -ForegroundColor Green
         Write-Host "     `"$answer`"" -ForegroundColor Cyan
