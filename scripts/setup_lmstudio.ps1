@@ -31,9 +31,19 @@ if ($ram -lt 8.0) {
 # 2. Kiểm tra LM Studio CLI / Ứng dụng
 Write-Host ""
 Write-Host "[2/4] Kiểm tra công cụ LM Studio..." -ForegroundColor Yellow
+$lmsPath = "$env:USERPROFILE\.lmstudio\bin\lms.exe"
 $lmsCmd = Get-Command "lms" -ErrorAction SilentlyContinue
+if (-not $lmsCmd -and (Test-Path $lmsPath)) {
+    $lmsCmd = [PSCustomObject]@{ Source = $lmsPath }
+}
+
 if ($lmsCmd) {
     Write-Host "  -> Đã tìm thấy LM Studio CLI: $($lmsCmd.Source)" -ForegroundColor Green
+    try {
+        $models = & $lmsCmd.Source ls 2>$null
+        Write-Host "  -> Danh sách mô hình hiện có:" -ForegroundColor Gray
+        $models | ForEach-Object { Write-Host "     $_" -ForegroundColor DarkGray }
+    } catch {}
 } else {
     Write-Host "  -> LM Studio CLI chưa được thêm vào PATH." -ForegroundColor Gray
     Write-Host "  -> Hướng dẫn cài đặt:" -ForegroundColor White
