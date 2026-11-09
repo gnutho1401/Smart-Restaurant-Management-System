@@ -31,21 +31,29 @@ public class LmStudioService : IAiService
 
     public async Task<string> GetDishRecommendationAsync(string customerQuery)
     {
-        // 1. LINQ Grounding: Fetch available dishes and their details
+        // 1. Dynamic LINQ Context Grounding: Fetch available dishes with categories, prices, descriptions, and BOM recipes
         var liveMenu = await _context.MenuItems
             .Where(m => m.IsAvailable)
+            .Include(m => m.Category)
+            .Include(m => m.Recipes)
+                .ThenInclude(r => r.Ingredient)
             .Select(m => new
             {
-                m.Name,
+                DishName = m.Name,
                 Category = m.Category != null ? m.Category.CategoryName : "Khác",
                 Price = $"{m.Price:N0} VND",
-                m.Description
+                m.Description,
+                Ingredients = m.Recipes.Select(r => r.Ingredient != null ? r.Ingredient.Name : $"Nguyên liệu #{r.IngredientId}").ToList()
             })
             .ToListAsync();
 
-        string systemPrompt = ContextGroundingHelper.BuildGroundedSystemPrompt(
-            liveMenu,
-            "Hãy tư vấn món ăn phù hợp với câu hỏi của khách hàng, giải thích hương vị và báo giá chính xác.");
+        string instruction =
+            "1. Tư vấn món ăn phù hợp với yêu cầu, sở thích hoặc chế độ ăn của khách hàng.\n" +
+            "2. Luôn báo đúng tên món và giá niêm yết theo dữ liệu CSDL.\n" +
+            "3. Khi khách hỏi về nguyên liệu hoặc dị ứng (chay, hải sản, bò, đậu phộng...), hãy đối chiếu trường 'Ingredients' để cảnh báo hoặc xác nhận an toàn tuyệt đối.\n" +
+            "4. Nếu khách hỏi món ngoài danh sách, thông báo lịch sự nhà hàng chưa có và đề xuất món thay thế tương tự.";
+
+        string systemPrompt = ContextGroundingHelper.BuildGroundedSystemPrompt(liveMenu, instruction);
 
         return await SendLlmChatRequestAsync(systemPrompt, customerQuery);
     }
