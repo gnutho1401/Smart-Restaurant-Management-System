@@ -113,22 +113,50 @@ public class LmStudioService : IAiService
 
     public async Task<string> GenerateMenuInsightsAsync()
     {
-        // BCG Menu Engineering Matrix Grounding
+        // BCG Menu Engineering Matrix Grounding with Volume, Margin, and Revenue metrics
         var dishes = await _context.MenuItems
             .Select(m => new
             {
-                m.Name,
+                m.MenuItemId,
+                DishName = m.Name,
                 Category = m.Category != null ? m.Category.CategoryName : "Khác",
                 Price = m.Price,
-                TotalSold = _context.OrderItems.Where(oi => oi.MenuItemId == m.MenuItemId).Sum(oi => (int?)oi.Quantity) ?? 0
+                TotalSold = _context.OrderItems.Where(oi => oi.MenuItemId == m.MenuItemId).Sum(oi => (int?)oi.Quantity) ?? 0,
+                TotalRevenue = _context.OrderItems.Where(oi => oi.MenuItemId == m.MenuItemId).Sum(oi => (decimal?)oi.UnitPrice * oi.Quantity) ?? 0m
             })
             .ToListAsync();
 
-        string systemPrompt = ContextGroundingHelper.BuildGroundedSystemPrompt(
-            dishes,
-            "Hãy phân loại các món ăn theo ma trận BCG Menu Engineering (Stars, Plowhorses, Puzzles, Dogs) và gợi ý giải pháp điều chỉnh giá bán hoặc định lượng.");
+        decimal avgSold = dishes.Any() ? (decimal)dishes.Average(d => d.TotalSold) : 0;
+        decimal avgPrice = dishes.Any() ? dishes.Average(d => d.Price) : 0;
 
-        return await SendLlmChatRequestAsync(systemPrompt, "Đánh giá ma trận thực đơn BCG và đề xuất cải thiện.");
+        var categorizedData = dishes.Select(d => new
+        {
+            d.DishName,
+            d.Category,
+            Price = $"{d.Price:N0} VND",
+            Sold = $"{d.TotalSold} phần",
+            Revenue = $"{d.TotalRevenue:N0} VND",
+            Quadrant = (d.TotalSold >= avgSold && d.Price >= avgPrice) ? "Star" :
+                       (d.TotalSold >= avgSold && d.Price < avgPrice) ? "Plowhorse" :
+                       (d.TotalSold < avgSold && d.Price >= avgPrice) ? "Puzzle" : "Dog"
+        }).ToList();
+
+        var matrixSnapshot = new
+        {
+            AverageSalesVolume = $"{avgSold:N1} phần",
+            AverageDishPrice = $"{avgPrice:N0} VND",
+            Dishes = categorizedData
+        };
+
+        string instruction =
+            "Bạn là Giám đốc Vận hành Ẩm thực (F&B Director). Hãy phân tích báo cáo ma trận BCG Menu Engineering:\n" +
+            "1. Phân loại và đánh giá từng nhóm: Stars (Ngôi sao), Plowhorses (Bò sữa), Puzzles (Thử thách), Dogs (Chó mực).\n" +
+            "2. Đưa ra chiến lược cụ thể cho từng nhóm: điều chỉnh giá, định lượng nguyên liệu (BOM), hay kỹ năng upselling của nhân viên.\n" +
+            "3. Trình bày rõ ràng theo tiêu đề markdown, súc tích và có tính hành động cao.";
+
+        string systemPrompt = ContextGroundingHelper.BuildGroundedSystemPrompt(matrixSnapshot, instruction);
+
+        return await SendLlmChatRequestAsync(systemPrompt, "Hãy phân tích ma trận thực đơn BCG và đề xuất kế hoạch tối ưu lợi nhuận.");
     }
 
     public async Task<string> AnalyzePeakHoursAsync()
