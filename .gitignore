@@ -43,3 +43,10 @@ packages/
 publish/
 Publish/
 *.appinstaller
+
+## Project Reports (DO NOT PUSH)
+report/
+report/**
+.dotnet_home/
+
+
