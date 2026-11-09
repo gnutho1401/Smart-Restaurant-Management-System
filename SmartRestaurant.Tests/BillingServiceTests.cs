@@ -87,6 +87,37 @@ public class BillingServiceTests
     }
 
     [Fact]
+    public async Task ComputeInvoice_NegativeDiscount_ThrowsException()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var dish = new MenuItem { Name = "Cơm Trưa", Price = 50000m };
+        context.MenuItems.Add(dish);
+        await context.SaveChangesAsync();
+
+        var order = new Order { TableId = 1, Status = "New" };
+        order.OrderItems.Add(new OrderItem { MenuItemId = dish.MenuItemId, Quantity = 1, UnitPrice = 50000m });
+        context.Orders.Add(order);
+        await context.SaveChangesAsync();
+
+        var service = new BillingService(context);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => service.GenerateInvoiceAsync(order.OrderId, discountAmount: -5000m));
+    }
+
+    [Fact]
+    public async Task ComputeInvoice_NonExistentOrder_ThrowsKeyNotFoundException()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var service = new BillingService(context);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => service.GenerateInvoiceAsync(99999));
+    }
+
+    [Fact]
     public async Task ProcessPayment_ValidTender_MarksOrderCompletedAndTableCleaning()
     {
         // Arrange
@@ -126,5 +157,41 @@ public class BillingServiceTests
 
         Assert.Equal("Completed", updatedOrder!.Status);
         Assert.Equal(TableStatus.Cleaning, updatedTable!.Status);
+    }
+
+    [Fact]
+    public async Task ProcessPayment_InsufficientAmountPaid_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var table = new DiningTable { TableName = "B-02", Capacity = 2, Status = TableStatus.Occupied, AreaId = 1 };
+        context.DiningTables.Add(table);
+        await context.SaveChangesAsync();
+
+        var dish = new MenuItem { Name = "Cơm Trưa", Price = 100000m };
+        context.MenuItems.Add(dish);
+        await context.SaveChangesAsync();
+
+        var order = new Order { TableId = table.TableId, Status = "Active" };
+        order.OrderItems.Add(new OrderItem { MenuItemId = dish.MenuItemId, Quantity = 1, UnitPrice = 100000m });
+        context.Orders.Add(order);
+        await context.SaveChangesAsync();
+
+        var service = new BillingService(context);
+        var invoice = await service.GenerateInvoiceAsync(order.OrderId);
+
+        // Act & Assert (Paid 1,000 < TotalDue 108,000)
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.SettlePaymentAsync(invoice.InvoiceId, PaymentMethod.Cash, 1000m));
+    }
+
+    [Fact]
+    public async Task ProcessPayment_NonExistentInvoice_ThrowsKeyNotFoundException()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var service = new BillingService(context);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => service.SettlePaymentAsync(99999, PaymentMethod.Cash, 50000m));
     }
 }

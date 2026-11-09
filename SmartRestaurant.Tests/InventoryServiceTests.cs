@@ -113,6 +113,15 @@ public class InventoryServiceTests
     }
 
     [Fact]
+    public async Task DeductBOM_NonExistentOrder_ThrowsKeyNotFoundException()
+    {
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var service = new InventoryService(context);
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => service.DeductBomIngredientsAsync(9999));
+    }
+
+    [Fact]
     public async Task RestockIngredient_PositiveQuantity_IncrementsStock()
     {
         // Arrange

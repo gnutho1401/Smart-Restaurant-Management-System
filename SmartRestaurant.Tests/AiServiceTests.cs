@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SmartRestaurant.AIEngine;
@@ -25,9 +27,35 @@ public class AiServiceTests
 
     private class ThrowingHttpMessageHandler : HttpMessageHandler
     {
+        private readonly Exception? _exceptionToThrow;
+
+        public ThrowingHttpMessageHandler(Exception? ex = null)
+        {
+            _exceptionToThrow = ex ?? new HttpRequestException("Connection refused (localhost:1234)");
+        }
+
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            throw new HttpRequestException("Connection refused (localhost:1234)");
+            throw _exceptionToThrow!;
+        }
+    }
+
+    private class SuccessfulHttpMessageHandler : HttpMessageHandler
+    {
+        private readonly string _responseContent;
+
+        public SuccessfulHttpMessageHandler(string content)
+        {
+            _responseContent = content;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(_responseContent, Encoding.UTF8, "application/json")
+            };
+            return Task.FromResult(response);
         }
     }
 
@@ -69,12 +97,6 @@ public class AiServiceTests
         context.MenuCategories.Add(cat);
         await context.SaveChangesAsync();
 
-        // 4 dishes with varied price:
-        // Average price will be (200 + 50 + 200 + 50) / 4 = 125k
-        // Star: high price (200k), high volume (10 sold)
-        // Plowhorse: low price (50k), high volume (10 sold)
-        // Puzzle: high price (200k), low volume (1 sold)
-        // Dog: low price (50k), low volume (1 sold)
         var starDish = new MenuItem { Name = "Bò Wagyu", Price = 200000m, CategoryId = cat.CategoryId, IsAvailable = true };
         var plowhorseDish = new MenuItem { Name = "Cơm Trứng", Price = 50000m, CategoryId = cat.CategoryId, IsAvailable = true };
         var puzzleDish = new MenuItem { Name = "Tôm Hùm Đút Lò", Price = 200000m, CategoryId = cat.CategoryId, IsAvailable = true };
@@ -83,7 +105,6 @@ public class AiServiceTests
         context.MenuItems.AddRange(starDish, plowhorseDish, puzzleDish, dogDish);
         await context.SaveChangesAsync();
 
-        // Orders: Average sold will be (10 + 10 + 1 + 1) / 4 = 5.5
         var order = new Order { TableId = 1, Status = "Completed" };
         order.OrderItems.Add(new OrderItem { MenuItemId = starDish.MenuItemId, Quantity = 10, UnitPrice = 200000m });
         order.OrderItems.Add(new OrderItem { MenuItemId = plowhorseDish.MenuItemId, Quantity = 10, UnitPrice = 50000m });
@@ -112,9 +133,105 @@ public class AiServiceTests
     }
 
     [Fact]
-    public async Task AiClient_HandlesOfflineDaemon_GracefullyWithFallback()
+    public async Task ComputePeakHours_CategorizesHoursIntoLevelsCorrectly()
     {
-        // Arrange: HttpClient configured with failing message handler
+        // Arrange
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var today = DateTime.UtcNow.Date;
+
+        // Add 10 orders at 12:00 (Rush hour >= 8)
+        for (int i = 0; i < 10; i++)
+        {
+            context.Orders.Add(new Order { TableId = 1, CreatedAt = today.AddHours(12) });
+        }
+        // Add 5 orders at 15:00 (Medium >= 4)
+        for (int i = 0; i < 5; i++)
+        {
+            context.Orders.Add(new Order { TableId = 1, CreatedAt = today.AddHours(15) });
+        }
+        // Add 1 order at 10:00 (Low < 4)
+        context.Orders.Add(new Order { TableId = 1, CreatedAt = today.AddHours(10) });
+
+        await context.SaveChangesAsync();
+
+        var aiEngine = new AiAnalyticsEngine(context, new MockAiService());
+
+        // Act
+        var result = await aiEngine.ComputePeakHoursAsync();
+
+        // Assert
+        var rushHour = result.Slots.First(s => s.TimeSlot.StartsWith("12:00"));
+        var mediumHour = result.Slots.First(s => s.TimeSlot.StartsWith("15:00"));
+        var lowHour = result.Slots.First(s => s.TimeSlot.StartsWith("10:00"));
+
+        Assert.Contains("Cao Điểm", rushHour.BusynessLevel);
+        Assert.Contains("Trung Bình", mediumHour.BusynessLevel);
+        Assert.Contains("Thấp Điểm", lowHour.BusynessLevel);
+    }
+
+    [Fact]
+    public async Task ComputeWeeklyReorderForecast_CategorizesUrgencyCorrectly()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var criticalIng = new Ingredient { Name = "Thịt Bò", Unit = "kg", CurrentStock = 1.0m, MinStock = 2.0m }; // <= MinStock
+        var warningIng = new Ingredient { Name = "Hành Tây", Unit = "kg", CurrentStock = 2.5m, MinStock = 2.0m };  // <= MinStock * 1.5
+        var safeIng = new Ingredient { Name = "Muối", Unit = "kg", CurrentStock = 10.0m, MinStock = 2.0m };       // > MinStock * 1.5
+
+        context.Ingredients.AddRange(criticalIng, warningIng, safeIng);
+        await context.SaveChangesAsync();
+
+        var aiEngine = new AiAnalyticsEngine(context, new MockAiService());
+
+        // Act
+        var result = await aiEngine.ComputeWeeklyReorderForecastAsync();
+
+        // Assert
+        var critical = result.ReorderList.First(i => i.IngredientName == "Thịt Bò");
+        var warning = result.ReorderList.First(i => i.IngredientName == "Hành Tây");
+        var safe = result.ReorderList.First(i => i.IngredientName == "Muối");
+
+        Assert.Contains("Khẩn Cấp", critical.Urgency);
+        Assert.Contains("Cần Lưu Ý", warning.Urgency);
+        Assert.Contains("An Toàn", safe.Urgency);
+    }
+
+    [Fact]
+    public async Task LmStudioService_ReturnsParsedContent_WhenApiRespondsSuccessfully()
+    {
+        // Arrange
+        string mockApiResponse = @"{
+            ""id"": ""chatcmpl-123"",
+            ""object"": ""chat.completion"",
+            ""created"": 1677652288,
+            ""choices"": [{
+                ""index"": 0,
+                ""message"": {
+                    ""role"": ""assistant"",
+                    ""content"": ""Gợi ý cho bạn món Bò Wagyu A5 thượng hạng kèm vang đỏ.""
+                },
+                ""finish_reason"": ""stop""
+            }]
+        }";
+
+        var httpClient = new HttpClient(new SuccessfulHttpMessageHandler(mockApiResponse));
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        context.MenuItems.Add(new MenuItem { Name = "Bò Wagyu A5", Price = 450000m, IsAvailable = true, Description = "Ngon" });
+        await context.SaveChangesAsync();
+
+        var service = new LmStudioService(httpClient, context);
+
+        // Act
+        string reply = await service.GetDishRecommendationAsync("Hôm nay có món gì ngon?");
+
+        // Assert
+        Assert.Contains("Bò Wagyu A5", reply);
+    }
+
+    [Fact]
+    public async Task LmStudioService_HandlesOfflineDaemon_GracefullyWithFallback()
+    {
+        // Arrange
         var httpClient = new HttpClient(new ThrowingHttpMessageHandler());
         using var context = TestDbContextFactory.CreateInMemoryContext();
         var lmService = new LmStudioService(httpClient, context);
@@ -122,8 +239,62 @@ public class AiServiceTests
         // Act
         string response = await lmService.GenerateDishDescriptionAsync("Phở Đặc Biệt", new List<string> { "Bò", "Bánh Phở" });
 
-        // Assert: Returns offline fallback message instead of throwing an unhandled crash
+        // Assert
         Assert.Contains("Chế độ Ngoại tuyến", response);
         Assert.Contains("Máy chủ LM Studio chưa được khởi động", response);
+    }
+
+    [Fact]
+    public async Task LmStudioService_HandlesTimeout_GracefullyWithFallback()
+    {
+        // Arrange
+        var httpClient = new HttpClient(new ThrowingHttpMessageHandler(new TaskCanceledException("Timed out")));
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var lmService = new LmStudioService(httpClient, context);
+
+        // Act
+        string response = await lmService.GetDishRecommendationAsync("Có món gì nhanh?");
+
+        // Assert
+        Assert.Contains("Hết thời gian chờ", response);
+    }
+
+    [Fact]
+    public async Task LmStudioService_AllAnalyticalMethods_ExecuteWithMockApi()
+    {
+        // Arrange
+        string mockApiResponse = @"{
+            ""choices"": [{
+                ""message"": {
+                    ""content"": ""Phân tích thành công từ mô hình AI.""
+                }
+            }]
+        }";
+
+        var httpClient = new HttpClient(new SuccessfulHttpMessageHandler(mockApiResponse));
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+
+        var dish = new MenuItem { Name = "Cá Hồi", Price = 300000m, IsAvailable = true };
+        context.MenuItems.Add(dish);
+        var ing = new Ingredient { Name = "Cá", Unit = "kg", CurrentStock = 5m, MinStock = 2m };
+        context.Ingredients.Add(ing);
+        var order = new Order { TableId = 1, Status = "Completed", FinalTotal = 300000m, CreatedAt = DateTime.UtcNow };
+        order.OrderItems.Add(new OrderItem { MenuItemId = dish.MenuItemId, Quantity = 1, UnitPrice = 300000m });
+        context.Orders.Add(order);
+        await context.SaveChangesAsync();
+
+        var service = new LmStudioService(httpClient, context);
+
+        // Act
+        var rev = await service.AnalyzeRevenueTrendsAsync(DateTime.UtcNow.AddDays(-7), DateTime.UtcNow);
+        var insights = await service.GenerateMenuInsightsAsync();
+        var peaks = await service.AnalyzePeakHoursAsync();
+        var reorders = await service.PredictWeeklyReorderAsync();
+
+        // Assert
+        Assert.Equal("Phân tích thành công từ mô hình AI.", rev);
+        Assert.Equal("Phân tích thành công từ mô hình AI.", insights);
+        Assert.Equal("Phân tích thành công từ mô hình AI.", peaks);
+        Assert.Equal("Phân tích thành công từ mô hình AI.", reorders);
     }
 }

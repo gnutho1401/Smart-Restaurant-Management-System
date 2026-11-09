@@ -110,6 +110,47 @@ public class OrderServiceTests
     }
 
     [Fact]
+    public async Task CreateOrder_ExistingActiveOrder_AppendsItemsAndRecalculatesTotals()
+    {
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var table = new DiningTable { TableName = "T-04X", Status = TableStatus.Occupied, Capacity = 4 };
+        var dish1 = new MenuItem { Name = "Món 1", Price = 50000m };
+        var dish2 = new MenuItem { Name = "Món 2", Price = 70000m };
+        context.DiningTables.Add(table);
+        context.MenuItems.AddRange(dish1, dish2);
+        await context.SaveChangesAsync();
+
+        var service = new OrderService(context);
+        // First order
+        var order1 = await service.CreateOrderAsync(table.TableId, 1, new List<(int, int, string?)> { (dish1.MenuItemId, 1, null) });
+        // Second order on same table -> Appends to same active order
+        var order2 = await service.CreateOrderAsync(table.TableId, 1, new List<(int, int, string?)> { (dish2.MenuItemId, 2, null) });
+
+        Assert.Equal(order1.OrderId, order2.OrderId);
+        Assert.Equal(3, order2.OrderItems.Sum(oi => oi.Quantity));
+        Assert.Equal(50000m + (70000m * 2), order2.SubTotal);
+    }
+
+    [Fact]
+    public async Task CreateOrder_NonExistentTableOrDish_ThrowsKeyNotFoundException()
+    {
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var table = new DiningTable { TableName = "T-04Y", Status = TableStatus.Available };
+        context.DiningTables.Add(table);
+        await context.SaveChangesAsync();
+
+        var service = new OrderService(context);
+
+        // Non-existent table
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            service.CreateOrderAsync(9999, 1, new List<(int, int, string?)> { (1, 1, null) }));
+
+        // Non-existent dish
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            service.CreateOrderAsync(table.TableId, 1, new List<(int, int, string?)> { (9999, 1, null) }));
+    }
+
+    [Fact]
     public async Task GetActiveOrderByTableId_ReturnsActiveOrder()
     {
         using var context = TestDbContextFactory.CreateInMemoryContext();
@@ -131,6 +172,24 @@ public class OrderServiceTests
     }
 
     [Fact]
+    public async Task GetOrderById_ReturnsOrderWithDetails()
+    {
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var table = new DiningTable { TableName = "T-05B", Status = TableStatus.Occupied };
+        var dish = new MenuItem { Name = "Món Z", Price = 80000m };
+        context.DiningTables.Add(table);
+        context.MenuItems.Add(dish);
+        await context.SaveChangesAsync();
+
+        var service = new OrderService(context);
+        var order = await service.CreateOrderAsync(table.TableId, 1, new List<(int, int, string?)> { (dish.MenuItemId, 1, null) });
+
+        var fetched = await service.GetOrderByIdAsync(order.OrderId);
+        Assert.NotNull(fetched);
+        Assert.Equal(order.OrderId, fetched.OrderId);
+    }
+
+    [Fact]
     public async Task UpdateCookingStatus_TransitionsStatus()
     {
         using var context = TestDbContextFactory.CreateInMemoryContext();
@@ -146,8 +205,10 @@ public class OrderServiceTests
         var orderItem = order.OrderItems.First();
 
         bool updated = await service.UpdateItemCookingStatusAsync(orderItem.OrderItemId, CookingStatus.Cooking);
-
         Assert.True(updated);
         Assert.Equal(CookingStatus.Cooking, orderItem.CookingStatus);
+
+        bool missing = await service.UpdateItemCookingStatusAsync(9999, CookingStatus.Served);
+        Assert.False(missing);
     }
 }
