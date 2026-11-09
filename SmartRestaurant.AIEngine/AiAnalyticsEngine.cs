@@ -133,24 +133,61 @@ public class AiAnalyticsEngine
 
     public async Task<WeeklyReorderResult> ComputeWeeklyReorderForecastAsync()
     {
+        var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
+        var recentOrderItems = await _context.OrderItems
+            .Where(oi => oi.Order != null && oi.Order.CreatedAt >= sevenDaysAgo && oi.Order.Status == "Completed")
+            .Include(oi => oi.MenuItem)
+                .ThenInclude(m => m!.Recipes)
+            .ToListAsync();
+
+        var usageDict = new Dictionary<int, decimal>();
+        foreach (var oi in recentOrderItems)
+        {
+            if (oi.MenuItem?.Recipes == null) continue;
+            foreach (var recipe in oi.MenuItem.Recipes)
+            {
+                decimal used = recipe.QuantityRequired * oi.Quantity;
+                usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + used;
+            }
+        }
+
         var ingredients = await _context.Ingredients.ToListAsync();
         var reorderItems = new List<StockReorderItem>();
 
         foreach (var ing in ingredients)
         {
+            decimal weeklyUsage = usageDict.GetValueOrDefault(ing.IngredientId, 0m);
+            decimal projectedStock = ing.CurrentStock - weeklyUsage;
+            decimal suggestedReorder = 0m;
+
             string urgency;
-            if (ing.CurrentStock <= ing.MinStock)
-                urgency = "Khẩn Cấp (Dưới Định Mức)";
-            else if (ing.CurrentStock <= ing.MinStock * 1.5m)
-                urgency = "Cần Lưu Ý";
+            if (ing.CurrentStock <= ing.MinStock || projectedStock <= 0)
+            {
+                urgency = "Khẩn Cấp (Nguy Cơ Hết Hàng)";
+                suggestedReorder = (ing.MinStock * 2m) - ing.CurrentStock;
+                if (suggestedReorder < ing.MinStock) suggestedReorder = ing.MinStock;
+            }
+            else if (projectedStock <= ing.MinStock || ing.CurrentStock <= ing.MinStock * 1.5m)
+            {
+                urgency = "Cần Lưu Ý (Sắp Đạt Ngưỡng)";
+                suggestedReorder = ing.MinStock;
+            }
             else
+            {
                 urgency = "An Toàn";
+                suggestedReorder = 0m;
+            }
+
+            string usageText = weeklyUsage > 0 ? $"{weeklyUsage:N1} {ing.Unit}/tuần" : $"0 {ing.Unit}/tuần";
+            string reorderText = suggestedReorder > 0 ? $"{suggestedReorder:N1} {ing.Unit}" : "Chưa cần nhập";
 
             reorderItems.Add(new StockReorderItem(
                 ing.Name,
                 $"{ing.CurrentStock:N1} {ing.Unit}",
                 $"{ing.MinStock:N1} {ing.Unit}",
-                urgency));
+                urgency,
+                usageText,
+                reorderText));
         }
 
         string advisory = await _aiService.PredictWeeklyReorderAsync();

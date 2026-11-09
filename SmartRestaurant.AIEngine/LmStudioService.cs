@@ -167,28 +167,84 @@ public class LmStudioService : IAiService
 
         var hourlyDistribution = orderTimes
             .GroupBy(o => o.Hour)
-            .Select(g => new { Hour = $"{g.Key}:00", OrderCount = g.Count() })
-            .OrderBy(x => x.Hour)
+            .Select(g => new
+            {
+                TimeSlot = $"{g.Key:D2}:00 - {g.Key + 1:D2}:00",
+                OrderCount = g.Count(),
+                TrafficLevel = g.Count() >= 8 ? "Cao điểm (Đông khách)" :
+                               g.Count() >= 4 ? "Trung bình" : "Thấp điểm"
+            })
+            .OrderBy(x => x.TimeSlot)
             .ToList();
 
-        string systemPrompt = ContextGroundingHelper.BuildGroundedSystemPrompt(
-            hourlyDistribution,
-            "Hãy phân tích lưu lượng khách theo khung giờ, xác định giờ cao điểm trưa/tối và tư vấn phương án phân bổ nhân sự bếp và phục vụ.");
+        var summary = new
+        {
+            OperatingHours = "09:00 - 22:00",
+            TotalOrdersSampled = orderTimes.Count,
+            PeakLunchWindow = "11:30 - 13:30",
+            PeakDinnerWindow = "18:00 - 20:30",
+            HourlyTraffic = hourlyDistribution
+        };
 
-        return await SendLlmChatRequestAsync(systemPrompt, "Phân tích giờ cao điểm của nhà hàng.");
+        string instruction =
+            "Bạn là Quản lý Vận hành Nhà hàng chuyên nghiệp.\n" +
+            "Dựa trên phân bố lưu lượng khách theo khung giờ:\n" +
+            "1. Đánh giá chi tiết hai đợt cao điểm trưa (11:30-13:30) và tối (18:00-20:30).\n" +
+            "2. Đưa ra phương án phân bổ nhân sự: số lượng nhân viên chạy bàn (runner), thu ngân, và phụ bếp line nóng theo ca.\n" +
+            "3. Hướng dẫn công tác chuẩn bị nguyên liệu (mise-en-place) trong khung giờ thấp điểm (14:00-17:00) để phục vụ giờ cao điểm tối mượt mà.";
+
+        string systemPrompt = ContextGroundingHelper.BuildGroundedSystemPrompt(summary, instruction);
+
+        return await SendLlmChatRequestAsync(systemPrompt, "Phân tích giờ cao điểm và hướng dẫn điều phối nhân sự nhà hàng.");
     }
 
     public async Task<string> PredictWeeklyReorderAsync()
     {
-        var rawStock = await _context.Ingredients
-            .Select(i => new { i.Name, CurrentStock = $"{i.CurrentStock} {i.Unit}", MinStock = $"{i.MinStock} {i.Unit}" })
+        var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
+        var recentOrderItems = await _context.OrderItems
+            .Where(oi => oi.Order != null && oi.Order.CreatedAt >= sevenDaysAgo && oi.Order.Status == "Completed")
+            .Include(oi => oi.MenuItem)
+                .ThenInclude(m => m!.Recipes)
             .ToListAsync();
 
-        string systemPrompt = ContextGroundingHelper.BuildGroundedSystemPrompt(
-            rawStock,
-            "Dựa trên số lượng tồn kho thực tế và ngưỡng tối thiểu, hãy lập danh sách các nguyên liệu cần nhập thêm trong 7 ngày tới.");
+        var usageDict = new Dictionary<int, decimal>();
+        foreach (var oi in recentOrderItems)
+        {
+            if (oi.MenuItem?.Recipes == null) continue;
+            foreach (var recipe in oi.MenuItem.Recipes)
+            {
+                usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + (recipe.QuantityRequired * oi.Quantity);
+            }
+        }
 
-        return await SendLlmChatRequestAsync(systemPrompt, "Dự báo nguyên liệu cần nhập tuần tới.");
+        var ingredients = await _context.Ingredients.ToListAsync();
+        var stockSnapshot = ingredients.Select(i =>
+        {
+            decimal weeklyUsage = usageDict.GetValueOrDefault(i.IngredientId, 0m);
+            decimal projected = i.CurrentStock - weeklyUsage;
+            return new
+            {
+                Ingredient = i.Name,
+                CurrentStock = $"{i.CurrentStock:N1} {i.Unit}",
+                MinStock = $"{i.MinStock:N1} {i.Unit}",
+                Past7DaysConsumption = $"{weeklyUsage:N1} {i.Unit}",
+                EstimatedStockAfter7Days = $"{projected:N1} {i.Unit}",
+                Status = (i.CurrentStock <= i.MinStock || projected <= 0) ? "Cực kỳ khẩn cấp" :
+                         (projected <= i.MinStock) ? "Cần đặt hàng bổ sung" : "Đủ dùng"
+            };
+        }).ToList();
+
+        string instruction =
+            "Bạn là Chuyên gia Quản lý Kho Vận và Cung ứng (Supply Chain Manager) của nhà hàng.\n" +
+            "Dựa trên dữ liệu tồn kho thực tế, ngưỡng an toàn và tốc độ tiêu thụ 7 ngày qua:\n" +
+            "1. Lập danh sách ưu tiên các nguyên liệu cần đặt hàng gấp trong 24-48 giờ tới.\n" +
+            "2. Đề xuất số lượng đặt hàng ước tính cho từng nguyên vật liệu để tránh đứt gãy phục vụ.\n" +
+            "3. Đưa ra lưu ý bảo quản nguyên liệu tươi sống (rau củ, thịt, gia vị).\n" +
+            "Trình bày chuyên nghiệp, gạch đầu dòng rõ ràng theo từng nhóm nguyên liệu.";
+
+        string systemPrompt = ContextGroundingHelper.BuildGroundedSystemPrompt(stockSnapshot, instruction);
+
+        return await SendLlmChatRequestAsync(systemPrompt, "Hãy lập kế hoạch dự báo và đề xuất danh mục nhập kho 7 ngày tới.");
     }
 
     private async Task<string> SendLlmChatRequestAsync(string systemPrompt, string userPrompt, double temperature = 0.3)

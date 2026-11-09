@@ -37,7 +37,9 @@ public record StockReorderItem(
     string IngredientName,
     string CurrentStock,
     string MinStock,
-    string Urgency); // Critical, Moderate, Normal
+    string Urgency,
+    string ProjectedUsage = "",
+    string RecommendedReorder = "");
 
 public record WeeklyReorderResult(
     List<StockReorderItem> ReorderList,
