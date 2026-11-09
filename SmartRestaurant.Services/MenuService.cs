@@ -96,8 +96,14 @@ public class MenuService : IMenuService
             // Synchronize BOM Recipes
             if (item.Recipes.Any())
             {
-                _context.Recipes.RemoveRange(existing.Recipes);
-                foreach (var recipe in item.Recipes)
+                var newRecipes = item.Recipes.ToList();
+                var dbRecipes = existing.Recipes.Where(r => r.RecipeId > 0).ToList();
+                if (dbRecipes.Any())
+                {
+                    _context.Recipes.RemoveRange(dbRecipes);
+                }
+                existing.Recipes.Clear();
+                foreach (var recipe in newRecipes)
                 {
                     existing.Recipes.Add(new Recipe
                     {
