@@ -59,6 +59,29 @@ public class AiServiceTests
         }
     }
 
+    private class CapturingHttpMessageHandler : HttpMessageHandler
+    {
+        public string? CapturedRequestBody { get; private set; }
+        private readonly string _responseJson;
+
+        public CapturingHttpMessageHandler(string responseJson)
+        {
+            _responseJson = responseJson;
+        }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.Content != null)
+            {
+                CapturedRequestBody = await request.Content.ReadAsStringAsync(cancellationToken);
+            }
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(_responseJson, Encoding.UTF8, "application/json")
+            };
+        }
+    }
+
     [Fact]
     public void GroundingBuilder_InjectsLiveMenuSnapshot_Accurately()
     {
@@ -296,5 +319,151 @@ public class AiServiceTests
         Assert.Equal("Phân tích thành công từ mô hình AI.", insights);
         Assert.Equal("Phân tích thành công từ mô hình AI.", peaks);
         Assert.Equal("Phân tích thành công từ mô hình AI.", reorders);
+    }
+
+    [Fact]
+    public async Task ComputeRevenueInsightsAsync_AggregatesCompletedOrdersCorrectly()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var item1 = new MenuItem { Name = "Cơm Tấm", Price = 70000m, IsAvailable = true };
+        var item2 = new MenuItem { Name = "Trà Đá", Price = 10000m, IsAvailable = true };
+        context.MenuItems.AddRange(item1, item2);
+        await context.SaveChangesAsync();
+
+        var completedOrder = new Order
+        {
+            TableId = 1,
+            Status = "Completed",
+            FinalTotal = 80000m,
+            CreatedAt = DateTime.UtcNow.AddDays(-1)
+        };
+        completedOrder.OrderItems.Add(new OrderItem { MenuItemId = item1.MenuItemId, Quantity = 1, UnitPrice = 70000m });
+        completedOrder.OrderItems.Add(new OrderItem { MenuItemId = item2.MenuItemId, Quantity = 1, UnitPrice = 10000m });
+
+        var pendingOrder = new Order
+        {
+            TableId = 2,
+            Status = "Pending",
+            FinalTotal = 70000m,
+            CreatedAt = DateTime.UtcNow.AddDays(-1)
+        };
+        pendingOrder.OrderItems.Add(new OrderItem { MenuItemId = item1.MenuItemId, Quantity = 1, UnitPrice = 70000m });
+
+        context.Orders.AddRange(completedOrder, pendingOrder);
+        await context.SaveChangesAsync();
+
+        var aiEngine = new AiAnalyticsEngine(context, new MockAiService());
+
+        // Act
+        var result = await aiEngine.ComputeRevenueInsightsAsync(DateTime.UtcNow.AddDays(-7), DateTime.UtcNow);
+
+        // Assert
+        Assert.Equal(80000m, result.TotalRevenue);
+        Assert.Equal(1, result.TotalOrders);
+        Assert.NotEmpty(result.TopDishes);
+        Assert.Contains("Cơm Tấm", result.TopDishes[0]);
+        Assert.Equal("Mock Revenue Advice", result.AiAnalysis);
+    }
+
+    [Fact]
+    public async Task ComputeWeeklyReorderForecast_ScalesWithRecentBOMConsumption()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var beef = new Ingredient { Name = "Thịt Bò Mỹ", Unit = "kg", CurrentStock = 10m, MinStock = 4m };
+        context.Ingredients.Add(beef);
+        await context.SaveChangesAsync();
+
+        var pho = new MenuItem { Name = "Phở Bò", Price = 90000m, IsAvailable = true };
+        pho.Recipes.Add(new Recipe { IngredientId = beef.IngredientId, QuantityRequired = 1.0m });
+        context.MenuItems.Add(pho);
+        await context.SaveChangesAsync();
+
+        // 8 orders of pho in the last 7 days -> 8kg consumed -> projected = 10 - 8 = 2kg <= MinStock (4kg)
+        var order = new Order { TableId = 1, Status = "Completed", CreatedAt = DateTime.UtcNow.AddDays(-2) };
+        order.OrderItems.Add(new OrderItem { MenuItemId = pho.MenuItemId, Quantity = 8, UnitPrice = 90000m });
+        context.Orders.Add(order);
+        await context.SaveChangesAsync();
+
+        var aiEngine = new AiAnalyticsEngine(context, new MockAiService());
+
+        // Act
+        var result = await aiEngine.ComputeWeeklyReorderForecastAsync();
+
+        // Assert
+        var beefItem = result.ReorderList.First(i => i.IngredientName == "Thịt Bò Mỹ");
+        Assert.Contains("Cần Lưu Ý", beefItem.Urgency);
+        Assert.Contains("8.0 kg/tuần", beefItem.ProjectedUsage);
+        Assert.Contains("4.0 kg", beefItem.RecommendedReorder);
+    }
+
+    [Fact]
+    public async Task LmStudioService_GetDishRecommendation_IncludesRecipeIngredientsInGrounding()
+    {
+        // Arrange
+        string mockApiResponse = @"{
+            ""choices"": [{
+                ""message"": {
+                    ""content"": ""Phở bò rất thơm ngon, an toàn với người ăn thịt bò.""
+                }
+            }]
+        }";
+        var handler = new CapturingHttpMessageHandler(mockApiResponse);
+        var httpClient = new HttpClient(handler);
+
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var cat = new MenuCategory { CategoryName = "Món Nước" };
+        context.MenuCategories.Add(cat);
+        var ingredient = new Ingredient { Name = "Thịt bò tươi", Unit = "kg", CurrentStock = 20, MinStock = 5 };
+        context.Ingredients.Add(ingredient);
+        await context.SaveChangesAsync();
+
+        var dish = new MenuItem { Name = "Phở Tái", Price = 75000m, IsAvailable = true, CategoryId = cat.CategoryId };
+        dish.Recipes.Add(new Recipe { IngredientId = ingredient.IngredientId, QuantityRequired = 0.2m, Ingredient = ingredient });
+        context.MenuItems.Add(dish);
+        await context.SaveChangesAsync();
+
+        var service = new LmStudioService(httpClient, context);
+
+        // Act
+        string reply = await service.GetDishRecommendationAsync("Món phở có thành phần gì?");
+
+        // Assert
+        Assert.Contains("Phở bò rất thơm ngon", reply);
+        Assert.NotNull(handler.CapturedRequestBody);
+        Assert.Contains("Thịt bò tươi", handler.CapturedRequestBody);
+    }
+
+    [Fact]
+    public async Task LmStudioService_HandlesMalformedAndEmptyResponses()
+    {
+        // Arrange - Malformed JSON choices
+        string badJson = @"{ ""choices"": [] }";
+        var clientBad = new HttpClient(new SuccessfulHttpMessageHandler(badJson));
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var serviceBad = new LmStudioService(clientBad, context);
+
+        // Act
+        string resultBad = await serviceBad.GenerateDishDescriptionAsync("Bánh Mì", new List<string>());
+
+        // Assert
+        Assert.Contains("Định dạng phản hồi từ LM Studio không hợp lệ", resultBad);
+    }
+
+    [Fact]
+    public async Task LmStudioService_HandlesGenericExceptionGracefully()
+    {
+        // Arrange
+        var client = new HttpClient(new ThrowingHttpMessageHandler(new InvalidOperationException("Fatal socket crash")));
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var service = new LmStudioService(client, context);
+
+        // Act
+        string result = await service.GetDishRecommendationAsync("Món ăn");
+
+        // Assert
+        Assert.Contains("Lỗi AI", result);
+        Assert.Contains("Fatal socket crash", result);
     }
 }

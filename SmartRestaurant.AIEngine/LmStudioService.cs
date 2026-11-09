@@ -260,7 +260,11 @@ public class LmStudioService : IAiService
             }
         };
 
-        string jsonPayload = JsonSerializer.Serialize(payload);
+        var options = new JsonSerializerOptions
+        {
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+        string jsonPayload = JsonSerializer.Serialize(payload, options);
         var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
         try
