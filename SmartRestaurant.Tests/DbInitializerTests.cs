@@ -62,3 +62,4 @@ public class DbInitializerTests
         Assert.Equal(initialDishes, secondDishes);
     }
 }
+
