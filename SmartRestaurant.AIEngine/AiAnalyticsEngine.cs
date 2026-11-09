@@ -101,6 +101,36 @@ public class AiAnalyticsEngine
         return new PeakHourResult(slots, "Trưa 11:30 - 13:30 & Tối 18:00 - 20:30", advice);
     }
 
+    public async Task<RevenueInsightResult> ComputeRevenueInsightsAsync(DateTime startDate, DateTime endDate)
+    {
+        var orders = await _context.Orders
+            .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status == "Completed")
+            .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.MenuItem)
+            .ToListAsync();
+
+        decimal totalRevenue = orders.Sum(o => o.FinalTotal);
+        int totalOrders = orders.Count;
+
+        var topDishes = orders
+            .SelectMany(o => o.OrderItems)
+            .GroupBy(oi => oi.MenuItem != null ? oi.MenuItem.Name : "Khác")
+            .Select(g => new { Dish = g.Key, Portions = g.Sum(x => x.Quantity), Revenue = g.Sum(x => x.UnitPrice * x.Quantity) })
+            .OrderByDescending(x => x.Revenue)
+            .Take(5)
+            .Select(x => $"{x.Dish} ({x.Portions} phần - {x.Revenue:N0} VND)")
+            .ToList();
+
+        string aiAnalysis = await _aiService.AnalyzeRevenueTrendsAsync(startDate, endDate);
+
+        return new RevenueInsightResult(
+            $"{startDate:dd/MM/yyyy} - {endDate:dd/MM/yyyy}",
+            totalRevenue,
+            totalOrders,
+            topDishes,
+            aiAnalysis);
+    }
+
     public async Task<WeeklyReorderResult> ComputeWeeklyReorderForecastAsync()
     {
         var ingredients = await _context.Ingredients.ToListAsync();

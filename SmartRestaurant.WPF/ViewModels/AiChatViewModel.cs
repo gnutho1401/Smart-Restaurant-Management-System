@@ -228,11 +228,19 @@ public class AiChatViewModel : ViewModelBase
 
         try
         {
-            string analysis = await _aiService.AnalyzeRevenueTrendsAsync(DateTime.UtcNow.AddDays(-30), DateTime.UtcNow);
+            var result = await _analyticsEngine.ComputeRevenueInsightsAsync(DateTime.UtcNow.AddDays(-30), DateTime.UtcNow);
+            string topDishesStr = result.TopDishes.Any()
+                ? string.Join("\n", result.TopDishes.Select(d => $"• {d}"))
+                : "Chưa có dữ liệu món bán trong kỳ.";
+
             Messages.Add(new ChatMessageViewModel
             {
                 Sender = "Assistant",
-                Content = $"💰 **BÁO CÁO PHÂN TÍCH DOANH THU:**\n\n{analysis}",
+                Content = $"💰 **BÁO CÁO DOANH THU KỲ {result.Period}:**\n" +
+                          $"• Tổng doanh thu: {result.TotalRevenue:N0} VND\n" +
+                          $"• Tổng đơn hoàn tất: {result.TotalOrders} đơn\n\n" +
+                          $"🏆 **Top 5 Món Doanh Thu Cao Nhất:**\n{topDishesStr}\n\n" +
+                          $"📊 **Đánh Giá & Khuyến Nghị Vận Hành AI:**\n{result.AiAnalysis}",
                 Timestamp = DateTime.Now
             });
             StatusInfo = "Hoàn tất phân tích doanh thu.";
