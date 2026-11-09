@@ -60,12 +60,20 @@ public class LmStudioService : IAiService
 
     public async Task<string> GenerateDishDescriptionAsync(string dishName, List<string> ingredients)
     {
-        string ingredientsStr = ingredients.Any() ? string.Join(", ", ingredients) : "Nguyên liệu tươi chọn lọc";
-        string systemPrompt = "Bạn là chuyên gia viết thực đơn nhà hàng cao cấp. Hãy viết đoạn mô tả món ăn ngắn gọn (2-3 câu), " +
-                             "gợi cảm giác ngon miệng, sang trọng và thu hút thực khách.";
-        string userPrompt = $"Hãy viết mô tả cho món: '{dishName}' sử dụng các thành phần chính: {ingredientsStr}.";
+        string ingredientsStr = ingredients.Any() ? string.Join(", ", ingredients) : "Nguyên liệu tươi sạch tuyển chọn";
 
-        return await SendLlmChatRequestAsync(systemPrompt, userPrompt);
+        string systemPrompt =
+            "Bạn là chuyên gia sáng tạo nội dung ẩm thực cao cấp (Culinary Copywriter) của nhà hàng SmartRestaurant.\n" +
+            "Nhiệm vụ: Viết đoạn mô tả món ăn hấp dẫn, tinh tế và kích thích vị giác để hiển thị trên thực đơn.\n" +
+            "Yêu cầu:\n" +
+            "- Độ dài: Đúng 2-3 câu ngắn gọn (khoảng 40-60 từ).\n" +
+            "- Miêu tả sinh động sự hòa quyện hương vị, màu sắc và độ tươi ngon của các nguyên liệu chính được cung cấp.\n" +
+            "- Tuyệt đối không tự bịa thêm các thành phần gây dị ứng lạ không có trong danh sách nguyên liệu.\n" +
+            "- Giọng văn sang trọng, ấm cúng và tôn vinh phong vị ẩm thực.";
+
+        string userPrompt = $"Hãy viết đoạn mô tả thực đơn cuốn hút cho món: '{dishName}', với các nguyên liệu chính: {ingredientsStr}.";
+
+        return await SendLlmChatRequestAsync(systemPrompt, userPrompt, temperature: 0.5);
     }
 
     public async Task<string> AnalyzeRevenueTrendsAsync(DateTime startDate, DateTime endDate)
@@ -155,12 +163,12 @@ public class LmStudioService : IAiService
         return await SendLlmChatRequestAsync(systemPrompt, "Dự báo nguyên liệu cần nhập tuần tới.");
     }
 
-    private async Task<string> SendLlmChatRequestAsync(string systemPrompt, string userPrompt)
+    private async Task<string> SendLlmChatRequestAsync(string systemPrompt, string userPrompt, double temperature = 0.3)
     {
         var payload = new
         {
             model = TargetModel,
-            temperature = 0.3, // Low temperature for high factual accuracy
+            temperature = temperature, // Dynamic temperature: 0.3 for factual grounding, 0.5 for culinary copywriting
             messages = new[]
             {
                 new { role = "system", content = systemPrompt },
