@@ -18,7 +18,7 @@ public class AiChatViewModel : ViewModelBase
     private ObservableCollection<ChatMessageViewModel> _messages = new();
     private string _inputQuery = string.Empty;
     private bool _isBusy;
-    private string _statusInfo = "Sẵn sàng kết nối LM Studio (localhost:1234)";
+    private string _statusInfo = "Sẵn sàng kết nối LM Studio (localhost:1234 / 1235)";
 
     public ObservableCollection<ChatMessageViewModel> Messages
     {

@@ -6,7 +6,7 @@
         xmlns:vm="clr-namespace:SmartRestaurant.WPF.ViewModels"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance vm:AiChatViewModel}"
-        Title="Trợ Lý Ảo GenAI Nhà Hàng (Mistral-7B via LM Studio:1234) - SmartRestaurant" 
+        Title="Trợ Lý Ảo GenAI Nhà Hàng (Mistral-7B via LM Studio) - SmartRestaurant" 
         Height="720" Width="800" WindowStartupLocation="CenterScreen" Background="#F4F6F9">
     <Grid Margin="16">
         <Grid.RowDefinitions>
@@ -25,7 +25,7 @@
             <StackPanel>
                 <DockPanel Margin="0,0,0,10">
                     <TextBlock Text="🤖 TRỢ LÝ GENAI CỤC BỘ (LOCAL MISTRAL-7B)" FontSize="17" FontWeight="Bold" Foreground="#8E44AD"/>
-                    <TextBlock Text="Cổng: localhost:1234/v1 | Anti-Hallucination Grounding" FontSize="12" Foreground="#7F8C8D" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    <TextBlock Text="Cổng: localhost (1234/1235) | LINQ Anti-Hallucination Grounding" FontSize="12" Foreground="#7F8C8D" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                 </DockPanel>
 
                 <TextBlock Text="Kịch bản phân tích kinh doanh nhanh:" FontSize="12" FontWeight="SemiBold" Foreground="#7F8C8D" Margin="0,0,0,6"/>
