@@ -32,7 +32,7 @@ public class LmStudioService : IAiService
     {
         _httpClient = httpClient;
         _context = context;
-        _httpClient.Timeout = TimeSpan.FromSeconds(15.0);
+        _httpClient.Timeout = TimeSpan.FromSeconds(45.0);
     }
 
     public async Task<string> GetDishRecommendationAsync(string customerQuery)
