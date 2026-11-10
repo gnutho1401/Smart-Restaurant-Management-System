@@ -10,6 +10,8 @@
         Title="Smart Restaurant Management System - .NET 8 WPF &amp; Local GenAI (PRN212 Group 6)" 
         Height="820" Width="1280" WindowStartupLocation="CenterScreen" Background="#F4F6F9">
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
         <!-- ViewModel to View Mapping DataTemplates -->
         <DataTemplate DataType="{x:Type vm:FloorPlanViewModel}">
             <views:FloorPlanView/>
@@ -57,29 +59,47 @@
                         </Button.Resources>
                     </Button>
 
-                    <!-- User badge -->
-                    <Border Background="#2C3E50" CornerRadius="6" Padding="12,6">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="👤 " FontSize="13"/>
-                            <TextBlock Text="{Binding CurrentUser}" FontSize="12" FontWeight="SemiBold" Foreground="#ECF0F1"/>
+                    <!-- User and Role Badge -->
+                    <Border Background="#2C3E50" CornerRadius="6" Padding="10,6" Margin="0,0,10,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <!-- Role Pill Tag -->
+                            <Border Background="{Binding RoleBadgeColor}" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                                <TextBlock Text="{Binding RoleBadgeText}" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </Border>
+                            <TextBlock Text="{Binding CurrentUserName}" FontSize="12" FontWeight="SemiBold" Foreground="#ECF0F1" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
+
+                    <!-- Logout Button -->
+                    <Button Content="🚪 Đăng Xuất" Command="{Binding LogoutCommand}"
+                            Background="#C0392B" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" Height="34" Padding="12,0" Cursor="Hand" BorderThickness="0">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
                 </StackPanel>
             </DockPanel>
         </Border>
 
-        <!-- 2. Subsystem Navigation Tabs -->
+        <!-- 2. Subsystem Navigation Tabs (RBAC Filtered) -->
         <Border Grid.Row="1" Background="#FFFFFF" BorderBrush="#E0E6ED" BorderThickness="0,0,0,1" Padding="16,0">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <Button Content="🪑 Sơ Đồ Bàn (Floor Plan)" Command="{Binding NavFloorPlanCommand}"
+                        Visibility="{Binding IsFloorPlanAllowed, Converter={StaticResource BoolToVis}}"
                         Background="Transparent" Foreground="#2C3E50" FontWeight="Bold" FontSize="14" Height="48" Padding="16,0" Margin="0,0,8,0" Cursor="Hand" BorderThickness="0"/>
                 <Button Content="📱 Gọi Món POS (Touch POS)" Command="{Binding NavPosCommand}"
+                        Visibility="{Binding IsPosAllowed, Converter={StaticResource BoolToVis}}"
                         Background="Transparent" Foreground="#2C3E50" FontWeight="Bold" FontSize="14" Height="48" Padding="16,0" Margin="0,0,8,0" Cursor="Hand" BorderThickness="0"/>
                 <Button Content="👨‍🍳 Màn Hình Bếp (Kitchen KDS)" Command="{Binding NavKdsCommand}"
+                        Visibility="{Binding IsKdsAllowed, Converter={StaticResource BoolToVis}}"
                         Background="Transparent" Foreground="#2C3E50" FontWeight="Bold" FontSize="14" Height="48" Padding="16,0" Margin="0,0,8,0" Cursor="Hand" BorderThickness="0"/>
                 <Button Content="📖 Thực Đơn &amp; Định Lượng BOM" Command="{Binding NavMenuCommand}"
+                        Visibility="{Binding IsMenuAllowed, Converter={StaticResource BoolToVis}}"
                         Background="Transparent" Foreground="#2C3E50" FontWeight="Bold" FontSize="14" Height="48" Padding="16,0" Margin="0,0,8,0" Cursor="Hand" BorderThickness="0"/>
                 <Button Content="💳 Quyết Toán Hóa Đơn (VAT 8%)" Command="{Binding OpenBillingCommand}"
+                        Visibility="{Binding IsBillingAllowed, Converter={StaticResource BoolToVis}}"
                         Background="#E67E22" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="36" Padding="16,0" Margin="16,0,0,0" Cursor="Hand" BorderThickness="0">
                     <Button.Resources>
                         <Style TargetType="Border">

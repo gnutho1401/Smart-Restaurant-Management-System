@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SmartRestaurant.Core\SmartRestaurant.Core.csproj" />
     <ProjectReference Include="..\SmartRestaurant.Data\SmartRestaurant.Data.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
   </ItemGroup>
 
   <PropertyGroup>

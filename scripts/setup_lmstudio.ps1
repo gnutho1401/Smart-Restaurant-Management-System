@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Script kiểm tra và thiết lập môi trường Local Generative AI (LM Studio & Mistral-7B) cho SmartRestaurant.
 .DESCRIPTION

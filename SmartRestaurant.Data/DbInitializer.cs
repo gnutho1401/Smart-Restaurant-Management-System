@@ -178,10 +178,10 @@ public static class DbInitializer
         // 7. Seed Staff Users
         var users = new List<User>
         {
-            new() { Username = "admin", PasswordHash = "AQAAAAIAAYagAAAAEJ3...", FullName = "Hồ Thăng Tùng", Role = UserRole.Admin },
-            new() { Username = "manager", PasswordHash = "AQAAAAIAAYagAAAAEJ3...", FullName = "Lương Đức Tín", Role = UserRole.StoreManager },
-            new() { Username = "cashier", PasswordHash = "AQAAAAIAAYagAAAAEJ3...", FullName = "Phan Trần Hoàng Bảo", Role = UserRole.Cashier },
-            new() { Username = "chef", PasswordHash = "AQAAAAIAAYagAAAAEJ3...", FullName = "Nguyễn Văn Bếp Trưởng", Role = UserRole.HeadChef }
+            new() { Username = "admin", PasswordHash = Core.Security.PasswordHasher.HashPassword("admin123"), FullName = "Hồ Thăng Tùng (Admin)", Role = UserRole.Admin },
+            new() { Username = "manager", PasswordHash = Core.Security.PasswordHasher.HashPassword("manager123"), FullName = "Lương Đức Tín (Quản Lý)", Role = UserRole.StoreManager },
+            new() { Username = "cashier", PasswordHash = Core.Security.PasswordHasher.HashPassword("cashier123"), FullName = "Phan Trần Hoàng Bảo (Thu Ngân)", Role = UserRole.Cashier },
+            new() { Username = "chef", PasswordHash = Core.Security.PasswordHasher.HashPassword("chef123"), FullName = "Nguyễn Văn Bếp Trưởng (Bếp)", Role = UserRole.HeadChef }
         };
         context.Users.AddRange(users);
         await context.SaveChangesAsync();
