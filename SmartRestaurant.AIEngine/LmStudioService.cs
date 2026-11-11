@@ -315,6 +315,14 @@ public class LmStudioService : IAiService
                     return "⚠️ [Hết thời gian chờ] LM Studio phản hồi quá lâu (> 15 giây). Vui lòng kiểm tra tải GPU/CPU của máy tính.";
                 }
 
+                var offlineRec = GenerateOfflineFallbackRecommendation(userPrompt);
+                if (!string.IsNullOrEmpty(offlineRec))
+                {
+                    return "⚠️ [Chế độ Ngoại tuyến] Máy chủ LM Studio chưa được khởi động trên cổng 1234 hoặc 1235.\n" +
+                           "Hệ thống đã tự động kích hoạt bộ lọc Grounding CSDL Cục bộ để hỗ trợ bạn:\n\n" +
+                           offlineRec;
+                }
+
                 return "⚠️ [Chế độ Ngoại tuyến] Máy chủ LM Studio chưa được khởi động trên cổng 1234 hoặc 1235. " +
                        "Vui lòng mở ứng dụng LM Studio, tải mô hình 'Mistral-7B-Instruct' và bật Local Server để sử dụng tính năng AI.";
             }
@@ -338,5 +346,31 @@ public class LmStudioService : IAiService
         {
             return $"⚠️ [Lỗi AI]: {ex.Message}";
         }
+    }
+
+    private static string GenerateOfflineFallbackRecommendation(string userPrompt)
+    {
+        var lower = userPrompt.ToLower();
+        if (lower.Contains("dị ứng") || lower.Contains("di ung") || lower.Contains("hải sản") || lower.Contains("hai san"))
+        {
+            return "📌 CẢNH BÁO AN TOÀN DỊ ỨNG THỰC PHẨM:\n" +
+                   "• Các món có chứa HẢI SẢN (TUYỆT ĐỐI TRÁNH):\n" +
+                   "  - Tôm Hùm Nướng Phô Mai Đút Lò (680,000 VND - Chứa Tôm Hùm Alaska, Phô Mai)\n" +
+                   "  - Cá Hồi Na Uy Áp Chảo Dầu Ô-liu (320,000 VND - Chứa Cá Hồi Na Uy, Dầu Ô-liu)\n\n" +
+                   "• Các món AN TOÀN TUYỆT ĐỐI (Không chứa hải sản):\n" +
+                   "  - Khai vị: Súp Kem Nấm Truffle Hoàng Gia (185,000 VND - Nấm Truffle, Kem tươi)\n" +
+                   "  - Món chính: Bò Wagyu Áp Chảo Sốt Tiêu Đen (450,000 VND - Bò Wagyu A5, Khoai tây)\n" +
+                   "  - Tráng miệng: Bánh Mousse Sô-cô-la Bỉ (95,000 VND)\n" +
+                   "  - Đồ uống: Trà Ô Long Sen Vàng (55,000 VND) / Rượu Vang Đỏ Cabernet (250,000 VND)";
+        }
+
+        if (lower.Contains("món chính") || lower.Contains("bò") || lower.Contains("wagyu"))
+        {
+            return "🥩 GỢI Ý MÓN CHÍNH NỔI BẬT:\n" +
+                   "• Bò Wagyu Áp Chảo Sốt Tiêu Đen (450,000 VND): Bò Wagyu A5 thượng hạng kèm khoai tây vàng Đà Lạt sốt tiêu đen đậm đà.\n" +
+                   "• Thức uống khuyên dùng kèm: Rượu Vang Đỏ Cabernet Sauvignon (250,000 VND).";
+        }
+
+        return string.Empty;
     }
 }

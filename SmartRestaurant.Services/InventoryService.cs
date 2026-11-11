@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using SmartRestaurant.Core.Entities;
 using SmartRestaurant.Core.Exceptions;
 using SmartRestaurant.Core.Interfaces;
@@ -26,7 +27,8 @@ public class InventoryService : IInventoryService
 
     public async Task<bool> DeductBomIngredientsAsync(int orderId)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        bool isInMemory = _context.Database.ProviderName?.EndsWith(".InMemory") == true;
+        IDbContextTransaction? transaction = isInMemory ? null : await _context.Database.BeginTransactionAsync();
         try
         {
             var order = await _context.Orders
@@ -79,7 +81,10 @@ public class InventoryService : IInventoryService
 
                 if (ingredient.CurrentStock < requiredQty)
                 {
-                    await transaction.RollbackAsync();
+                    if (transaction != null)
+                    {
+                        await transaction.RollbackAsync();
+                    }
                     throw new InsufficientStockException(
                         ingredient.IngredientId,
                         ingredient.Name,
@@ -96,14 +101,27 @@ public class InventoryService : IInventoryService
             }
 
             await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
+            if (transaction != null)
+            {
+                await transaction.CommitAsync();
+            }
             return true;
         }
         catch (DbUpdateConcurrencyException ex)
         {
-            await transaction.RollbackAsync();
+            if (transaction != null)
+            {
+                await transaction.RollbackAsync();
+            }
             throw new ConcurrencyConflictException(
                 "Kho nguyên liệu vừa được cập nhật bởi quầy khác. Giao dịch đã được hủy an toàn, vui lòng thử lại.", ex);
+        }
+        finally
+        {
+            if (transaction != null)
+            {
+                await transaction.DisposeAsync();
+            }
         }
     }
 

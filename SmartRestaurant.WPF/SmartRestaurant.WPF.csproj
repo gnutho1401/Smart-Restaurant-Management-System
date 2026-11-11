@@ -15,6 +15,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\SmartRestaurant.Core\SmartRestaurant.Core.csproj" />
     <ProjectReference Include="..\SmartRestaurant.Data\SmartRestaurant.Data.csproj" />
     <ProjectReference Include="..\SmartRestaurant.Services\SmartRestaurant.Services.csproj" />
