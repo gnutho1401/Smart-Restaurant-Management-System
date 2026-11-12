@@ -24,6 +24,7 @@ public class AuthService : IAuthService
     public User? CurrentUser => _currentUser;
     public bool IsAuthenticated => _currentUser != null;
 
+    [ActivatorUtilitiesConstructor]
     public AuthService(IServiceScopeFactory scopeFactory)
     {
         _scopeFactory = scopeFactory;

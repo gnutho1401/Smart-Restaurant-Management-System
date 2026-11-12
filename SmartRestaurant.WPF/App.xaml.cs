@@ -129,7 +129,7 @@ public partial class App : Application
         services.AddSingleton<HttpClient>();
 
         // 3. Domain Business & Security Services
-        services.AddSingleton<IAuthService, AuthService>();
+        services.AddSingleton<IAuthService>(sp => new AuthService(sp.GetRequiredService<IServiceScopeFactory>()));
         services.AddScoped<ITableService, TableService>();
         services.AddScoped<IMenuService, MenuService>();
         services.AddScoped<IOrderService, OrderService>();
