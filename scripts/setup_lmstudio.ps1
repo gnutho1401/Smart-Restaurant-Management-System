@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Script kiem tra va thiet lap moi truong Local GenAI cho SmartRestaurant.
 #>

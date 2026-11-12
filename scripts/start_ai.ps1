@@ -1,66 +1,82 @@
-<#
+﻿<#
 .SYNOPSIS
-    Kích hoạt máy chủ và nạp mô hình Mistral-7B cho phiên làm việc mới của SmartRestaurant.
-.DESCRIPTION
-    Script tự động:
-    1. Kiểm tra và khởi động Local Server LM Studio (nếu chưa chạy).
-    2. Nạp mô hình mistral-7b-instruct-v0.3 vào bộ nhớ RAM/VRAM (nếu chưa nạp).
-    3. Gửi prompt ping kiểm tra và báo trạng thái sẵn sàng.
+    Kich hoat may chu va nap mo hinh Mistral-7B cho phien lam viec moi cua SmartRestaurant.
 #>
 
 param(
     [string]$ModelName = "mistral-7b-instruct-v0.3"
 )
 
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "   KÍCH HOẠT MÔ HÌNH MISTRAL-7B CHO PHIÊN LÀM VIỆC MỚI    " -ForegroundColor Cyan
+Write-Host "   KICH HOAT MO HINH MISTRAL-7B CHO PHIEN LAM VIEC MOI    " -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
-# 1. Tìm đường dẫn lms.exe
-$lmsPath = "$env:USERPROFILE\.lmstudio\bin\lms.exe"
-$lmsCmd = Get-Command "lms" -ErrorAction SilentlyContinue
-$lmsExe = if ($lmsCmd) { $lmsCmd.Source } elseif (Test-Path $lmsPath) { $lmsPath } else { $null }
+# 1. Kiem tra xem cong 1234 hoac 1235 da co server nao lang nghe chua
+$portActive = $false
+try {
+    $client = New-Object System.Net.Sockets.TcpClient
+    $iar = $client.BeginConnect("127.0.0.1", 1234, $null, $null)
+    $success = $iar.AsyncWaitHandle.WaitOne(1000)
+    if ($success -and $client.Connected) {
+        $portActive = $true
+        $client.EndConnect($iar)
+    }
+    $client.Close()
+} catch {}
 
-if (-not $lmsExe) {
-    Write-Warning "Không tìm thấy công cụ lms.exe tại $lmsPath."
-    Write-Host "Hướng dẫn: Vui lòng mở ứng dụng LM Studio và bấm chọn model trên thanh trên cùng." -ForegroundColor Yellow
-    exit 1
-}
-
-# 2. Kiểm tra Local Server
-Write-Host "[1/3] Kiểm tra trạng thái máy chủ Local Server..." -ForegroundColor Yellow
-$statusOutput = & $lmsExe status 2>&1
-$serverRunning = ($statusOutput -match "Server:\s+ON")
-
-if (-not $serverRunning) {
-    Write-Host "  -> Máy chủ đang tắt. Đang khởi động Local Server..." -ForegroundColor Yellow
-    & $lmsExe server start --cors
-    Start-Sleep -Seconds 2
+if ($portActive) {
+    Write-Host "[1/3] May chu Local AI da dang hoat dong tren cong 1234!" -ForegroundColor Green
 } else {
-    Write-Host "  -> Máy chủ Local Server đang chạy." -ForegroundColor Green
+    Write-Host "[1/3] Kiem tra cong cu LM Studio CLI..." -ForegroundColor Yellow
+    $lmsPath = "$env:USERPROFILE\.lmstudio\bin\lms.exe"
+    $lmsCmd = Get-Command "lms" -ErrorAction SilentlyContinue
+    $lmsExe = if ($lmsCmd) { $lmsCmd.Source } elseif (Test-Path $lmsPath -ErrorAction SilentlyContinue) { $lmsPath } else { $null }
+
+    if ($lmsExe) {
+        Write-Host "  -> Tim thay LM Studio CLI tai: $lmsExe" -ForegroundColor Green
+        $statusOutput = & $lmsExe status 2>&1
+        $serverRunning = ($statusOutput -match "Server:\s+ON")
+
+        if (-not $serverRunning) {
+            Write-Host "  -> Dang khoi dong Local Server..." -ForegroundColor Yellow
+            & $lmsExe server start --cors
+            Start-Sleep -Seconds 2
+        } else {
+            Write-Host "  -> May chu Local Server dang chay." -ForegroundColor Green
+        }
+
+        # Kiem tra mo hinh
+        Write-Host ""
+        Write-Host "[2/3] Kiem tra mo hinh trong bo nho RAM/VRAM..." -ForegroundColor Yellow
+        $statusOutput = & $lmsExe status 2>&1
+        $modelLoaded = ($statusOutput -match $ModelName)
+
+        if ($modelLoaded) {
+            Write-Host "  -> Mo hinh $ModelName DA DUOC NAP SAN SANG!" -ForegroundColor Green
+        } else {
+            Write-Host "  -> Dang nap $ModelName vao RAM (khoang 15-20 giay)..." -ForegroundColor Cyan
+            & $lmsExe load $ModelName -y
+            Write-Host "  -> Nap mo hinh hoan tat!" -ForegroundColor Green
+        }
+    } else {
+        Write-Warning "Khong tim thay lms.exe CLI tren may."
+        Write-Host "  -> Neu ban da mo LM Studio GUI, vui long kiem tra Local Server tren cong 1234." -ForegroundColor Yellow
+        Write-Host "  -> Dang khoi dong May chu AI noi bo (Mock LLM Server) tai cong 1234 de ban test ngay..." -ForegroundColor Cyan
+        & powershell -ExecutionPolicy Bypass -File .\scripts\start_mock_llm.ps1
+        exit 0
+    }
 }
 
-# 3. Kiểm tra mô hình trong bộ nhớ
+# Kiem tra phan hoi thuc te
 Write-Host ""
-Write-Host "[2/3] Kiểm tra mô hình trong bộ nhớ RAM/VRAM..." -ForegroundColor Yellow
-$statusOutput = & $lmsExe status 2>&1
-$modelLoaded = ($statusOutput -match $ModelName)
-
-if ($modelLoaded) {
-    Write-Host "  -> Mô hình $ModelName ĐÃ ĐƯỢC NẠP SẴN SÀNG trong bộ nhớ!" -ForegroundColor Green
-} else {
-    Write-Host "  -> Mô hình chưa nạp. Đang nạp $ModelName vào RAM (khoảng 15-20 giây)..." -ForegroundColor Cyan
-    & $lmsExe load $ModelName -y
-    Write-Host "  -> Nạp mô hình hoàn tất!" -ForegroundColor Green
+Write-Host "[3/3] Kiem tra phan hoi thuc te tu AI..." -ForegroundColor Yellow
+if (Test-Path .\scripts\setup_lmstudio.ps1) {
+    & powershell -ExecutionPolicy Bypass -File .\scripts\setup_lmstudio.ps1
 }
-
-# 4. Kiểm tra phản hồi thực tế từ AI
-Write-Host ""
-Write-Host "[3/3] Kiểm tra phản hồi thực tế từ AI..." -ForegroundColor Yellow
-& powershell -ExecutionPolicy Bypass -File .\scripts\setup_lmstudio.ps1
 
 Write-Host ""
 Write-Host "==========================================================" -ForegroundColor Green
-Write-Host "   MÔ HÌNH ĐÃ SẴN SÀNG! BẠN CÓ THỂ MỞ SMARTRESTAURANT     " -ForegroundColor Green
+Write-Host "   MO HINH DA SAN SANG! BAN CO THE MO SMARTRESTAURANT     " -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
-

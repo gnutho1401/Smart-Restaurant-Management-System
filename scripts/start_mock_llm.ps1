@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Lightweight Mock OpenAI / LM Studio Local Server cho kiểm thử phát triển và CI/CD.
 .DESCRIPTION
