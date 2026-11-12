@@ -11,11 +11,11 @@ param(
     [int]$TimeoutSeconds = 0 # 0 = chạy liên tục đến khi dừng bằng Ctrl+C
 )
 
-$listener = New-Object System.Net.HttpListener
-$prefix = "http://localhost:$Port/"
-$listener.Prefixes.Add($prefix)
-
+$listener = $null
 try {
+    $listener = New-Object System.Net.HttpListener
+    $prefix = "http://localhost:$Port/"
+    $listener.Prefixes.Add($prefix)
     $listener.Start()
     Write-Host "==========================================================" -ForegroundColor Green
     Write-Host "   MOCK LM STUDIO SERVER (PORT $Port) ĐANG CHẠY...        " -ForegroundColor Green
@@ -154,10 +154,17 @@ try {
         $response.Close()
     }
 }
+catch {
+    Write-Warning "Lỗi máy chủ Mock AI: $_"
+}
 finally {
-    if ($listener -and $listener.IsListening) {
-        $listener.Stop()
-        $listener.Close()
+    if ($null -ne $listener) {
+        try {
+            if ($listener.IsListening) {
+                $listener.Stop()
+            }
+            $listener.Close()
+        } catch {}
     }
     Write-Host "Mock LM Studio Server đã dừng." -ForegroundColor Yellow
 }

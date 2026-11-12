@@ -54,8 +54,8 @@ public partial class App : Application
 
     private void ShowLoginGateway()
     {
-        var loginVm = ServiceProvider.GetRequiredService<LoginViewModel>();
         var loginWindow = ServiceProvider.GetRequiredService<LoginWindow>();
+        var loginVm = (LoginViewModel)loginWindow.DataContext;
 
         loginVm.LoginSuccess += (user) =>
         {

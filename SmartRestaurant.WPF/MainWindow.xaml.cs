@@ -1,7 +1,5 @@
 using System.Windows;
-using Microsoft.Extensions.DependencyInjection;
 using SmartRestaurant.WPF.ViewModels;
-using SmartRestaurant.WPF.Views;
 
 namespace SmartRestaurant.WPF;
 
@@ -17,14 +15,5 @@ public partial class MainWindow : Window
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = _viewModel;
-
-        _viewModel.RequestLogout += OnRequestLogout;
-    }
-
-    private void OnRequestLogout()
-    {
-        var loginWindow = App.ServiceProvider.GetRequiredService<LoginWindow>();
-        loginWindow.Show();
-        this.Close();
     }
 }

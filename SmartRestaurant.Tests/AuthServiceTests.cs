@@ -9,6 +9,16 @@ namespace SmartRestaurant.Tests;
 
 public class AuthServiceTests
 {
+    [Theory]
+    [InlineData("admin123", "q4+PCo11EIoVoDVN+mQ1YQ==:UGIzHYa3oMu8Sm8Cl5yFQl4s62phRYPSNGXhQaknn9E=")]
+    [InlineData("manager123", "43QlLzbmZWPrcJrM8yMawg==:5hc7gd11002E8yFg12LuuEV1orxiCtHqOq/ErmrgVFw=")]
+    [InlineData("cashier123", "7R4iS7eyCu+dAGMF7FP2pg==:Z4slefUr6yoYAcz9FiymY5YHyuupKvpdgvdcRoVH9Gs=")]
+    [InlineData("chef123", "T8VIkLPUJNaqS/qTVqVH+Q==:nO68qiJ0lcfw0nnvnKqjk7M/B6kghaqOd2ikwDCC9lM=")]
+    public void VerifySeedHashes(string password, string hash)
+    {
+        Assert.True(PasswordHasher.VerifyPassword(password, hash));
+    }
+
     [Fact]
     public void PasswordHasher_GeneratesVerifiableHash()
     {

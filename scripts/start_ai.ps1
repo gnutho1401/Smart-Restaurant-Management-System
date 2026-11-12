@@ -64,7 +64,8 @@ if ($portActive) {
         Write-Warning "Khong tim thay lms.exe CLI tren may."
         Write-Host "  -> Neu ban da mo LM Studio GUI, vui long kiem tra Local Server tren cong 1234." -ForegroundColor Yellow
         Write-Host "  -> Dang khoi dong May chu AI noi bo (Mock LLM Server) tai cong 1234 de ban test ngay..." -ForegroundColor Cyan
-        & powershell -ExecutionPolicy Bypass -File .\scripts\start_mock_llm.ps1
+        $mockScript = Join-Path $PSScriptRoot "start_mock_llm.ps1"
+        & powershell -ExecutionPolicy Bypass -File $mockScript
         exit 0
     }
 }
@@ -72,8 +73,9 @@ if ($portActive) {
 # Kiem tra phan hoi thuc te
 Write-Host ""
 Write-Host "[3/3] Kiem tra phan hoi thuc te tu AI..." -ForegroundColor Yellow
-if (Test-Path .\scripts\setup_lmstudio.ps1) {
-    & powershell -ExecutionPolicy Bypass -File .\scripts\setup_lmstudio.ps1
+$setupScript = Join-Path $PSScriptRoot "setup_lmstudio.ps1"
+if (Test-Path $setupScript) {
+    & powershell -ExecutionPolicy Bypass -File $setupScript
 }
 
 Write-Host ""
