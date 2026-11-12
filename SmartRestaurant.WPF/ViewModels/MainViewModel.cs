@@ -1,9 +1,12 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SmartRestaurant.Core.Entities;
 using SmartRestaurant.Core.Enums;
 using SmartRestaurant.Core.Interfaces;
+using SmartRestaurant.Data;
 using SmartRestaurant.WPF.Common;
 using SmartRestaurant.WPF.Views;
 
@@ -94,6 +97,7 @@ public class MainViewModel : ViewModelBase
 
         // Wire cross-view navigation events
         FloorPlanVm.RequestOpenPos += OnOpenPosRequested;
+        FloorPlanVm.RequestOpenBilling += OnOpenBillingForTableRequested;
         PosOrderVm.RequestClosePos += () => SwitchView(FloorPlanVm, "FloorPlan");
 
         NavFloorPlanCommand = new RelayCommand(async () =>
@@ -169,7 +173,17 @@ public class MainViewModel : ViewModelBase
         await PosOrderVm.InitializeAsync(table);
     }
 
-    private void OpenBillingModal()
+    private async void OpenBillingModal()
+    {
+        await OpenBillingForTableInternalAsync(null);
+    }
+
+    private async void OnOpenBillingForTableRequested(DiningTable table)
+    {
+        await OpenBillingForTableInternalAsync(table);
+    }
+
+    private async Task OpenBillingForTableInternalAsync(DiningTable? table)
     {
         if (!IsBillingAllowed)
         {
@@ -181,9 +195,45 @@ public class MainViewModel : ViewModelBase
             return;
         }
 
+        var orderService = _serviceProvider.GetRequiredService<IOrderService>();
+        Order? targetOrder = null;
+
+        if (table != null)
+        {
+            targetOrder = await orderService.GetActiveOrderByTableIdAsync(table.TableId);
+        }
+        else if (PosOrderVm.CurrentTable != null)
+        {
+            targetOrder = await orderService.GetActiveOrderByTableIdAsync(PosOrderVm.CurrentTable.TableId);
+        }
+        else if (FloorPlanVm.SelectedTable != null)
+        {
+            targetOrder = await orderService.GetActiveOrderByTableIdAsync(FloorPlanVm.SelectedTable.TableId);
+        }
+
+        if (targetOrder == null)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<RestaurantDbContext>();
+            targetOrder = await db.Orders
+                .Include(o => o.Table)
+                .Where(o => o.Status == "Active")
+                .OrderByDescending(o => o.CreatedAt)
+                .FirstOrDefaultAsync();
+        }
+
+        if (targetOrder == null)
+        {
+            System.Windows.MessageBox.Show(
+                "Hiện không có bàn nào đang có đơn hàng cần thanh toán.",
+                "Thông Báo Quyết Toán",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Information);
+            return;
+        }
+
         var billingVm = _serviceProvider.GetRequiredService<BillingViewModel>();
-        int orderId = PosOrderVm.CurrentTable?.TableId ?? 3;
-        _ = billingVm.InitializeWithOrderAsync(orderId);
+        await billingVm.InitializeWithOrderAsync(targetOrder.OrderId);
 
         var dialog = new BillingDialog
         {
@@ -191,6 +241,8 @@ public class MainViewModel : ViewModelBase
             Owner = System.Windows.Application.Current.MainWindow
         };
         dialog.ShowDialog();
+
+        await FloorPlanVm.LoadTablesAsync();
     }
 
     private void OpenAiChatModal()

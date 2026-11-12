@@ -26,6 +26,7 @@ public class FloorPlanViewModel : ViewModelBase
     private int _cleaningCount;
 
     public event Action<DiningTable>? RequestOpenPos;
+    public event Action<DiningTable>? RequestOpenBilling;
 
     public ObservableCollection<DiningTable> Tables
     {
@@ -79,6 +80,7 @@ public class FloorPlanViewModel : ViewModelBase
     public IAsyncRelayCommand<DiningTable> OpenTableCommand { get; }
     public IAsyncRelayCommand<DiningTable> CleanTableDoneCommand { get; }
     public IAsyncRelayCommand<DiningTable> ToggleReserveCommand { get; }
+    public IAsyncRelayCommand<DiningTable> PayTableCommand { get; }
 
     public FloorPlanViewModel(ITableService tableService)
     {
@@ -88,6 +90,7 @@ public class FloorPlanViewModel : ViewModelBase
         OpenTableCommand = new AsyncRelayCommand<DiningTable>(ExecuteOpenTableAsync);
         CleanTableDoneCommand = new AsyncRelayCommand<DiningTable>(ExecuteCleanTableDoneAsync);
         ToggleReserveCommand = new AsyncRelayCommand<DiningTable>(ExecuteToggleReserveAsync);
+        PayTableCommand = new AsyncRelayCommand<DiningTable>(ExecutePayTableAsync);
     }
 
     public async Task LoadTablesAsync()
@@ -130,6 +133,13 @@ public class FloorPlanViewModel : ViewModelBase
         }
 
         RequestOpenPos?.Invoke(table);
+    }
+
+    private Task ExecutePayTableAsync(DiningTable? table)
+    {
+        if (table == null) return Task.CompletedTask;
+        RequestOpenBilling?.Invoke(table);
+        return Task.CompletedTask;
     }
 
     private async Task ExecuteCleanTableDoneAsync(DiningTable? table)

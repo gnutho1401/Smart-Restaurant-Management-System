@@ -89,7 +89,17 @@ public class BillingViewModel : ViewModelBase
     public PaymentMethod SelectedMethod
     {
         get => _selectedMethod;
-        set => SetProperty(ref _selectedMethod, value);
+        set
+        {
+            if (SetProperty(ref _selectedMethod, value))
+            {
+                if (value == PaymentMethod.CreditCard || value == PaymentMethod.BankTransferQR)
+                {
+                    AmountPaid = TotalDue;
+                    ChangeDue = 0;
+                }
+            }
+        }
     }
 
     public decimal AmountPaid

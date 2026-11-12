@@ -18,6 +18,7 @@ public class PosOrderViewModel : ViewModelBase
     private readonly IMenuService _menuService;
     private readonly IOrderService _orderService;
     private readonly IInventoryService _inventoryService;
+    private readonly IAuthService? _authService;
 
     private DiningTable? _currentTable;
     private List<MenuItem> _allMenuItems = new();
@@ -117,11 +118,13 @@ public class PosOrderViewModel : ViewModelBase
     public PosOrderViewModel(
         IMenuService menuService,
         IOrderService orderService,
-        IInventoryService inventoryService)
+        IInventoryService inventoryService,
+        IAuthService? authService = null)
     {
         _menuService = menuService;
         _orderService = orderService;
         _inventoryService = inventoryService;
+        _authService = authService;
 
         AddToCartCommand = new RelayCommand<MenuItem>(AddToCart);
         IncreaseQuantityCommand = new RelayCommand<CartItemViewModel>(IncreaseQuantity);
@@ -249,7 +252,8 @@ public class PosOrderViewModel : ViewModelBase
                 .ToList();
 
             // 2. Create Order in DB
-            var order = await _orderService.CreateOrderAsync(CurrentTable.TableId, 1, items);
+            int userId = _authService?.CurrentUser?.UserId ?? 1;
+            var order = await _orderService.CreateOrderAsync(CurrentTable.TableId, userId, items);
 
             // 3. Atomic BOM Inventory Deduction with Optimistic Locking
             await _inventoryService.DeductBomIngredientsAsync(order.OrderId);

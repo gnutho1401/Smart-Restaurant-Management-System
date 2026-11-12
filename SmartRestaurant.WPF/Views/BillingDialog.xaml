@@ -105,11 +105,14 @@
                 <!-- Method Selector -->
                 <TextBlock Text="Hình thức thanh toán:" FontWeight="SemiBold" Foreground="#7F8C8D" Margin="0,0,0,6"/>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                    <RadioButton Content="Tiền Mặt (Cash)" IsChecked="True" GroupName="PayMethod" 
+                    <RadioButton Content="Tiền Mặt (Cash)" GroupName="PayMethod" 
+                                 IsChecked="{Binding SelectedMethod, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Cash, Mode=TwoWay}"
                                  FontWeight="SemiBold" Foreground="#2C3E50" Margin="0,0,14,0" VerticalAlignment="Center"/>
                     <RadioButton Content="Thẻ (Card)" GroupName="PayMethod" 
+                                 IsChecked="{Binding SelectedMethod, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CreditCard, Mode=TwoWay}"
                                  FontWeight="SemiBold" Foreground="#2C3E50" Margin="0,0,14,0" VerticalAlignment="Center"/>
                     <RadioButton Content="VietQR (Chuyển khoản)" GroupName="PayMethod" 
+                                 IsChecked="{Binding SelectedMethod, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=BankTransferQR, Mode=TwoWay}"
                                  FontWeight="SemiBold" Foreground="#2C3E50" VerticalAlignment="Center"/>
                 </StackPanel>
 

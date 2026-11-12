@@ -8,6 +8,7 @@
         <converters:CookingStatusToBrushConverter x:Key="CookingStatusToBrushConverter" />
         <converters:CurrencyFormatConverter x:Key="CurrencyFormatConverter" />
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
 
         <!-- Modern UI Global Palette -->
         <Color x:Key="PrimaryColor">#1A252F</Color>

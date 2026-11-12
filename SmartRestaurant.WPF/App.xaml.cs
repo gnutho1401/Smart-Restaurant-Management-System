@@ -49,6 +49,11 @@ public partial class App : Application
         }
 
         // Launch Authentication Gateway
+        ShowLoginGateway();
+    }
+
+    private void ShowLoginGateway()
+    {
         var loginVm = ServiceProvider.GetRequiredService<LoginViewModel>();
         var loginWindow = ServiceProvider.GetRequiredService<LoginWindow>();
 
@@ -58,6 +63,16 @@ public partial class App : Application
             mainVm.ApplyInitialRoleView();
 
             var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
+
+            Action? logoutHandler = null;
+            logoutHandler = () =>
+            {
+                mainVm.RequestLogout -= logoutHandler;
+                mainWindow.Close();
+                ShowLoginGateway();
+            };
+            mainVm.RequestLogout += logoutHandler;
+
             Current.MainWindow = mainWindow;
             mainWindow.Show();
             loginWindow.Close();

@@ -125,7 +125,19 @@
                                     <Button Content="Gọi Món POS" 
                                             Command="{Binding DataContext.OpenTableCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
-                                            Background="#27AE60" Foreground="#FFFFFF" FontWeight="SemiBold" Height="34" Padding="10,0" Margin="0,0,6,0" Cursor="Hand" BorderThickness="0">
+                                            Background="#27AE60" Foreground="#FFFFFF" FontWeight="SemiBold" Height="34" Padding="8,0" Margin="0,0,4,0" Cursor="Hand" BorderThickness="0">
+                                        <Button.Resources>
+                                            <Style TargetType="Border">
+                                                <Setter Property="CornerRadius" Value="6"/>
+                                            </Style>
+                                        </Button.Resources>
+                                    </Button>
+
+                                    <!-- Settle / Bill Table -->
+                                    <Button Content="Thanh Toán" 
+                                            Command="{Binding DataContext.PayTableCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Background="#E67E22" Foreground="#FFFFFF" FontWeight="SemiBold" Height="34" Padding="8,0" Margin="0,0,4,0" Cursor="Hand" BorderThickness="0">
                                         <Button.Resources>
                                             <Style TargetType="Border">
                                                 <Setter Property="CornerRadius" Value="6"/>
@@ -137,7 +149,7 @@
                                     <Button Content="Dọn Xong" 
                                             Command="{Binding DataContext.CleanTableDoneCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
-                                            Background="#F39C12" Foreground="#FFFFFF" FontWeight="SemiBold" Height="34" Padding="10,0" Cursor="Hand" BorderThickness="0">
+                                            Background="#F39C12" Foreground="#FFFFFF" FontWeight="SemiBold" Height="34" Padding="8,0" Cursor="Hand" BorderThickness="0">
                                         <Button.Resources>
                                             <Style TargetType="Border">
                                                 <Setter Property="CornerRadius" Value="6"/>

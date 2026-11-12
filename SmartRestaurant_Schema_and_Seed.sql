@@ -94,23 +94,20 @@ CREATE TABLE dbo.Users (
     Username NVARCHAR(50) NOT NULL CONSTRAINT UQ_Users_Username UNIQUE,
     PasswordHash NVARCHAR(255) NOT NULL,
     FullName NVARCHAR(100) NOT NULL,
-    Role NVARCHAR(20) NOT NULL CONSTRAINT CK_Users_Role CHECK (Role IN (N'Admin', N'StoreManager', N'Waiter', N'Cashier', N'HeadChef')),
-    IsActive BIT NOT NULL CONSTRAINT DF_Users_IsActive DEFAULT (1)
+    Role NVARCHAR(30) NOT NULL CONSTRAINT CK_Users_Role CHECK (Role IN (N'Admin', N'StoreManager', N'Cashier', N'HeadChef'))
 );
 GO
 
 CREATE TABLE dbo.Orders (
     OrderId INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Orders PRIMARY KEY CLUSTERED,
     TableId INT NOT NULL CONSTRAINT FK_Orders_DiningTables FOREIGN KEY REFERENCES dbo.DiningTables(TableId),
-    UserId INT NOT NULL CONSTRAINT FK_Orders_Users FOREIGN KEY REFERENCES dbo.Users(UserId),
+    CreatedByUserId INT NOT NULL CONSTRAINT DF_Orders_CreatedByUserId DEFAULT (1),
     CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Orders_CreatedAt DEFAULT (SYSUTCDATETIME()),
-    CompletedAt DATETIME2 NULL,
-    Status NVARCHAR(20) NOT NULL CONSTRAINT CK_Orders_Status CHECK (Status IN (N'Active', N'Completed', N'Cancelled')),
+    Status NVARCHAR(20) NOT NULL CONSTRAINT DF_Orders_Status DEFAULT (N'Active')
+        CONSTRAINT CK_Orders_Status CHECK (Status IN (N'Active', N'Completed', N'Cancelled')),
     SubTotal DECIMAL(18,2) NOT NULL CONSTRAINT DF_Orders_SubTotal DEFAULT (0),
     DiscountAmount DECIMAL(18,2) NOT NULL CONSTRAINT DF_Orders_DiscountAmount DEFAULT (0),
-    TaxAmount DECIMAL(18,2) NOT NULL CONSTRAINT DF_Orders_TaxAmount DEFAULT (0),
-    FinalTotal DECIMAL(18,2) NOT NULL CONSTRAINT DF_Orders_FinalTotal DEFAULT (0),
-    RowVersion ROWVERSION NOT NULL
+    FinalTotal DECIMAL(18,2) NOT NULL CONSTRAINT DF_Orders_FinalTotal DEFAULT (0)
 );
 CREATE NONCLUSTERED INDEX IX_Orders_TableId ON dbo.Orders(TableId);
 CREATE NONCLUSTERED INDEX IX_Orders_Status ON dbo.Orders(Status);
@@ -125,8 +122,7 @@ CREATE TABLE dbo.OrderItems (
     UnitPrice DECIMAL(18,2) NOT NULL,
     CookingStatus NVARCHAR(20) NOT NULL CONSTRAINT DF_OrderItems_CookingStatus DEFAULT (N'Pending')
         CONSTRAINT CK_OrderItems_CookingStatus CHECK (CookingStatus IN (N'Pending', N'Cooking', N'Ready', N'Served')),
-    Note NVARCHAR(255) NULL,
-    IsBomDeducted BIT NOT NULL CONSTRAINT DF_OrderItems_IsBomDeducted DEFAULT (0)
+    Note NVARCHAR(250) NULL
 );
 CREATE NONCLUSTERED INDEX IX_OrderItems_OrderId ON dbo.OrderItems(OrderId);
 CREATE NONCLUSTERED INDEX IX_OrderItems_CookingStatus ON dbo.OrderItems(CookingStatus);
@@ -136,23 +132,19 @@ CREATE TABLE dbo.Invoices (
     InvoiceId INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Invoices PRIMARY KEY CLUSTERED,
     OrderId INT NOT NULL CONSTRAINT FK_Invoices_Orders FOREIGN KEY REFERENCES dbo.Orders(OrderId),
     InvoiceCode NVARCHAR(50) NOT NULL CONSTRAINT UQ_Invoices_InvoiceCode UNIQUE,
-    IssuedAt DATETIME2 NOT NULL CONSTRAINT DF_Invoices_IssuedAt DEFAULT (SYSUTCDATETIME()),
-    SubTotal DECIMAL(18,2) NOT NULL,
-    DiscountAmount DECIMAL(18,2) NOT NULL CONSTRAINT DF_Invoices_DiscountAmount DEFAULT (0),
-    TaxableAmount DECIMAL(18,2) NOT NULL,
     VatRate DECIMAL(5,4) NOT NULL CONSTRAINT DF_Invoices_VatRate DEFAULT (0.0800),
-    VatAmount DECIMAL(18,2) NOT NULL,
-    TotalAmount DECIMAL(18,2) NOT NULL
+    VatAmount DECIMAL(18,2) NOT NULL CONSTRAINT DF_Invoices_VatAmount DEFAULT (0),
+    TotalDue DECIMAL(18,2) NOT NULL,
+    IssuedAt DATETIME2 NOT NULL CONSTRAINT DF_Invoices_IssuedAt DEFAULT (SYSUTCDATETIME())
 );
 CREATE NONCLUSTERED INDEX IX_Invoices_OrderId ON dbo.Invoices(OrderId);
 GO
 
 CREATE TABLE dbo.Payments (
     PaymentId INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Payments PRIMARY KEY CLUSTERED,
-    InvoiceId INT NOT NULL CONSTRAINT FK_Payments_Invoices FOREIGN KEY REFERENCES dbo.Invoices(InvoiceId),
-    Method NVARCHAR(20) NOT NULL CONSTRAINT CK_Payments_Method CHECK (Method IN (N'Cash', N'CreditCard', N'BankTransferQR')),
+    InvoiceId INT NOT NULL CONSTRAINT FK_Payments_Invoices FOREIGN KEY REFERENCES dbo.Invoices(InvoiceId) ON DELETE CASCADE,
+    Method NVARCHAR(30) NOT NULL CONSTRAINT CK_Payments_Method CHECK (Method IN (N'Cash', N'CreditCard', N'BankTransferQR')),
     AmountPaid DECIMAL(18,2) NOT NULL,
-    ChangeGiven DECIMAL(18,2) NOT NULL CONSTRAINT DF_Payments_ChangeGiven DEFAULT (0),
     PaidAt DATETIME2 NOT NULL CONSTRAINT DF_Payments_PaidAt DEFAULT (SYSUTCDATETIME())
 );
 CREATE NONCLUSTERED INDEX IX_Payments_InvoiceId ON dbo.Payments(InvoiceId);
@@ -246,24 +238,24 @@ SET IDENTITY_INSERT dbo.Recipes OFF;
 GO
 
 SET IDENTITY_INSERT dbo.Users ON;
-INSERT INTO dbo.Users (UserId, Username, PasswordHash, FullName, Role, IsActive) VALUES
-(1, N'admin', N'AQAAAAIAAYagAAAAEJ3...pbkdf2...', N'Hồ Thăng Tùng', N'Admin', 1),
-(2, N'manager', N'AQAAAAIAAYagAAAAEJ3...pbkdf2...', N'Lương Đức Tín', N'StoreManager', 1),
-(3, N'cashier', N'AQAAAAIAAYagAAAAEJ3...pbkdf2...', N'Phan Trần Hoàng Bảo', N'Cashier', 1),
-(4, N'chef', N'AQAAAAIAAYagAAAAEJ3...pbkdf2...', N'Nguyễn Văn Bếp Trưởng', N'HeadChef', 1);
+INSERT INTO dbo.Users (UserId, Username, PasswordHash, FullName, Role) VALUES
+(1, N'admin', N'q4+PCo11EIoVoDVN+mQ1YQ==:UGIzHYa3oMu8Sm8Cl5yFQl4s62phRYPSNGXhQaknn9E=', N'Hồ Thăng Tùng (Admin)', N'Admin'),
+(2, N'manager', N'43QlLzbmZWPrcJrM8yMawg==:5hc7gd11002E8yFg12LuuEV1orxiCtHqOq/ErmrgVFw=', N'Lương Đức Tín (Quản Lý)', N'StoreManager'),
+(3, N'cashier', N'7R4iS7eyCu+dAGMF7FP2pg==:Z4slefUr6yoYAcz9FiymY5YHyuupKvpdgvdcRoVH9Gs=', N'Phan Trần Hoàng Bảo (Thu Ngân)', N'Cashier'),
+(4, N'chef', N'T8VIkLPUJNaqS/qTVqVH+Q==:nO68qiJ0lcfw0nnvnKqjk7M/B6kghaqOd2ikwDCC9lM=', N'Nguyễn Văn Bếp Trưởng (Bếp)', N'HeadChef');
 SET IDENTITY_INSERT dbo.Users OFF;
 GO
 
 SET IDENTITY_INSERT dbo.Orders ON;
-INSERT INTO dbo.Orders (OrderId, TableId, UserId, CreatedAt, Status, SubTotal, DiscountAmount, TaxAmount, FinalTotal) VALUES
-(1, 3, 1, DATEADD(MINUTE, -25, SYSUTCDATETIME()), N'Active', 635000.00, 0, 50800.00, 685800.00);
+INSERT INTO dbo.Orders (OrderId, TableId, CreatedByUserId, CreatedAt, Status, SubTotal, DiscountAmount, FinalTotal) VALUES
+(1, 3, 1, DATEADD(MINUTE, -25, SYSUTCDATETIME()), N'Active', 635000.00, 0, 685800.00);
 SET IDENTITY_INSERT dbo.Orders OFF;
 GO
 
 SET IDENTITY_INSERT dbo.OrderItems ON;
-INSERT INTO dbo.OrderItems (OrderItemId, OrderId, MenuItemId, Quantity, UnitPrice, CookingStatus, Note, IsBomDeducted) VALUES
-(1, 1, 1, 1, 450000.00, N'Cooking', N'Chín vừa (Medium-rare)', 1),
-(2, 1, 2, 1, 185000.00, N'Ready', N'Ít tiêu', 1);
+INSERT INTO dbo.OrderItems (OrderItemId, OrderId, MenuItemId, Quantity, UnitPrice, CookingStatus, Note) VALUES
+(1, 1, 1, 1, 450000.00, N'Cooking', N'Chín vừa (Medium-rare)'),
+(2, 1, 2, 1, 185000.00, N'Ready', N'Ít tiêu');
 SET IDENTITY_INSERT dbo.OrderItems OFF;
 GO
 
