@@ -115,8 +115,7 @@ public partial class App : Application
         {
             if (string.Equals(dbProvider, "SqlServer", StringComparison.OrdinalIgnoreCase))
             {
-                options.UseSqlServer(sqlServerConnection, b =>
-                    b.EnableRetryOnFailure(3, TimeSpan.FromSeconds(3), null));
+                options.UseSqlServer(sqlServerConnection);
             }
             else
             {

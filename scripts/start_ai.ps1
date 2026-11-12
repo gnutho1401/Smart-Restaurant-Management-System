@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Kich hoat may chu va nap mo hinh Mistral-7B cho phien lam viec moi cua SmartRestaurant.
 #>

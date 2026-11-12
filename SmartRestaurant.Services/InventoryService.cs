@@ -27,102 +27,114 @@ public class InventoryService : IInventoryService
 
     public async Task<bool> DeductBomIngredientsAsync(int orderId)
     {
-        bool isInMemory = _context.Database.ProviderName?.EndsWith(".InMemory") == true;
-        IDbContextTransaction? transaction = isInMemory ? null : await _context.Database.BeginTransactionAsync();
-        try
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
         {
-            var order = await _context.Orders
-                .Include(o => o.OrderItems)
-                .FirstOrDefaultAsync(o => o.OrderId == orderId);
-
-            if (order == null)
+            bool isInMemory = _context.Database.ProviderName?.EndsWith(".InMemory") == true;
+            IDbContextTransaction? transaction = isInMemory ? null : await _context.Database.BeginTransactionAsync();
+            try
             {
-                throw new KeyNotFoundException($"Order ID {orderId} không tồn tại.");
-            }
+                var order = await _context.Orders
+                    .Include(o => o.OrderItems)
+                    .FirstOrDefaultAsync(o => o.OrderId == orderId);
 
-            var menuItemIds = order.OrderItems.Select(oi => oi.MenuItemId).Distinct().ToList();
-            var recipes = await _context.Recipes
-                .Where(r => menuItemIds.Contains(r.MenuItemId))
-                .ToListAsync();
-
-            // 1. Calculate Aggregate BOM Requirements per Raw Ingredient
-            var requiredQuantities = new Dictionary<int, decimal>();
-
-            foreach (var item in order.OrderItems)
-            {
-                var dishRecipes = recipes.Where(r => r.MenuItemId == item.MenuItemId);
-                foreach (var recipe in dishRecipes)
+                if (order == null)
                 {
-                    decimal totalNeeded = recipe.QuantityRequired * item.Quantity;
-                    if (requiredQuantities.TryGetValue(recipe.IngredientId, out decimal currentNeeded))
-                    {
-                        requiredQuantities[recipe.IngredientId] = currentNeeded + totalNeeded;
-                    }
-                    else
-                    {
-                        requiredQuantities[recipe.IngredientId] = totalNeeded;
-                    }
-                }
-            }
-
-            var ingredientIds = requiredQuantities.Keys.ToList();
-            var ingredients = await _context.Ingredients
-                .Where(ing => ingredientIds.Contains(ing.IngredientId))
-                .ToListAsync();
-
-            // 2. Mathematical Invariant Verification: All Stock >= Required
-            foreach (var (ingredientId, requiredQty) in requiredQuantities)
-            {
-                var ingredient = ingredients.FirstOrDefault(i => i.IngredientId == ingredientId);
-                if (ingredient == null)
-                {
-                    throw new KeyNotFoundException($"Không tìm thấy nguyên liệu kho ID {ingredientId}.");
+                    throw new KeyNotFoundException($"Order ID {orderId} không tồn tại.");
                 }
 
-                if (ingredient.CurrentStock < requiredQty)
+                var menuItemIds = order.OrderItems.Select(oi => oi.MenuItemId).Distinct().ToList();
+                var recipes = await _context.Recipes
+                    .Where(r => menuItemIds.Contains(r.MenuItemId))
+                    .ToListAsync();
+
+                // 1. Calculate Aggregate BOM Requirements per Raw Ingredient
+                var requiredQuantities = new Dictionary<int, decimal>();
+
+                foreach (var item in order.OrderItems)
                 {
-                    if (transaction != null)
+                    var dishRecipes = recipes.Where(r => r.MenuItemId == item.MenuItemId);
+                    foreach (var recipe in dishRecipes)
                     {
-                        await transaction.RollbackAsync();
+                        decimal totalNeeded = recipe.QuantityRequired * item.Quantity;
+                        if (requiredQuantities.TryGetValue(recipe.IngredientId, out decimal currentNeeded))
+                        {
+                            requiredQuantities[recipe.IngredientId] = currentNeeded + totalNeeded;
+                        }
+                        else
+                        {
+                            requiredQuantities[recipe.IngredientId] = totalNeeded;
+                        }
                     }
-                    throw new InsufficientStockException(
-                        ingredient.IngredientId,
-                        ingredient.Name,
-                        requiredQty,
-                        ingredient.CurrentStock);
+                }
+
+                var ingredientIds = requiredQuantities.Keys.ToList();
+                var ingredients = await _context.Ingredients
+                    .Where(ing => ingredientIds.Contains(ing.IngredientId))
+                    .ToListAsync();
+
+                // 2. Mathematical Invariant Verification: All Stock >= Required
+                foreach (var (ingredientId, requiredQty) in requiredQuantities)
+                {
+                    var ingredient = ingredients.FirstOrDefault(i => i.IngredientId == ingredientId);
+                    if (ingredient == null)
+                    {
+                        throw new KeyNotFoundException($"Không tìm thấy nguyên liệu kho ID {ingredientId}.");
+                    }
+
+                    if (ingredient.CurrentStock < requiredQty)
+                    {
+                        if (transaction != null)
+                        {
+                            await transaction.RollbackAsync();
+                        }
+                        throw new InsufficientStockException(
+                            ingredient.IngredientId,
+                            ingredient.Name,
+                            requiredQty,
+                            ingredient.CurrentStock);
+                    }
+                }
+
+                // 3. Atomic Stock Deduction
+                foreach (var (ingredientId, requiredQty) in requiredQuantities)
+                {
+                    var ingredient = ingredients.First(i => i.IngredientId == ingredientId);
+                    ingredient.CurrentStock -= requiredQty;
+                }
+
+                await _context.SaveChangesAsync();
+                if (transaction != null)
+                {
+                    await transaction.CommitAsync();
+                }
+                return true;
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                if (transaction != null)
+                {
+                    await transaction.RollbackAsync();
+                }
+                throw new ConcurrencyConflictException(
+                    "Kho nguyên liệu vừa được cập nhật bởi quầy khác. Giao dịch đã được hủy an toàn, vui lòng thử lại.", ex);
+            }
+            catch
+            {
+                if (transaction != null)
+                {
+                    await transaction.RollbackAsync();
+                }
+                throw;
+            }
+            finally
+            {
+                if (transaction != null)
+                {
+                    await transaction.DisposeAsync();
                 }
             }
-
-            // 3. Atomic Stock Deduction
-            foreach (var (ingredientId, requiredQty) in requiredQuantities)
-            {
-                var ingredient = ingredients.First(i => i.IngredientId == ingredientId);
-                ingredient.CurrentStock -= requiredQty;
-            }
-
-            await _context.SaveChangesAsync();
-            if (transaction != null)
-            {
-                await transaction.CommitAsync();
-            }
-            return true;
-        }
-        catch (DbUpdateConcurrencyException ex)
-        {
-            if (transaction != null)
-            {
-                await transaction.RollbackAsync();
-            }
-            throw new ConcurrencyConflictException(
-                "Kho nguyên liệu vừa được cập nhật bởi quầy khác. Giao dịch đã được hủy an toàn, vui lòng thử lại.", ex);
-        }
-        finally
-        {
-            if (transaction != null)
-            {
-                await transaction.DisposeAsync();
-            }
-        }
+        });
     }
 
     public async Task<IEnumerable<Ingredient>> GetAllIngredientsAsync()
