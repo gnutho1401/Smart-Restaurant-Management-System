@@ -466,4 +466,99 @@ public class AiServiceTests
         Assert.Contains("Lỗi AI", result);
         Assert.Contains("Fatal socket crash", result);
     }
+
+    private class DelegatingAiFailoverHttpMessageHandler : HttpMessageHandler
+    {
+        private readonly string _geminiResponseJson;
+        public List<string> RequestedUrls { get; } = new();
+
+        public DelegatingAiFailoverHttpMessageHandler(string geminiResponseJson)
+        {
+            _geminiResponseJson = geminiResponseJson;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            string url = request.RequestUri?.ToString() ?? string.Empty;
+            RequestedUrls.Add(url);
+
+            if (url.Contains("localhost"))
+            {
+                throw new HttpRequestException("Connection refused (localhost:1234)");
+            }
+
+            if (url.Contains("googleapis.com"))
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(_geminiResponseJson, Encoding.UTF8, "application/json")
+                };
+                return Task.FromResult(response);
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+        }
+    }
+
+    [Fact]
+    public async Task LmStudioService_FailoverToGemini_WhenLocalServerIsOffline()
+    {
+        // Arrange
+        string geminiMockJson = @"{
+            ""candidates"": [
+                {
+                    ""content"": {
+                        ""parts"": [
+                            { ""text"": ""Chào quý khách! Tôi gợi ý món Bò Wagyu A5 sốt tiêu đen kèm vang đỏ thượng hạng."" }
+                        ],
+                        ""role"": ""model""
+                    },
+                    ""finishReason"": ""STOP""
+                }
+            ]
+        }";
+
+        var handler = new DelegatingAiFailoverHttpMessageHandler(geminiMockJson);
+        var httpClient = new HttpClient(handler);
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+
+        var service = new LmStudioService(
+            httpClient,
+            context,
+            geminiApiKey: "TEST_GEMINI_KEY",
+            geminiModel: "gemini-flash-lite-latest",
+            geminiTimeoutSeconds: 5);
+
+        // Act
+        string response = await service.GetDishRecommendationAsync("Hôm nay có món gì đặc biệt?");
+
+        // Assert
+        Assert.Contains("Google Gemini Backup", response);
+        Assert.Contains("gemini-flash-lite-latest", response);
+        Assert.Contains("Bò Wagyu A5 sốt tiêu đen", response);
+        Assert.Contains(handler.RequestedUrls, u => u.Contains("googleapis.com") && u.Contains("key=TEST_GEMINI_KEY"));
+    }
+
+    [Fact]
+    public async Task LmStudioService_FallsBackToDeterministicGrounding_WhenBothLocalAndGeminiFail()
+    {
+        // Arrange
+        var httpClient = new HttpClient(new ThrowingHttpMessageHandler());
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+
+        var service = new LmStudioService(
+            httpClient,
+            context,
+            geminiApiKey: "TEST_GEMINI_KEY",
+            geminiModel: "gemini-flash-lite-latest",
+            geminiTimeoutSeconds: 5);
+
+        // Act
+        string response = await service.GetDishRecommendationAsync("Tôi bị dị ứng hải sản, nên ăn gì?");
+
+        // Assert
+        Assert.Contains("CẢNH BÁO AN TOÀN DỊ ỨNG", response);
+        Assert.Contains("Tôm Hùm Nướng Phô Mai", response);
+        Assert.Contains("Súp Kem Nấm Truffle Hoàng Gia", response);
+    }
 }

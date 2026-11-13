@@ -39,6 +39,10 @@ desktop.ini
 packages/
 
 
+## Local Settings & Secrets
+*appsettings.local.json
+*appsettings.Development.json
+
 ## Publish Output
 publish/
 Publish/

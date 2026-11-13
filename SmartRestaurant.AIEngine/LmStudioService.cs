@@ -28,11 +28,102 @@ public class LmStudioService : IAiService
     private static string _activeEndpoint = CandidateEndpoints[0];
     private static string _targetModel = "mistral-7b-instruct-v0.3";
 
+    private string? _geminiApiKey;
+    private string _geminiModel = "gemini-flash-lite-latest";
+    private int _geminiTimeoutSeconds = 20;
+
     public LmStudioService(HttpClient httpClient, RestaurantDbContext context)
+        : this(httpClient, context, null, null, null)
+    {
+    }
+
+    public LmStudioService(
+        HttpClient httpClient,
+        RestaurantDbContext context,
+        string? geminiApiKey,
+        string? geminiModel = null,
+        int? geminiTimeoutSeconds = null)
     {
         _httpClient = httpClient;
         _context = context;
         _httpClient.Timeout = TimeSpan.FromSeconds(45.0);
+
+        _geminiApiKey = geminiApiKey;
+        if (!string.IsNullOrWhiteSpace(geminiModel))
+        {
+            _geminiModel = geminiModel;
+        }
+        if (geminiTimeoutSeconds.HasValue && geminiTimeoutSeconds.Value > 0)
+        {
+            _geminiTimeoutSeconds = geminiTimeoutSeconds.Value;
+        }
+
+        if (string.IsNullOrWhiteSpace(_geminiApiKey))
+        {
+            LoadConfigurationFromEnvironmentOrFile();
+        }
+    }
+
+    private void LoadConfigurationFromEnvironmentOrFile()
+    {
+        try
+        {
+            // 1. Check environment variable
+            string? envKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+            if (!string.IsNullOrWhiteSpace(envKey))
+            {
+                _geminiApiKey = envKey.Trim();
+            }
+
+            // 2. Check local untracked override files and appsettings.json
+            string[] candidatePaths = new[]
+            {
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.local.json"),
+                Path.Combine(Directory.GetCurrentDirectory(), "SmartRestaurant.WPF", "appsettings.local.json"),
+                Path.Combine(Directory.GetCurrentDirectory(), "appsettings.local.json"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json"),
+                Path.Combine(Directory.GetCurrentDirectory(), "SmartRestaurant.WPF", "appsettings.json"),
+                Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json")
+            };
+
+            foreach (var path in candidatePaths)
+            {
+                if (File.Exists(path))
+                {
+                    string json = File.ReadAllText(path);
+                    using var doc = JsonDocument.Parse(json);
+                    if (doc.RootElement.TryGetProperty("Gemini", out var geminiElem))
+                    {
+                        if (string.IsNullOrWhiteSpace(_geminiApiKey) &&
+                            geminiElem.TryGetProperty("ApiKey", out var keyElem))
+                        {
+                            _geminiApiKey = keyElem.GetString()?.Trim();
+                        }
+                        if (geminiElem.TryGetProperty("Model", out var modelElem))
+                        {
+                            var modelStr = modelElem.GetString()?.Trim();
+                            if (!string.IsNullOrWhiteSpace(modelStr))
+                            {
+                                _geminiModel = modelStr;
+                            }
+                        }
+                        if (geminiElem.TryGetProperty("TimeoutSeconds", out var timeoutElem) &&
+                            timeoutElem.TryGetInt32(out int timeoutVal) && timeoutVal > 0)
+                        {
+                            _geminiTimeoutSeconds = timeoutVal;
+                        }
+                    }
+                    if (!string.IsNullOrWhiteSpace(_geminiApiKey))
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Configuration loading should never throw
+        }
     }
 
     public async Task<string> GetDishRecommendationAsync(string customerQuery)
@@ -310,6 +401,14 @@ public class LmStudioService : IAiService
 
             if (response == null || !response.IsSuccessStatusCode)
             {
+                // Priority 2: Attempt Google Gemini Cloud Backup if configured
+                string? geminiResult = await TryCallGeminiBackupAsync(systemPrompt, userPrompt);
+                if (!string.IsNullOrEmpty(geminiResult))
+                {
+                    return geminiResult;
+                }
+
+                // Priority 3: Offline deterministic Grounding fallback
                 var offlineRec = GenerateOfflineFallbackRecommendation(userPrompt);
 
                 if (lastEx is TaskCanceledException)
@@ -351,6 +450,75 @@ public class LmStudioService : IAiService
         {
             return $"⚠️ [Lỗi AI]: {ex.Message}";
         }
+    }
+
+    private async Task<string?> TryCallGeminiBackupAsync(string systemPrompt, string userPrompt)
+    {
+        if (string.IsNullOrWhiteSpace(_geminiApiKey))
+        {
+            return null;
+        }
+
+        try
+        {
+            string endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/{_geminiModel}:generateContent?key={_geminiApiKey}";
+
+            var geminiPayload = new
+            {
+                contents = new[]
+                {
+                    new
+                    {
+                        role = "user",
+                        parts = new[]
+                        {
+                            new { text = $"[HƯỚNG DẪN HỆ THỐNG / CHỈ DẪN DỮ LIỆU THỰC ĐƠN]:\n{systemPrompt}\n\n[YÊU CẦU NGƯỜI DÙNG]:\n{userPrompt}" }
+                        }
+                    }
+                }
+            };
+
+            var options = new JsonSerializerOptions
+            {
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
+            string json = JsonSerializer.Serialize(geminiPayload, options);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_geminiTimeoutSeconds));
+            var response = await _httpClient.PostAsync(endpoint, content, cts.Token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                string responseJson = await response.Content.ReadAsStringAsync(cts.Token);
+                using var doc = JsonDocument.Parse(responseJson);
+                var root = doc.RootElement;
+                if (root.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)
+                {
+                    var candidate = candidates[0];
+                    if (candidate.TryGetProperty("content", out var candContent) &&
+                        candContent.TryGetProperty("parts", out var parts) &&
+                        parts.GetArrayLength() > 0)
+                    {
+                        var firstPart = parts[0];
+                        if (firstPart.TryGetProperty("text", out var textElem))
+                        {
+                            string reply = textElem.GetString() ?? string.Empty;
+                            if (!string.IsNullOrWhiteSpace(reply))
+                            {
+                                return $"🤖 **[Trợ lý GenAI - Google Gemini Backup ({_geminiModel})]:**\n\n{reply.Trim()}";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Gemini call failed or timed out, gracefully return null to trigger deterministic grounding
+        }
+
+        return null;
     }
 
     private static string GenerateOfflineFallbackRecommendation(string userPrompt)
