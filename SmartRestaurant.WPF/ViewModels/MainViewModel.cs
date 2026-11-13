@@ -257,6 +257,7 @@ public class MainViewModel : ViewModelBase
 
     private void ExecuteLogout()
     {
+        PosOrderVm.ClearCartCommand.Execute(null);
         _authService.Logout();
         RequestLogout?.Invoke();
     }

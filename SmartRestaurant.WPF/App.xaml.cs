@@ -27,6 +27,9 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Explicit shutdown mode ensures smooth transition between MainWindow and LoginWindow upon logout
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
         var services = new ServiceCollection();
         ConfigureServices(services);
 
@@ -57,6 +60,15 @@ public partial class App : Application
         var loginWindow = ServiceProvider.GetRequiredService<LoginWindow>();
         var loginVm = (LoginViewModel)loginWindow.DataContext;
 
+        // Clean application shutdown if user closes login window
+        loginWindow.Closed += (s, e) =>
+        {
+            if (ReferenceEquals(Current.MainWindow, loginWindow))
+            {
+                Current.Shutdown();
+            }
+        };
+
         loginVm.LoginSuccess += (user) =>
         {
             var mainVm = ServiceProvider.GetRequiredService<MainViewModel>();
@@ -64,12 +76,21 @@ public partial class App : Application
 
             var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
 
+            // Clean application shutdown if user closes main window directly (X button or Alt+F4)
+            mainWindow.Closed += (s, e) =>
+            {
+                if (ReferenceEquals(Current.MainWindow, mainWindow))
+                {
+                    Current.Shutdown();
+                }
+            };
+
             Action? logoutHandler = null;
             logoutHandler = () =>
             {
                 mainVm.RequestLogout -= logoutHandler;
-                mainWindow.Close();
                 ShowLoginGateway();
+                mainWindow.Close();
             };
             mainVm.RequestLogout += logoutHandler;
 
