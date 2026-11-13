@@ -130,10 +130,24 @@ public class AiChatViewModel : ViewModelBase
         try
         {
             var result = await _analyticsEngine.ComputeBcgMatrixAsync();
+            var stars = result.Items.Where(i => i.Classification.StartsWith("Star")).Select(i => $"• {i.DishName}: {i.PortionsSold} phần ({i.Revenue:N0} đ)").ToList();
+            var plowhorses = result.Items.Where(i => i.Classification.StartsWith("Plowhorse")).Select(i => $"• {i.DishName}: {i.PortionsSold} phần ({i.Revenue:N0} đ)").ToList();
+            var puzzles = result.Items.Where(i => i.Classification.StartsWith("Puzzle")).Select(i => $"• {i.DishName}: {i.PortionsSold} phần ({i.Revenue:N0} đ)").ToList();
+            var dogs = result.Items.Where(i => i.Classification.StartsWith("Dog")).Select(i => $"• {i.DishName}: {i.PortionsSold} phần ({i.Revenue:N0} đ)").ToList();
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("📊 **KẾT QUẢ MA TRẬN THỰC ĐƠN BCG (MENU ENGINEERING):**\n");
+            sb.AppendLine($"⭐ **Stars (Ngôi Sao - Bán chạy & Sinh lời cao):**\n{(stars.Any() ? string.Join("\n", stars) : "• Không có món")}\n");
+            sb.AppendLine($"🐄 **Plowhorses (Bò Sữa - Bán chạy, Giá phổ thông):**\n{(plowhorses.Any() ? string.Join("\n", plowhorses) : "• Không có món")}\n");
+            sb.AppendLine($"❓ **Puzzles (Dấu Hỏi - Giá trị cao, Bán chậm):**\n{(puzzles.Any() ? string.Join("\n", puzzles) : "• Không có món")}\n");
+            sb.AppendLine($"🐕 **Dogs (Chó Mực - Bán chậm, Lợi nhuận thấp):**\n{(dogs.Any() ? string.Join("\n", dogs) : "• Không có món")}\n");
+            sb.AppendLine("🤖 **TƯ VẤN CHIẾN LƯỢC TỪ GENAI MISTRAL-7B:**");
+            sb.AppendLine(result.AiExecutiveNarrative);
+
             Messages.Add(new ChatMessageViewModel
             {
                 Sender = "Assistant",
-                Content = $"📊 **KẾT QUẢ MA TRẬN BCG MENU:**\n\n{result.AiExecutiveNarrative}",
+                Content = sb.ToString(),
                 Timestamp = DateTime.Now
             });
             StatusInfo = "Hoàn tất phân tích BCG.";
@@ -163,10 +177,22 @@ public class AiChatViewModel : ViewModelBase
         try
         {
             var result = await _analyticsEngine.ComputePeakHoursAsync();
+            var busySlots = result.Slots.Where(s => s.OrderVolume > 0).Select(s => $"• Khung giờ {s.TimeSlot}: {s.OrderVolume} đơn ({s.BusynessLevel})").ToList();
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("📈 **PHÂN BỐ LƯU LƯỢNG KHÁCH THEO KHUNG GIỜ:**\n");
+            sb.AppendLine($"🔥 **Khung giờ cao điểm:** {result.PrimaryPeakPeriod}");
+            if (busySlots.Any())
+            {
+                sb.AppendLine("⏱️ **Lưu lượng theo giờ:**\n" + string.Join("\n", busySlots) + "\n");
+            }
+            sb.AppendLine("🤖 **KHUYẾN NGHỊ ĐIỀU PHỐI VẬN HÀNH & NHÂN SỰ GENAI:**");
+            sb.AppendLine(result.StaffingRecommendations);
+
             Messages.Add(new ChatMessageViewModel
             {
                 Sender = "Assistant",
-                Content = $"📈 **PHÂN TÍCH GIỜ CAO ĐIỂM:**\nKhung giờ nóng nhất: {result.PrimaryPeakPeriod}\n\n{result.StaffingRecommendations}",
+                Content = sb.ToString(),
                 Timestamp = DateTime.Now
             });
             StatusInfo = "Hoàn tất phân tích giờ cao điểm.";
@@ -196,10 +222,26 @@ public class AiChatViewModel : ViewModelBase
         try
         {
             var result = await _analyticsEngine.ComputeWeeklyReorderForecastAsync();
+            var urgentItems = result.ReorderList.Where(i => i.Urgency.Contains("Khẩn Cấp")).Select(i => $"• {i.IngredientName}: Tồn kho {i.CurrentStock} (Tối thiểu: {i.MinStock}) -> Cần nhập: {i.RecommendedReorder}").ToList();
+            var noticeItems = result.ReorderList.Where(i => i.Urgency.Contains("Lưu Ý")).Select(i => $"• {i.IngredientName}: Tồn kho {i.CurrentStock} -> Cần nhập: {i.RecommendedReorder}").ToList();
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("📦 **TỔNG HỢP NGUYÊN VẬT LIỆU CẦN BỔ SUNG (BOM):**\n");
+            if (urgentItems.Any())
+            {
+                sb.AppendLine("🚨 **Cảnh báo khẩn cấp:**\n" + string.Join("\n", urgentItems) + "\n");
+            }
+            if (noticeItems.Any())
+            {
+                sb.AppendLine("⚠️ **Cần theo dõi thêm:**\n" + string.Join("\n", noticeItems) + "\n");
+            }
+            sb.AppendLine("🤖 **KẾ HOẠCH HẬU CẦN & DỰ BÁO TỪ GENAI MISTRAL-7B:**");
+            sb.AppendLine(result.AiLogisticsAdvisory);
+
             Messages.Add(new ChatMessageViewModel
             {
                 Sender = "Assistant",
-                Content = $"📦 **DỰ BÁO NHẬP KHO NGUYÊN LIỆU:**\n\n{result.AiLogisticsAdvisory}",
+                Content = sb.ToString(),
                 Timestamp = DateTime.Now
             });
             StatusInfo = "Hoàn tất dự báo nhập kho.";

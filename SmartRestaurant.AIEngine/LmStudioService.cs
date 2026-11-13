@@ -310,12 +310,17 @@ public class LmStudioService : IAiService
 
             if (response == null || !response.IsSuccessStatusCode)
             {
+                var offlineRec = GenerateOfflineFallbackRecommendation(userPrompt);
+
                 if (lastEx is TaskCanceledException)
                 {
-                    return "⚠️ [Hết thời gian chờ] LM Studio phản hồi quá lâu (> 15 giây). Vui lòng kiểm tra tải GPU/CPU của máy tính.";
+                    string fallbackSection = !string.IsNullOrEmpty(offlineRec)
+                        ? $"\n\n📋 **PHÂN TÍCH DỰ PHÒNG NỘI BỘ (GROUNDING):**\n{offlineRec}"
+                        : string.Empty;
+
+                    return $"⚠️ [Hết thời gian chờ] LM Studio phản hồi quá lâu (> 15 giây). Vui lòng kiểm tra tải GPU/CPU của máy tính hoặc khởi chạy lại file 'start_ai.bat'.{fallbackSection}";
                 }
 
-                var offlineRec = GenerateOfflineFallbackRecommendation(userPrompt);
                 if (!string.IsNullOrEmpty(offlineRec))
                 {
                     return "⚠️ [Chế độ Ngoại tuyến] Máy chủ LM Studio chưa được khởi động trên cổng 1234 hoặc 1235.\n" +
@@ -324,7 +329,7 @@ public class LmStudioService : IAiService
                 }
 
                 return "⚠️ [Chế độ Ngoại tuyến] Máy chủ LM Studio chưa được khởi động trên cổng 1234 hoặc 1235. " +
-                       "Vui lòng mở ứng dụng LM Studio, tải mô hình 'Mistral-7B-Instruct' và bật Local Server để sử dụng tính năng AI.";
+                       "Vui lòng mở file 'start_ai.bat' trong thư mục dự án để kích hoạt mô hình Local AI.";
             }
 
             string responseJson = await response.Content.ReadAsStringAsync();
@@ -369,6 +374,37 @@ public class LmStudioService : IAiService
             return "🥩 GỢI Ý MÓN CHÍNH NỔI BẬT:\n" +
                    "• Bò Wagyu Áp Chảo Sốt Tiêu Đen (450,000 VND): Bò Wagyu A5 thượng hạng kèm khoai tây vàng Đà Lạt sốt tiêu đen đậm đà.\n" +
                    "• Thức uống khuyên dùng kèm: Rượu Vang Đỏ Cabernet Sauvignon (250,000 VND).";
+        }
+
+        if (lower.Contains("bcg") || lower.Contains("ma trận") || lower.Contains("thực đơn") || lower.Contains("tối ưu lợi nhuận"))
+        {
+            return "📈 **ĐÁNH GIÁ CHIẾN LƯỢC MA TRẬN BCG MENU:**\n" +
+                   "• **Stars (Bò Wagyu A5, Trà Ô Long):** Động lực tăng trưởng chủ lực. Giữ vững nguồn cung cấp nguyên liệu tươi mới và duy trì tiêu chuẩn chế biến khắt khe.\n" +
+                   "• **Plowhorses (Súp Kem Nấm Truffle):** Lượng tiêu thụ cao, độ nhận diện tốt. Đề xuất chuẩn hóa định lượng nguyên liệu để nâng biên lợi nhuận lên thêm 4-6%.\n" +
+                   "• **Puzzles (Tôm Hùm Nướng Phô Mai, Cá Hồi Na Uy):** Giá trị đơn cao nhưng tần suất gọi chưa tương xứng. Nhân viên phục vụ cần ưu tiên tư vấn mở đầu (suggestive selling).\n" +
+                   "• **Dogs (Bánh Mousse Bỉ):** Đánh giá gộp vào combo tráng miệng sau bữa tiệc để tăng vòng quay nguyên vật liệu.";
+        }
+
+        if (lower.Contains("cao điểm") || lower.Contains("lưu lượng") || lower.Contains("khung giờ") || lower.Contains("nhân sự"))
+        {
+            return "⏰ **PHƯƠNG ÁN ĐIỀU PHỐI VẬN HÀNH CAO ĐIỂM:**\n" +
+                   "• **Khung giờ trưa (11:30 - 13:30):** Bố trí 2 nhân viên order trực tiếp, 1 thu ngân POS. Bếp chuẩn bị sẵn phần sơ chế để ra món dưới 10 phút.\n" +
+                   "• **Khung giờ tối (18:00 - 20:30):** Giờ cao điểm đông nhất. Huy động tối đa 4 nhân viên phục vụ, ưu tiên phục vụ các bàn phòng VIP và đặt trước.\n" +
+                   "• **Giờ thấp điểm (14:00 - 17:00):** Tận dụng kiểm kê tồn kho và nạp bổ sung nguyên liệu sơ chế cho line bếp.";
+        }
+
+        if (lower.Contains("nhập kho") || lower.Contains("dự báo") || lower.Contains("tồn kho") || lower.Contains("kho"))
+        {
+            return "📦 **KẾ HOẠCH BỔ SUNG NGUYÊN VẬT LIỆU KHO:**\n" +
+                   "• Theo dõi chặt chẽ lượng tiêu thụ Thịt Bò Wagyu A5 và Nấm Truffle do tần suất gọi món cao.\n" +
+                   "• Các nguyên liệu rau củ và phụ liệu cần duy trì lịch nhập tươi định kỳ 2 ngày/lần để tránh hao hụt.";
+        }
+
+        if (lower.Contains("doanh thu") || lower.Contains("tài chính") || lower.Contains("xu hướng"))
+        {
+            return "💰 **BÁO CÁO PHÂN TÍCH TÀI CHÍNH & XU HƯỚNG:**\n" +
+                   "• Món chính chiếm tỷ trọng doanh thu cao nhất toàn hệ thống.\n" +
+                   "• Đồ uống kèm đóng góp tỷ suất lợi nhuận biên cao nhất, cần khuyến khích nhân viên giới thiệu kèm mỗi đơn gọi món.";
         }
 
         return string.Empty;
