@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance vm:BillingViewModel}"
         Title="Quyết Toán Hóa Đơn VAT 8% - SmartRestaurant" 
-        Height="700" Width="850" WindowStartupLocation="CenterScreen" Background="#ECEFF1">
+        Height="740" Width="900" MinHeight="700" MinWidth="850" WindowStartupLocation="CenterScreen" Background="#ECEFF1">
     <Grid Margin="16">
         <Grid.ColumnDefinitions>
             <!-- Left: Paper Receipt Print Preview (52%) -->
@@ -122,13 +122,19 @@
 
                 <!-- Amount Paid Input -->
                 <TextBlock Text="Tiền khách đưa (VND):" FontWeight="SemiBold" Foreground="#7F8C8D" Margin="0,0,0,4"/>
-                <TextBox Text="{Binding AmountPaid, UpdateSourceTrigger=PropertyChanged}" Height="38" FontSize="16" FontWeight="Bold" 
-                         VerticalContentAlignment="Center" Padding="8,0" Margin="0,0,0,14" Foreground="#27AE60"/>
+                <TextBox Text="{Binding AmountPaid, UpdateSourceTrigger=PropertyChanged}" Height="44" FontSize="18" FontWeight="Bold" 
+                         VerticalContentAlignment="Center" Padding="10,0" Margin="0,0,0,14" Foreground="#27AE60" BorderBrush="#BDC3C7" BorderThickness="1">
+                    <TextBox.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="6"/>
+                        </Style>
+                    </TextBox.Resources>
+                </TextBox>
 
                 <!-- Change Due -->
                 <DockPanel Margin="0,0,0,20">
-                    <TextBlock Text="Tiền thừa trả khách:" FontSize="15" FontWeight="SemiBold" Foreground="#7F8C8D"/>
-                    <TextBlock Text="{Binding ChangeDue, Converter={StaticResource CurrencyFormatConverter}}" FontSize="18" FontWeight="Bold" Foreground="#2980B9" HorizontalAlignment="Right"/>
+                    <TextBlock Text="Tiền thừa trả khách:" FontSize="15" FontWeight="SemiBold" Foreground="#7F8C8D" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding ChangeDue, Converter={StaticResource CurrencyFormatConverter}}" FontSize="22" FontWeight="Bold" Foreground="#27AE60" HorizontalAlignment="Right"/>
                 </DockPanel>
 
                 <!-- Feedback -->
@@ -136,17 +142,17 @@
 
                 <!-- Settle Button -->
                 <Button Content="✅ HOÀN TẤT THANH TOÁN" Command="{Binding SettlePaymentCommand}"
-                        Background="#27AE60" Foreground="#FFFFFF" FontWeight="Bold" FontSize="16" Height="48" Margin="0,0,0,12" Cursor="Hand" BorderThickness="0">
+                        Background="#27AE60" Foreground="#FFFFFF" FontWeight="Bold" FontSize="16" Height="54" Margin="0,0,0,12" Cursor="Hand" BorderThickness="0">
                     <Button.Resources>
                         <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="8"/>
+                            <Setter Property="CornerRadius" Value="10"/>
                         </Style>
                     </Button.Resources>
                 </Button>
 
                 <!-- Print Receipt Button (WPF PrintDialog) -->
                 <Button Content="🖨️ IN BIÊN LAI HÓA ĐƠN" Click="PrintReceipt_Click"
-                        Background="#34495E" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="14" Height="42" Cursor="Hand" BorderThickness="0">
+                        Background="#34495E" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="15" Height="46" Cursor="Hand" BorderThickness="0">
                     <Button.Resources>
                         <Style TargetType="Border">
                             <Setter Property="CornerRadius" Value="8"/>

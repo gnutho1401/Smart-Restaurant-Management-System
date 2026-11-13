@@ -75,8 +75,11 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Width="195" Height="175" Margin="6" Background="#FAFAFA" CornerRadius="8" Padding="12"
+                                <Border Width="205" Height="185" Margin="8" Background="#FAFAFA" CornerRadius="10" Padding="12"
                                         BorderBrush="#E0E0E0" BorderThickness="1">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="6" ShadowDepth="1" Direction="270" Color="#000000" Opacity="0.08"/>
+                                    </Border.Effect>
                                     <Grid>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
@@ -90,16 +93,16 @@
 
                                         <!-- Price -->
                                         <TextBlock Grid.Row="1" Text="{Binding Price, Converter={StaticResource CurrencyFormatConverter}}" 
-                                                   FontSize="15" FontWeight="SemiBold" Foreground="#E67E22" VerticalAlignment="Center"/>
+                                                   FontSize="16" FontWeight="Bold" Foreground="#E67E22" VerticalAlignment="Center"/>
 
-                                        <!-- Add Button (Touch target >= 48px height) -->
+                                        <!-- Add Button (Touch target >= 46px height) -->
                                         <Button Grid.Row="2" Content="+ Chọn Món" 
                                                 Command="{Binding DataContext.AddToCartCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
-                                                Background="#2980B9" Foreground="#FFFFFF" FontWeight="Bold" Height="40" Cursor="Hand" BorderThickness="0">
+                                                Background="#2980B9" Foreground="#FFFFFF" FontWeight="Bold" FontSize="14" Height="46" Cursor="Hand" BorderThickness="0">
                                             <Button.Resources>
                                                 <Style TargetType="Border">
-                                                    <Setter Property="CornerRadius" Value="6"/>
+                                                    <Setter Property="CornerRadius" Value="8"/>
                                                 </Style>
                                             </Button.Resources>
                                         </Button>
@@ -124,18 +127,19 @@
                 </Grid.RowDefinitions>
 
                 <!-- Active Table Title -->
-                <Border Grid.Row="0" Background="#1A252F" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+                <Border Grid.Row="0" Background="#1A252F" CornerRadius="10" Padding="14" Margin="0,0,0,12">
                     <DockPanel>
-                        <TextBlock Text="{Binding CurrentTable.TableName, StringFormat='BÀN: {0}'}" FontSize="18" FontWeight="Bold" Foreground="#FFFFFF"/>
-                        <TextBlock Text="{Binding CurrentTable.Area.AreaName}" FontSize="13" Foreground="#BDC3C7" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding CurrentTable.TableName, StringFormat='BÀN: {0}'}" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
+                        <TextBlock Text="{Binding CurrentTable.Area.AreaName}" FontSize="14" Foreground="#BDC3C7" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                     </DockPanel>
                 </Border>
 
-                <!-- Cart Items List -->
-                <ListView Grid.Row="1" ItemsSource="{Binding CartItems}" BorderThickness="0" Margin="0,0,0,10">
+                <!-- Cart Items List (Full Width Stretch) -->
+                <ListView Grid.Row="1" ItemsSource="{Binding CartItems}" BorderThickness="0" Margin="0,0,0,10"
+                          HorizontalContentAlignment="Stretch">
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <Border BorderBrush="#ECEFF1" BorderThickness="0,0,0,1" Padding="4,8" Width="360">
+                            <Border BorderBrush="#ECEFF1" BorderThickness="0,0,0,1" Padding="6,10" HorizontalAlignment="Stretch">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -151,18 +155,30 @@
                                                    Visibility="{Binding AllergyNote, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     </StackPanel>
 
-                                    <!-- Quantity Controls (Touch size) -->
+                                    <!-- Quantity Controls (Enlarged 38x38 Touch Target) -->
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
                                         <Button Content="-" Command="{Binding DataContext.DecreaseQuantityCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}" Width="32" Height="32" FontWeight="Bold" Background="#BDC3C7" BorderThickness="0"/>
-                                        <TextBlock Text="{Binding Quantity}" VerticalAlignment="Center" Margin="10,0" FontWeight="Bold" FontSize="14"/>
+                                                CommandParameter="{Binding}" Width="38" Height="38" FontSize="16" FontWeight="Bold" Background="#BDC3C7" Foreground="#2C3E50" Cursor="Hand" BorderThickness="0">
+                                            <Button.Resources>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="CornerRadius" Value="6"/>
+                                                </Style>
+                                            </Button.Resources>
+                                        </Button>
+                                        <TextBlock Text="{Binding Quantity}" VerticalAlignment="Center" Margin="12,0" FontWeight="Bold" FontSize="15" MinWidth="20" TextAlignment="Center"/>
                                         <Button Content="+" Command="{Binding DataContext.IncreaseQuantityCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}" Width="32" Height="32" FontWeight="Bold" Background="#BDC3C7" BorderThickness="0"/>
+                                                CommandParameter="{Binding}" Width="38" Height="38" FontSize="16" FontWeight="Bold" Background="#BDC3C7" Foreground="#2C3E50" Cursor="Hand" BorderThickness="0">
+                                            <Button.Resources>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="CornerRadius" Value="6"/>
+                                                </Style>
+                                            </Button.Resources>
+                                        </Button>
                                     </StackPanel>
 
                                     <!-- Line Total -->
                                     <TextBlock Grid.Column="2" Text="{Binding LineTotal, Converter={StaticResource CurrencyFormatConverter}}" 
-                                               FontWeight="Bold" Foreground="#2C3E50" VerticalAlignment="Center" Width="85" TextAlignment="Right"/>
+                                               FontWeight="Bold" Foreground="#2C3E50" VerticalAlignment="Center" Width="95" TextAlignment="Right"/>
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -172,7 +188,7 @@
                 <!-- Allergy Note Input Area -->
                 <StackPanel Grid.Row="2" Margin="0,0,0,10">
                     <TextBlock Text="Ghi chú dị ứng / lưu ý chế biến món tiếp theo:" FontSize="12" FontWeight="SemiBold" Foreground="#7F8C8D" Margin="0,0,0,4"/>
-                    <TextBox Text="{Binding CurrentAllergyNote, UpdateSourceTrigger=PropertyChanged}" Height="34" VerticalContentAlignment="Center" Padding="8,0"
+                    <TextBox Text="{Binding CurrentAllergyNote, UpdateSourceTrigger=PropertyChanged}" Height="38" VerticalContentAlignment="Center" Padding="10,0"
                              BorderBrush="#BDC3C7" BorderThickness="1">
                         <TextBox.Resources>
                             <Style TargetType="Border">
@@ -187,20 +203,20 @@
                            Foreground="{Binding IsSuccessMessage, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
                 <!-- Order Settlement & Submission Controls -->
-                <Border Grid.Row="4" Background="#FAFAFA" CornerRadius="8" Padding="12" BorderBrush="#E0E0E0" BorderThickness="1">
+                <Border Grid.Row="4" Background="#FAFAFA" CornerRadius="10" Padding="14" BorderBrush="#E0E0E0" BorderThickness="1">
                     <StackPanel>
                         <!-- SubTotal Sum -->
-                        <DockPanel Margin="0,0,0,10">
-                            <TextBlock Text="TỔNG TẠM TÍNH:" FontSize="15" FontWeight="Bold" Foreground="#7F8C8D"/>
-                            <TextBlock Text="{Binding SubTotal, Converter={StaticResource CurrencyFormatConverter}}" FontSize="20" FontWeight="Bold" Foreground="#E74C3C" HorizontalAlignment="Right"/>
+                        <DockPanel Margin="0,0,0,12">
+                            <TextBlock Text="TỔNG TẠM TÍNH:" FontSize="15" FontWeight="Bold" Foreground="#7F8C8D" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding SubTotal, Converter={StaticResource CurrencyFormatConverter}}" FontSize="22" FontWeight="Bold" Foreground="#E74C3C" HorizontalAlignment="Right"/>
                         </DockPanel>
 
-                        <!-- Big Confirm Button (Touch target >= 48px) -->
+                        <!-- Big Confirm Button (Touch target 54px) -->
                         <Button Content="🔔 XÁC NHẬN GỌI MÓN (TRỪ KHO BOM)" Command="{Binding ConfirmOrderCommand}"
-                                Background="#27AE60" Foreground="#FFFFFF" FontWeight="Bold" FontSize="15" Height="50" Cursor="Hand" BorderThickness="0">
+                                Background="#27AE60" Foreground="#FFFFFF" FontWeight="Bold" FontSize="16" Height="54" Cursor="Hand" BorderThickness="0">
                             <Button.Resources>
                                 <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="8"/>
+                                    <Setter Property="CornerRadius" Value="10"/>
                                 </Style>
                             </Button.Resources>
                         </Button>

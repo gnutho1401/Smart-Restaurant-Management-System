@@ -35,12 +35,12 @@
                     </Button>
                 </DockPanel>
 
-                <!-- Dishes List -->
+                <!-- Dishes List (Full Width Stretch) -->
                 <ListBox Grid.Row="1" ItemsSource="{Binding MenuItems}" SelectedItem="{Binding SelectedDish}"
-                         BorderThickness="0" Background="Transparent">
+                         BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Stretch">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Border BorderBrush="#ECEFF1" BorderThickness="0,0,0,1" Padding="6,10" Width="360">
+                            <Border BorderBrush="#ECEFF1" BorderThickness="0,0,0,1" Padding="8,12" HorizontalAlignment="Stretch">
                                 <DockPanel>
                                     <StackPanel DockPanel.Dock="Left">
                                         <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="15" Foreground="#2C3E50"/>
@@ -48,9 +48,9 @@
                                     </StackPanel>
                                     <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding Price, Converter={StaticResource CurrencyFormatConverter}}" 
-                                                   FontWeight="Bold" FontSize="14" Foreground="#E67E22" TextAlignment="Right"/>
+                                                   FontWeight="Bold" FontSize="15" Foreground="#E67E22" TextAlignment="Right"/>
                                         <Border Background="{Binding IsAvailable, Converter={StaticResource TableStatusToBrushConverter}}" 
-                                                CornerRadius="4" Padding="6,2" HorizontalAlignment="Right" Margin="0,2,0,0">
+                                                CornerRadius="4" Padding="8,3" HorizontalAlignment="Right" Margin="0,3,0,0">
                                             <TextBlock Text="{Binding IsAvailable, StringFormat='Sẵn sàng: {0}'}" FontSize="10" Foreground="#FFFFFF" FontWeight="Bold"/>
                                         </Border>
                                     </StackPanel>
@@ -163,14 +163,20 @@
                     <TextBlock Text="{Binding StatusMessage}" Foreground="#27AE60" FontWeight="SemiBold" Margin="0,0,0,12"/>
 
                     <!-- Action buttons -->
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
                         <Button Content="🗑️ Gỡ Món" Command="{Binding DeleteDishCommand}"
-                                Background="#95A5A6" Foreground="#FFFFFF" FontWeight="SemiBold" Height="38" Padding="14,0" Margin="0,0,10,0" Cursor="Hand" BorderThickness="0"/>
-                        <Button Content="💾 Lưu Món &amp; BOM" Command="{Binding SaveDishCommand}"
-                                Background="#27AE60" Foreground="#FFFFFF" FontWeight="Bold" Height="38" Padding="18,0" Cursor="Hand" BorderThickness="0">
+                                Background="#95A5A6" Foreground="#FFFFFF" FontWeight="SemiBold" Height="42" Padding="16,0" Margin="0,0,12,0" Cursor="Hand" BorderThickness="0">
                             <Button.Resources>
                                 <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="6"/>
+                                    <Setter Property="CornerRadius" Value="8"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                        <Button Content="💾 Lưu Món &amp; BOM" Command="{Binding SaveDishCommand}"
+                                Background="#27AE60" Foreground="#FFFFFF" FontWeight="Bold" FontSize="14" Height="42" Padding="22,0" Cursor="Hand" BorderThickness="0">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="8"/>
                                 </Style>
                             </Button.Resources>
                         </Button>

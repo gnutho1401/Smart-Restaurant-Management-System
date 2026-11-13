@@ -6,8 +6,8 @@
         xmlns:vm="clr-namespace:SmartRestaurant.WPF.ViewModels"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance vm:AiChatViewModel}"
-        Title="Trợ Lý Ảo GenAI Nhà Hàng (Mistral-7B via LM Studio) - SmartRestaurant" 
-        Height="720" Width="800" WindowStartupLocation="CenterScreen" Background="#F4F6F9">
+        Title="Trợ Lý Ảo GenAI Nhà Hàng (Mistral-7B / Google Gemini) - SmartRestaurant" 
+        Height="750" Width="850" MinHeight="700" MinWidth="800" WindowStartupLocation="CenterScreen" Background="#F4F6F9">
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <!-- 1. Header & AI Quick Analytics Buttons -->
@@ -21,23 +21,47 @@
         </Grid.RowDefinitions>
 
         <!-- 1. Header & Quick Action Buttons -->
-        <Border Grid.Row="0" Background="#FFFFFF" CornerRadius="8" Padding="14" Margin="0,0,0,14">
+        <Border Grid.Row="0" Background="#FFFFFF" CornerRadius="10" Padding="16,14" Margin="0,0,0,14">
             <StackPanel>
-                <DockPanel Margin="0,0,0,10">
-                    <TextBlock Text="🤖 TRỢ LÝ GENAI CỤC BỘ (LOCAL MISTRAL-7B)" FontSize="17" FontWeight="Bold" Foreground="#8E44AD"/>
-                    <TextBlock Text="Cổng: localhost (1234/1235) | LINQ Anti-Hallucination Grounding" FontSize="12" Foreground="#7F8C8D" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                <DockPanel Margin="0,0,0,12">
+                    <TextBlock Text="🤖 TRỢ LÝ GENAI (MISTRAL-7B / GEMINI BACKUP)" FontSize="18" FontWeight="Bold" Foreground="#8E44AD"/>
+                    <TextBlock Text="Cổng: 1234/1235 | Cloud Gemini Backup | LINQ Anti-Hallucination" FontSize="12" Foreground="#7F8C8D" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                 </DockPanel>
 
-                <TextBlock Text="Kịch bản phân tích kinh doanh nhanh:" FontSize="12" FontWeight="SemiBold" Foreground="#7F8C8D" Margin="0,0,0,6"/>
+                <TextBlock Text="Kịch bản phân tích kinh doanh nhanh:" FontSize="12" FontWeight="SemiBold" Foreground="#7F8C8D" Margin="0,0,0,8"/>
                 <WrapPanel Orientation="Horizontal">
                     <Button Content="📊 Ma Trận Thực Đơn BCG" Command="{Binding RunBcgCommand}" 
-                            Background="#3498DB" Foreground="#FFFFFF" FontWeight="SemiBold" Height="32" Padding="12,0" Margin="0,0,8,6" Cursor="Hand" BorderThickness="0"/>
+                            Background="#3498DB" Foreground="#FFFFFF" FontWeight="SemiBold" Height="36" Padding="14,0" Margin="0,0,8,6" Cursor="Hand" BorderThickness="0">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
                     <Button Content="📈 Phân Tích Giờ Cao Điểm" Command="{Binding RunPeakHoursCommand}" 
-                            Background="#E67E22" Foreground="#FFFFFF" FontWeight="SemiBold" Height="32" Padding="12,0" Margin="0,0,8,6" Cursor="Hand" BorderThickness="0"/>
+                            Background="#E67E22" Foreground="#FFFFFF" FontWeight="SemiBold" Height="36" Padding="14,0" Margin="0,0,8,6" Cursor="Hand" BorderThickness="0">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
                     <Button Content="📦 Dự Báo Nhập Kho 7 Ngày" Command="{Binding RunReorderCommand}" 
-                            Background="#27AE60" Foreground="#FFFFFF" FontWeight="SemiBold" Height="32" Padding="12,0" Margin="0,0,8,6" Cursor="Hand" BorderThickness="0"/>
+                            Background="#27AE60" Foreground="#FFFFFF" FontWeight="SemiBold" Height="36" Padding="14,0" Margin="0,0,8,6" Cursor="Hand" BorderThickness="0">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
                     <Button Content="💰 Phân Tích Xu Hướng Doanh Thu" Command="{Binding RunRevenueTrendCommand}" 
-                            Background="#9B59B6" Foreground="#FFFFFF" FontWeight="SemiBold" Height="32" Padding="12,0" Margin="0,0,8,6" Cursor="Hand" BorderThickness="0"/>
+                            Background="#9B59B6" Foreground="#FFFFFF" FontWeight="SemiBold" Height="36" Padding="14,0" Margin="0,0,8,6" Cursor="Hand" BorderThickness="0">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
                 </WrapPanel>
             </StackPanel>
         </Border>
@@ -117,19 +141,19 @@
             </Border>
 
         <!-- 3. Query Input Bar -->
-        <Border Grid.Row="2" Background="#FFFFFF" CornerRadius="8" Padding="8" Margin="0,0,0,6">
+        <Border Grid.Row="2" Background="#FFFFFF" CornerRadius="10" Padding="8" Margin="0,0,0,8" BorderBrush="#E0E6ED" BorderThickness="1">
             <DockPanel>
                 <Button DockPanel.Dock="Right" Content="Gửi 💬" Command="{Binding SendQueryCommand}"
-                        Background="#8E44AD" Foreground="#FFFFFF" FontWeight="Bold" FontSize="14" Width="90" Height="40" Margin="8,0,0,0" Cursor="Hand" BorderThickness="0">
+                        Background="#8E44AD" Foreground="#FFFFFF" FontWeight="Bold" FontSize="15" Width="100" Height="44" Margin="8,0,0,0" Cursor="Hand" BorderThickness="0">
                     <Button.Resources>
                         <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="6"/>
+                            <Setter Property="CornerRadius" Value="8"/>
                         </Style>
                     </Button.Resources>
                 </Button>
 
                 <TextBox Text="{Binding InputQuery, UpdateSourceTrigger=PropertyChanged}" 
-                         Height="40" FontSize="14" VerticalContentAlignment="Center" Padding="10,0" BorderThickness="0">
+                         Height="44" FontSize="14" VerticalContentAlignment="Center" Padding="12,0" BorderThickness="0">
                     <TextBox.InputBindings>
                         <KeyBinding Key="Enter" Command="{Binding SendQueryCommand}"/>
                     </TextBox.InputBindings>

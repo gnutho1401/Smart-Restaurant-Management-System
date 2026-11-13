@@ -24,34 +24,34 @@
             </Grid.ColumnDefinitions>
 
             <!-- Available Card -->
-            <Border Grid.Column="0" Background="#FFFFFF" CornerRadius="8" Padding="14" Margin="0,0,8,0" BorderBrush="#27AE60" BorderThickness="0,0,0,4">
+            <Border Grid.Column="0" Background="#FFFFFF" CornerRadius="10" Padding="16,12" Margin="0,0,8,0" BorderBrush="#27AE60" BorderThickness="0,0,0,4">
                 <StackPanel>
                     <TextBlock Text="Bàn Trống (Sẵn Sàng)" FontSize="13" Foreground="#7F8C8D" FontWeight="SemiBold"/>
-                    <TextBlock Text="{Binding AvailableCount}" FontSize="28" FontWeight="Bold" Foreground="#27AE60" Margin="0,4,0,0"/>
+                    <TextBlock Text="{Binding AvailableCount}" FontSize="32" FontWeight="Bold" Foreground="#27AE60" Margin="0,4,0,0"/>
                 </StackPanel>
             </Border>
 
             <!-- Occupied Card -->
-            <Border Grid.Column="1" Background="#FFFFFF" CornerRadius="8" Padding="14" Margin="4,0,4,0" BorderBrush="#E74C3C" BorderThickness="0,0,0,4">
+            <Border Grid.Column="1" Background="#FFFFFF" CornerRadius="10" Padding="16,12" Margin="4,0,4,0" BorderBrush="#E74C3C" BorderThickness="0,0,0,4">
                 <StackPanel>
                     <TextBlock Text="Đang Dùng Bữa" FontSize="13" Foreground="#7F8C8D" FontWeight="SemiBold"/>
-                    <TextBlock Text="{Binding OccupiedCount}" FontSize="28" FontWeight="Bold" Foreground="#E74C3C" Margin="0,4,0,0"/>
+                    <TextBlock Text="{Binding OccupiedCount}" FontSize="32" FontWeight="Bold" Foreground="#E74C3C" Margin="0,4,0,0"/>
                 </StackPanel>
             </Border>
 
             <!-- Reserved Card -->
-            <Border Grid.Column="2" Background="#FFFFFF" CornerRadius="8" Padding="14" Margin="4,0,4,0" BorderBrush="#2980B9" BorderThickness="0,0,0,4">
+            <Border Grid.Column="2" Background="#FFFFFF" CornerRadius="10" Padding="16,12" Margin="4,0,4,0" BorderBrush="#2980B9" BorderThickness="0,0,0,4">
                 <StackPanel>
                     <TextBlock Text="Đã Đặt Trước" FontSize="13" Foreground="#7F8C8D" FontWeight="SemiBold"/>
-                    <TextBlock Text="{Binding ReservedCount}" FontSize="28" FontWeight="Bold" Foreground="#2980B9" Margin="0,4,0,0"/>
+                    <TextBlock Text="{Binding ReservedCount}" FontSize="32" FontWeight="Bold" Foreground="#2980B9" Margin="0,4,0,0"/>
                 </StackPanel>
             </Border>
 
             <!-- Cleaning Card -->
-            <Border Grid.Column="3" Background="#FFFFFF" CornerRadius="8" Padding="14" Margin="8,0,0,0" BorderBrush="#F39C12" BorderThickness="0,0,0,4">
+            <Border Grid.Column="3" Background="#FFFFFF" CornerRadius="10" Padding="16,12" Margin="8,0,0,0" BorderBrush="#F39C12" BorderThickness="0,0,0,4">
                 <StackPanel>
                     <TextBlock Text="Đang Chờ Dọn Dẹp" FontSize="13" Foreground="#7F8C8D" FontWeight="SemiBold"/>
-                    <TextBlock Text="{Binding CleaningCount}" FontSize="28" FontWeight="Bold" Foreground="#F39C12" Margin="0,4,0,0"/>
+                    <TextBlock Text="{Binding CleaningCount}" FontSize="32" FontWeight="Bold" Foreground="#F39C12" Margin="0,4,0,0"/>
                 </StackPanel>
             </Border>
         </Grid>
@@ -90,10 +90,10 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Width="220" Height="190" Margin="8" Background="#FFFFFF" CornerRadius="10" Padding="14"
+                        <Border Width="230" Height="195" Margin="8" Background="#FFFFFF" CornerRadius="10" Padding="14"
                                 BorderBrush="{Binding Status, Converter={StaticResource TableStatusToBrushConverter}}" BorderThickness="2">
                             <Border.Effect>
-                                <DropShadowEffect BlurRadius="8" ShadowDepth="2" Direction="270" Color="#D0D3D4" Opacity="0.5"/>
+                                <DropShadowEffect BlurRadius="10" ShadowDepth="2" Direction="270" Color="#D0D3D4" Opacity="0.4"/>
                             </Border.Effect>
 
                             <Grid>
@@ -119,13 +119,13 @@
                                     <TextBlock Text="{Binding Area.AreaName, StringFormat='Khu vực: 📍 {0}'}" FontSize="12" Foreground="#95A5A6" Margin="0,2,0,0"/>
                                 </StackPanel>
 
-                                <!-- Action Buttons (Touch size >= 48px combined) -->
-                                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                                <!-- Action Buttons (Touch size 36px) -->
+                                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
                                     <!-- Open POS / Take Order -->
-                                    <Button Content="Gọi Món POS" 
+                                    <Button Content="Gọi Món" 
                                             Command="{Binding DataContext.OpenTableCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
-                                            Background="#27AE60" Foreground="#FFFFFF" FontWeight="SemiBold" Height="34" Padding="8,0" Margin="0,0,4,0" Cursor="Hand" BorderThickness="0">
+                                            Background="#27AE60" Foreground="#FFFFFF" FontWeight="SemiBold" Height="36" Padding="10,0" Margin="0,0,4,0" Cursor="Hand" BorderThickness="0">
                                         <Button.Resources>
                                             <Style TargetType="Border">
                                                 <Setter Property="CornerRadius" Value="6"/>
@@ -137,7 +137,7 @@
                                     <Button Content="Thanh Toán" 
                                             Command="{Binding DataContext.PayTableCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
-                                            Background="#E67E22" Foreground="#FFFFFF" FontWeight="SemiBold" Height="34" Padding="8,0" Margin="0,0,4,0" Cursor="Hand" BorderThickness="0">
+                                            Background="#E67E22" Foreground="#FFFFFF" FontWeight="SemiBold" Height="36" Padding="10,0" Margin="0,0,4,0" Cursor="Hand" BorderThickness="0">
                                         <Button.Resources>
                                             <Style TargetType="Border">
                                                 <Setter Property="CornerRadius" Value="6"/>
@@ -149,7 +149,7 @@
                                     <Button Content="Dọn Xong" 
                                             Command="{Binding DataContext.CleanTableDoneCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
-                                            Background="#F39C12" Foreground="#FFFFFF" FontWeight="SemiBold" Height="34" Padding="8,0" Cursor="Hand" BorderThickness="0">
+                                            Background="#F39C12" Foreground="#FFFFFF" FontWeight="SemiBold" Height="36" Padding="10,0" Cursor="Hand" BorderThickness="0">
                                         <Button.Resources>
                                             <Style TargetType="Border">
                                                 <Setter Property="CornerRadius" Value="6"/>

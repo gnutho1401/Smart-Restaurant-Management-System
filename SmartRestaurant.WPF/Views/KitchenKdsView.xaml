@@ -58,7 +58,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <!-- Urgency Border: Green <10m, Yellow 10-20m, Red >20m -->
-                        <Border Width="260" MinHeight="220" Margin="8" Background="#2C3A47" CornerRadius="10" Padding="14"
+                        <Border Width="280" MinHeight="250" Margin="8" Background="#2C3A47" CornerRadius="10" Padding="14"
                                 BorderBrush="{Binding UrgencyBrush}" BorderThickness="3">
                             <Grid>
                                 <Grid.RowDefinitions>
@@ -70,35 +70,35 @@
 
                                 <!-- Table, Order ID and Timer -->
                                 <DockPanel Grid.Row="0" Margin="0,0,0,8">
-                                    <TextBlock Text="{Binding TableName}" FontSize="18" FontWeight="Bold" Foreground="#FFFFFF" DockPanel.Dock="Left"/>
-                                    <TextBlock Text="{Binding ElapsedDisplay}" FontSize="12" FontWeight="Bold" Foreground="{Binding UrgencyBrush}" 
+                                    <TextBlock Text="{Binding TableName}" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF" DockPanel.Dock="Left"/>
+                                    <TextBlock Text="{Binding ElapsedDisplay}" FontSize="13" FontWeight="Bold" Foreground="{Binding UrgencyBrush}" 
                                                DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                                 </DockPanel>
 
                                 <TextBlock Grid.Row="1" Text="{Binding OrderId, StringFormat='Đơn hàng #{0:D4}'}" FontSize="12" Foreground="#BDC3C7" Margin="0,0,0,8"/>
 
                                 <!-- Dish and Allergy Warnings -->
-                                <StackPanel Grid.Row="2" Margin="0,0,0,12">
-                                    <DockPanel Margin="0,0,0,6">
-                                        <TextBlock Text="{Binding DishName}" FontSize="16" FontWeight="Bold" Foreground="#F5F6FA" TextWrapping="Wrap" Width="180"/>
-                                        <Border Background="#E67E22" CornerRadius="6" Padding="8,2" HorizontalAlignment="Right" VerticalAlignment="Top">
-                                            <TextBlock Text="{Binding Quantity, StringFormat='x{0}'}" FontSize="15" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                <StackPanel Grid.Row="2" Margin="0,0,0,14">
+                                    <DockPanel Margin="0,0,0,8">
+                                        <TextBlock Text="{Binding DishName}" FontSize="18" FontWeight="Bold" Foreground="#F5F6FA" TextWrapping="Wrap" Width="200"/>
+                                        <Border Background="#E67E22" CornerRadius="6" Padding="10,3" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                            <TextBlock Text="{Binding Quantity, StringFormat='x{0}'}" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF"/>
                                         </Border>
                                     </DockPanel>
 
                                     <!-- Allergy Note Callout Badge -->
-                                    <Border Background="#C0392B" CornerRadius="6" Padding="8,6" Margin="0,4,0,0"
+                                    <Border Background="#C0392B" CornerRadius="6" Padding="10,6" Margin="0,4,0,0"
                                             Visibility="{Binding AllergyNote, Converter={StaticResource BooleanToVisibilityConverter}}">
                                         <TextBlock Text="{Binding AllergyNote, StringFormat='⚠️ LƯU Ý DỊ ỨNG: {0}'}" 
-                                                   Foreground="#FFFFFF" FontSize="12" FontWeight="Bold" TextWrapping="Wrap"/>
+                                                   Foreground="#FFFFFF" FontSize="13" FontWeight="Bold" TextWrapping="Wrap"/>
                                     </Border>
                                 </StackPanel>
 
-                                <!-- Big Touch Action Button -->
+                                <!-- Big Touch Action Button (52px) -->
                                 <Button Grid.Row="3" Content="{Binding ActionButtonText}" 
                                         Command="{Binding DataContext.AdvanceStatusCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         CommandParameter="{Binding}"
-                                        Background="{Binding UrgencyBrush}" Foreground="#1E272E" FontWeight="Bold" FontSize="15" Height="46" Cursor="Hand" BorderThickness="0">
+                                        Background="{Binding UrgencyBrush}" Foreground="#1E272E" FontWeight="Bold" FontSize="16" Height="52" Cursor="Hand" BorderThickness="0">
                                     <Button.Resources>
                                         <Style TargetType="Border">
                                             <Setter Property="CornerRadius" Value="8"/>
