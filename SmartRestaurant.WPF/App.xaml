@@ -3,26 +3,32 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:converters="clr-namespace:SmartRestaurant.WPF.Converters">
     <Application.Resources>
-        <!-- Global Value Converters -->
-        <converters:TableStatusToBrushConverter x:Key="TableStatusToBrushConverter" />
-        <converters:CookingStatusToBrushConverter x:Key="CookingStatusToBrushConverter" />
-        <converters:CurrencyFormatConverter x:Key="CurrencyFormatConverter" />
-        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
-        <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
-        <converters:TableStatusToVisibilityConverter x:Key="TableStatusToVisibilityConverter" />
-        <converters:TableStatusToBadgeBackgroundConverter x:Key="TableStatusToBadgeBackgroundConverter" />
-        <converters:TableStatusToBadgeForegroundConverter x:Key="TableStatusToBadgeForegroundConverter" />
-        <converters:TableStatusToTextConverter x:Key="TableStatusToTextConverter" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Resources/Animations.xaml" />
+            </ResourceDictionary.MergedDictionaries>
 
-        <!-- Modern UI Global Palette -->
-        <Color x:Key="PrimaryColor">#1A252F</Color>
-        <Color x:Key="AccentColor">#E67E22</Color>
-        <Color x:Key="BackgroundColor">#F8F9FA</Color>
-        <Color x:Key="CardBackground">#FFFFFF</Color>
+            <!-- Global Value Converters -->
+            <converters:TableStatusToBrushConverter x:Key="TableStatusToBrushConverter" />
+            <converters:CookingStatusToBrushConverter x:Key="CookingStatusToBrushConverter" />
+            <converters:CurrencyFormatConverter x:Key="CurrencyFormatConverter" />
+            <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+            <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
+            <converters:TableStatusToVisibilityConverter x:Key="TableStatusToVisibilityConverter" />
+            <converters:TableStatusToBadgeBackgroundConverter x:Key="TableStatusToBadgeBackgroundConverter" />
+            <converters:TableStatusToBadgeForegroundConverter x:Key="TableStatusToBadgeForegroundConverter" />
+            <converters:TableStatusToTextConverter x:Key="TableStatusToTextConverter" />
 
-        <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
-        <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
-        <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}" />
-        <SolidColorBrush x:Key="CardBrush" Color="{StaticResource CardBackground}" />
+            <!-- Modern UI Global Palette -->
+            <Color x:Key="PrimaryColor">#1A252F</Color>
+            <Color x:Key="AccentColor">#E67E22</Color>
+            <Color x:Key="BackgroundColor">#F8F9FA</Color>
+            <Color x:Key="CardBackground">#FFFFFF</Color>
+
+            <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
+            <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}" />
+            <SolidColorBrush x:Key="CardBrush" Color="{StaticResource CardBackground}" />
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

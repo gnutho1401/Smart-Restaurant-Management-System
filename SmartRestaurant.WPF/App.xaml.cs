@@ -150,6 +150,7 @@ public partial class App : Application
 
         // 3. Domain Business & Security Services
         services.AddSingleton<IAuthService>(sp => new AuthService(sp.GetRequiredService<IServiceScopeFactory>()));
+        services.AddScoped<IStaffService, StaffService>();
         services.AddScoped<ITableService, TableService>();
         services.AddScoped<IMenuService, MenuService>();
         services.AddScoped<IOrderService, OrderService>();
@@ -165,6 +166,9 @@ public partial class App : Application
         services.AddSingleton<PosOrderViewModel>();
         services.AddSingleton<KitchenKdsViewModel>();
         services.AddSingleton<MenuViewModel>();
+        services.AddSingleton<ReportsViewModel>();
+        services.AddSingleton<StaffManagementViewModel>();
+        services.AddSingleton<InventoryManagementViewModel>();
         services.AddTransient<BillingViewModel>();
         services.AddTransient<AiChatViewModel>();
         services.AddSingleton<MainViewModel>();
@@ -174,5 +178,8 @@ public partial class App : Application
         services.AddTransient<MainWindow>();
         services.AddTransient<AiChatWindow>();
         services.AddTransient<BillingDialog>();
+        services.AddTransient<ReportsView>();
+        services.AddTransient<StaffManagementView>();
+        services.AddTransient<InventoryManagementView>();
     }
 }

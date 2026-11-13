@@ -27,6 +27,9 @@ public class MainViewModel : ViewModelBase
     public PosOrderViewModel PosOrderVm { get; }
     public KitchenKdsViewModel KitchenKdsVm { get; }
     public MenuViewModel MenuVm { get; }
+    public ReportsViewModel ReportsVm { get; }
+    public StaffManagementViewModel StaffVm { get; }
+    public InventoryManagementViewModel InventoryVm { get; }
 
     public object? CurrentView
     {
@@ -62,18 +65,25 @@ public class MainViewModel : ViewModelBase
         _ => "#7F8C8D"
     };
 
-    // Role-Based Access Control (RBAC) Permissions
-    public bool IsFloorPlanAllowed => _authService.HasPermission(UserRole.Admin, UserRole.StoreManager, UserRole.Cashier);
-    public bool IsPosAllowed => _authService.HasPermission(UserRole.Admin, UserRole.StoreManager, UserRole.Cashier);
-    public bool IsKdsAllowed => _authService.HasPermission(UserRole.Admin, UserRole.StoreManager, UserRole.HeadChef);
+    // Role-Based Access Control (RBAC) Permissions - Strict separation of duties
+    public bool IsFloorPlanAllowed => _authService.HasPermission(UserRole.StoreManager, UserRole.Cashier);
+    public bool IsPosAllowed => _authService.HasPermission(UserRole.StoreManager, UserRole.Cashier);
+    public bool IsKdsAllowed => _authService.HasPermission(UserRole.StoreManager, UserRole.HeadChef);
+    public bool IsBillingAllowed => _authService.HasPermission(UserRole.StoreManager, UserRole.Cashier);
+
+    public bool IsReportsAllowed => _authService.HasPermission(UserRole.Admin, UserRole.StoreManager);
+    public bool IsStaffAllowed => _authService.HasPermission(UserRole.Admin, UserRole.StoreManager);
+    public bool IsInventoryAllowed => _authService.HasPermission(UserRole.Admin, UserRole.StoreManager, UserRole.HeadChef);
     public bool IsMenuAllowed => _authService.HasPermission(UserRole.Admin, UserRole.StoreManager, UserRole.HeadChef);
-    public bool IsBillingAllowed => _authService.HasPermission(UserRole.Admin, UserRole.StoreManager, UserRole.Cashier);
     public bool IsAiAssistantAllowed => true;
 
     public RelayCommand NavFloorPlanCommand { get; }
     public RelayCommand NavPosCommand { get; }
     public RelayCommand NavKdsCommand { get; }
     public RelayCommand NavMenuCommand { get; }
+    public RelayCommand NavReportsCommand { get; }
+    public RelayCommand NavStaffCommand { get; }
+    public RelayCommand NavInventoryCommand { get; }
     public RelayCommand OpenBillingCommand { get; }
     public RelayCommand OpenAiAssistantCommand { get; }
     public RelayCommand LogoutCommand { get; }
@@ -86,7 +96,10 @@ public class MainViewModel : ViewModelBase
         FloorPlanViewModel floorPlanVm,
         PosOrderViewModel posOrderVm,
         KitchenKdsViewModel kitchenKdsVm,
-        MenuViewModel menuVm)
+        MenuViewModel menuVm,
+        ReportsViewModel reportsVm,
+        StaffManagementViewModel staffVm,
+        InventoryManagementViewModel inventoryVm)
     {
         _serviceProvider = serviceProvider;
         _authService = authService;
@@ -94,6 +107,9 @@ public class MainViewModel : ViewModelBase
         PosOrderVm = posOrderVm;
         KitchenKdsVm = kitchenKdsVm;
         MenuVm = menuVm;
+        ReportsVm = reportsVm;
+        StaffVm = staffVm;
+        InventoryVm = inventoryVm;
 
         // Wire cross-view navigation events
         FloorPlanVm.RequestOpenPos += OnOpenPosRequested;
@@ -127,6 +143,27 @@ public class MainViewModel : ViewModelBase
             await MenuVm.LoadMenuAsync();
         });
 
+        NavReportsCommand = new RelayCommand(async () =>
+        {
+            if (!IsReportsAllowed) return;
+            SwitchView(ReportsVm, "Reports");
+            await ReportsVm.LoadDashboardAsync();
+        });
+
+        NavStaffCommand = new RelayCommand(async () =>
+        {
+            if (!IsStaffAllowed) return;
+            SwitchView(StaffVm, "Staff");
+            await StaffVm.LoadStaffAsync();
+        });
+
+        NavInventoryCommand = new RelayCommand(async () =>
+        {
+            if (!IsInventoryAllowed) return;
+            SwitchView(InventoryVm, "Inventory");
+            await InventoryVm.LoadIngredientsAsync();
+        });
+
         OpenBillingCommand = new RelayCommand(OpenBillingModal);
         OpenAiAssistantCommand = new RelayCommand(OpenAiChatModal);
         LogoutCommand = new RelayCommand(ExecuteLogout);
@@ -146,9 +183,17 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsKdsAllowed));
         OnPropertyChanged(nameof(IsMenuAllowed));
         OnPropertyChanged(nameof(IsBillingAllowed));
+        OnPropertyChanged(nameof(IsReportsAllowed));
+        OnPropertyChanged(nameof(IsStaffAllowed));
+        OnPropertyChanged(nameof(IsInventoryAllowed));
 
         // Direct user to their primary operational screen upon login
-        if (_authService.CurrentUser?.Role == UserRole.HeadChef)
+        if (_authService.CurrentUser?.Role == UserRole.Admin)
+        {
+            SwitchView(ReportsVm, "Reports");
+            _ = ReportsVm.LoadDashboardAsync();
+        }
+        else if (_authService.CurrentUser?.Role == UserRole.HeadChef)
         {
             SwitchView(KitchenKdsVm, "KDS");
             _ = KitchenKdsVm.LoadTicketsAsync();

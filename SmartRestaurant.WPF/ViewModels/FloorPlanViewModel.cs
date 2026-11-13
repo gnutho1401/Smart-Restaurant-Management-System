@@ -125,6 +125,17 @@ public class FloorPlanViewModel : ViewModelBase
     {
         if (table == null) return;
 
+        // Workflow Guard: Cannot open table for ordering if table is currently waiting for cleaning
+        if (table.Status == TableStatus.Cleaning)
+        {
+            System.Windows.MessageBox.Show(
+                $"Bàn {table.TableName} đang trong trạng thái chờ dọn dẹp. Vui lòng bấm 'Dọn Xong' trước khi mở bàn đón khách mới!",
+                "Chốt Chặn Quy Trình Vận Hành",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
         if (table.Status == TableStatus.Available || table.Status == TableStatus.Reserved)
         {
             await _tableService.TransitionTableStatusAsync(table.TableId, TableStatus.Occupied);
@@ -138,6 +149,18 @@ public class FloorPlanViewModel : ViewModelBase
     private Task ExecutePayTableAsync(DiningTable? table)
     {
         if (table == null) return Task.CompletedTask;
+
+        // Workflow Guard: Can only settle billing for tables currently occupied
+        if (table.Status != TableStatus.Occupied)
+        {
+            System.Windows.MessageBox.Show(
+                $"Bàn {table.TableName} hiện chưa có khách hoặc chưa gọi món để quyết toán.",
+                "Chốt Chặn Quyết Toán Hóa Đơn",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Information);
+            return Task.CompletedTask;
+        }
+
         RequestOpenBilling?.Invoke(table);
         return Task.CompletedTask;
     }

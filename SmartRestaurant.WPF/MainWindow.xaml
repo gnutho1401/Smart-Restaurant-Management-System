@@ -25,8 +25,17 @@
         <DataTemplate DataType="{x:Type vm:MenuViewModel}">
             <views:MenuView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ReportsViewModel}">
+            <views:ReportsView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:StaffManagementViewModel}">
+            <views:StaffManagementView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:InventoryManagementViewModel}">
+            <views:InventoryManagementView/>
+        </DataTemplate>
 
-        <!-- Modern Clean Nav Tab Button Style -->
+        <!-- Modern Clean Nav Tab Button Style with Tactile Animation -->
         <Style x:Key="NavButtonStyle" TargetType="Button">
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -38,6 +47,12 @@
             <Setter Property="Margin" Value="0,0,6,0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5, 0.5"/>
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <ScaleTransform ScaleX="1.0" ScaleY="1.0"/>
+                </Setter.Value>
+            </Setter>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -48,9 +63,49 @@
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="border" Property="Background" Value="#F1F5F9"/>
                                 <Setter Property="Foreground" Value="#0F172A"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                             To="1.02" Duration="0:0:0.12"/>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                             To="1.02" Duration="0:0:0.12"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                             To="1.0" Duration="0:0:0.12"/>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                             To="1.0" Duration="0:0:0.12"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="border" Property="Background" Value="#E2E8F0"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                             To="0.97" Duration="0:0:0.06"/>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                             To="0.97" Duration="0:0:0.06"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                             To="1.0" Duration="0:0:0.08"/>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                             To="1.0" Duration="0:0:0.08"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -119,6 +174,21 @@
         <Border Grid.Row="1" Background="#FFFFFF" BorderBrush="#E0E6ED" BorderThickness="0,0,0,1" Padding="20,0">
             <DockPanel LastChildFill="False">
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                    <!-- Admin & Management Tabs -->
+                    <Button Content="📊 Báo Cáo &amp; AI Analytics" Command="{Binding NavReportsCommand}"
+                            Visibility="{Binding IsReportsAllowed, Converter={StaticResource BoolToVis}}"
+                            Style="{StaticResource NavButtonStyle}"/>
+                    <Button Content="👥 Quản Lý Nhân Viên" Command="{Binding NavStaffCommand}"
+                            Visibility="{Binding IsStaffAllowed, Converter={StaticResource BoolToVis}}"
+                            Style="{StaticResource NavButtonStyle}"/>
+                    <Button Content="📦 Quản Lý Kho (BOM)" Command="{Binding NavInventoryCommand}"
+                            Visibility="{Binding IsInventoryAllowed, Converter={StaticResource BoolToVis}}"
+                            Style="{StaticResource NavButtonStyle}"/>
+                    <Button Content="📖 Thực Đơn &amp; Dịch Vụ" Command="{Binding NavMenuCommand}"
+                            Visibility="{Binding IsMenuAllowed, Converter={StaticResource BoolToVis}}"
+                            Style="{StaticResource NavButtonStyle}"/>
+
+                    <!-- Operation Floor & Kitchen Tabs -->
                     <Button Content="🪑 Sơ Đồ Bàn (Floor Plan)" Command="{Binding NavFloorPlanCommand}"
                             Visibility="{Binding IsFloorPlanAllowed, Converter={StaticResource BoolToVis}}"
                             Style="{StaticResource NavButtonStyle}"/>
@@ -128,20 +198,12 @@
                     <Button Content="👨‍🍳 Màn Hình Bếp (Kitchen KDS)" Command="{Binding NavKdsCommand}"
                             Visibility="{Binding IsKdsAllowed, Converter={StaticResource BoolToVis}}"
                             Style="{StaticResource NavButtonStyle}"/>
-                    <Button Content="📖 Thực Đơn &amp; Định Lượng BOM" Command="{Binding NavMenuCommand}"
-                            Visibility="{Binding IsMenuAllowed, Converter={StaticResource BoolToVis}}"
-                            Style="{StaticResource NavButtonStyle}"/>
                 </StackPanel>
 
                 <Button DockPanel.Dock="Right" Content="💳 Quyết Toán Hóa Đơn (VAT 8%)" Command="{Binding OpenBillingCommand}"
                         Visibility="{Binding IsBillingAllowed, Converter={StaticResource BoolToVis}}"
-                        Background="#E67E22" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="40" Padding="18,0" Cursor="Hand" BorderThickness="0" VerticalAlignment="Center">
-                    <Button.Resources>
-                        <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="8"/>
-                        </Style>
-                    </Button.Resources>
-                </Button>
+                        Background="#E67E22" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="40" Padding="18,0" Cursor="Hand" BorderThickness="0" VerticalAlignment="Center"
+                        Style="{StaticResource AnimatedTouchButtonStyle}"/>
             </DockPanel>
         </Border>
 

@@ -79,10 +79,6 @@ public class AuthService : IAuthService
         if (_currentUser == null)
             return false;
 
-        // Admin has universal superuser access across all modules
-        if (_currentUser.Role == UserRole.Admin)
-            return true;
-
         if (allowedRoles == null || allowedRoles.Length == 0)
             return true;
 

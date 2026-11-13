@@ -180,7 +180,7 @@ public class AuthServiceTests
     }
 
     [Fact]
-    public async Task HasPermission_AdminHasUniversalAccessAcrossAllRoles()
+    public async Task HasPermission_AdminEnforcesConfiguredRolesStrictly()
     {
         // Arrange
         using var context = TestDbContextFactory.CreateInMemoryContext();
@@ -196,11 +196,11 @@ public class AuthServiceTests
         var authService = new AuthService(context);
         await authService.LoginAsync("super_admin", "admin123");
 
-        // Assert: Admin passes any role checks
+        // Assert: Admin only passes checks where Admin is explicitly allowed
         Assert.True(authService.HasPermission(UserRole.Admin));
-        Assert.True(authService.HasPermission(UserRole.StoreManager));
-        Assert.True(authService.HasPermission(UserRole.Cashier));
-        Assert.True(authService.HasPermission(UserRole.HeadChef));
+        Assert.True(authService.HasPermission(UserRole.Admin, UserRole.StoreManager));
+        Assert.False(authService.HasPermission(UserRole.Cashier));
+        Assert.False(authService.HasPermission(UserRole.HeadChef));
         Assert.True(authService.HasPermission());
     }
 

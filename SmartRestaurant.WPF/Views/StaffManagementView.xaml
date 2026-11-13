@@ -1,0 +1,172 @@
+<UserControl x:Class="SmartRestaurant.WPF.Views.StaffManagementView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewmodels="clr-namespace:SmartRestaurant.WPF.ViewModels"
+             xmlns:enums="clr-namespace:SmartRestaurant.Core.Enums;assembly=SmartRestaurant.Core"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance Type=viewmodels:StaffManagementViewModel}"
+             Style="{StaticResource AnimatedPageStyle}"
+             Background="#F8FAFC">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <!-- 1. Header Toolbar -->
+            <RowDefinition Height="Auto"/>
+            <!-- 2. Status Banner -->
+            <RowDefinition Height="Auto"/>
+            <!-- 3. Main Workspace: Staff Roster + Action Panel -->
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 1. Header Toolbar -->
+        <Border Grid.Row="0" Margin="0,0,0,16">
+            <DockPanel LastChildFill="False">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="👥" FontSize="26" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <StackPanel>
+                        <TextBlock Text="QUẢN LÝ NHÂN SỰ &amp; PHÂN QUYỀN VAI TRÒ" FontSize="20" FontWeight="Bold" Foreground="#1E293B"/>
+                        <TextBlock Text="Thiết lập tài khoản nhân viên, phân quyền hạn theo chức vụ vận hành nhà hàng" FontSize="12" Foreground="#64748B"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <Button DockPanel.Dock="Right" Content="🔄 Tải Lại Danh Sách" Command="{Binding LoadStaffCommand}"
+                        Background="#2563EB" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="38" Padding="18,0"
+                        Style="{StaticResource AnimatedTouchButtonStyle}" Cursor="Hand"/>
+            </DockPanel>
+        </Border>
+
+        <!-- 2. Status Banner -->
+        <Border Grid.Row="1" Margin="0,0,0,16" Padding="14,10" CornerRadius="8"
+                Visibility="{Binding StatusMessage, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="#FEF2F2"/>
+                    <Setter Property="BorderBrush" Value="#F87171"/>
+                    <Setter Property="BorderThickness" Value="1"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsSuccessMessage}" Value="True">
+                            <Setter Property="Background" Value="#F0FDF4"/>
+                            <Setter Property="BorderBrush" Value="#4ADE80"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <TextBlock Text="{Binding StatusMessage}" FontWeight="SemiBold" FontSize="13">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="#991B1B"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsSuccessMessage}" Value="True">
+                                <Setter Property="Foreground" Value="#166534"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Border>
+
+        <!-- 3. Main Workspace: Staff Roster + Action Panel -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="1.2*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: Staff DataGrid Roster -->
+            <Border Grid.Column="0" Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,16,0" BorderBrush="#E2E8F0" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
+                </Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="📋 DANH SÁCH NHÂN VIÊN HIỆN TẠI" FontSize="15" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,16"/>
+
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding StaffList}" SelectedItem="{Binding SelectedStaff}"
+                              AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F1F5F9"
+                              Background="Transparent" BorderThickness="0" RowHeight="46" SelectionMode="Single">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="MÃ NV" Binding="{Binding UserId}" Width="70"/>
+                            <DataGridTextColumn Header="TÊN ĐĂNG NHẬP" Binding="{Binding Username}" Width="1.5*"/>
+                            <DataGridTextColumn Header="HỌ VÀ TÊN" Binding="{Binding FullName}" Width="2*"/>
+                            <DataGridTemplateColumn Header="VAI TRÒ / CHỨC VỤ" Width="2*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding RoleBadgeColor}" CornerRadius="6" Padding="10,4" HorizontalAlignment="Left">
+                                            <TextBlock Text="{Binding RoleBadgeText}" FontWeight="Bold" FontSize="11" Foreground="#FFFFFF"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+
+            <!-- Right: Add Staff & Role Manager -->
+            <StackPanel Grid.Column="1">
+                <!-- Add New Staff Card -->
+                <Border Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#E2E8F0" BorderThickness="1">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
+                    </Border.Effect>
+                    <StackPanel>
+                        <TextBlock Text="➕ THÊM NHÂN VIÊN MỚI" FontSize="15" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,16"/>
+
+                        <TextBlock Text="Tên Đăng Nhập (*)" FontSize="12" FontWeight="SemiBold" Foreground="#475569" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding NewUsername, UpdateSourceTrigger=PropertyChanged}" Height="36" Padding="8,6" Margin="0,0,0,12"/>
+
+                        <TextBlock Text="Mật Khẩu Khởi Tạo (*)" FontSize="12" FontWeight="SemiBold" Foreground="#475569" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding NewPassword, UpdateSourceTrigger=PropertyChanged}" Height="36" Padding="8,6" Margin="0,0,0,12"/>
+
+                        <TextBlock Text="Họ Và Tên Đầy Đủ" FontSize="12" FontWeight="SemiBold" Foreground="#475569" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding NewFullName, UpdateSourceTrigger=PropertyChanged}" Height="36" Padding="8,6" Margin="0,0,0,12"/>
+
+                        <TextBlock Text="Vai Trò / Phân Quyền" FontSize="12" FontWeight="SemiBold" Foreground="#475569" Margin="0,0,0,4"/>
+                        <ComboBox ItemsSource="{Binding AvailableRoles}" SelectedItem="{Binding NewRole}" Height="36" Margin="0,0,0,18"/>
+
+                        <Button Content="Tạo Mới Nhân Viên" Command="{Binding CreateStaffCommand}"
+                                Background="#10B981" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="40"
+                                Style="{StaticResource AnimatedTouchButtonStyle}" Cursor="Hand"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Role Modification for Selected Staff Card -->
+                <Border Background="#FFFFFF" CornerRadius="12" Padding="20" BorderBrush="#E2E8F0" BorderThickness="1">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
+                    </Border.Effect>
+                    <StackPanel>
+                        <TextBlock Text="⚡ THAO TÁC NHÂN VIÊN ĐƯỢC CHỌN" FontSize="14" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,12"/>
+                        <TextBlock Text="{Binding SelectedStaff.FullName, StringFormat='Đang chọn: {0}'}" FontSize="13" Foreground="#64748B" Margin="0,0,0,12"/>
+
+                        <TextBlock Text="Cập nhật nhanh chức vụ:" FontSize="12" FontWeight="SemiBold" Foreground="#475569" Margin="0,0,0,8"/>
+                        <UniformGrid Columns="2" Rows="2" Margin="0,0,0,14">
+                            <Button Content="Quản Lý" Command="{Binding ChangeRoleCommand}" CommandParameter="{x:Static enums:UserRole.StoreManager}"
+                                    Background="#8E44AD" Foreground="#FFFFFF" FontWeight="Bold" FontSize="11" Height="32" Margin="3"
+                                    Style="{StaticResource AnimatedTouchButtonStyle}"/>
+                            <Button Content="Thu Ngân" Command="{Binding ChangeRoleCommand}" CommandParameter="{x:Static enums:UserRole.Cashier}"
+                                    Background="#F39C12" Foreground="#FFFFFF" FontWeight="Bold" FontSize="11" Height="32" Margin="3"
+                                    Style="{StaticResource AnimatedTouchButtonStyle}"/>
+                            <Button Content="Bếp Trưởng" Command="{Binding ChangeRoleCommand}" CommandParameter="{x:Static enums:UserRole.HeadChef}"
+                                    Background="#27AE60" Foreground="#FFFFFF" FontWeight="Bold" FontSize="11" Height="32" Margin="3"
+                                    Style="{StaticResource AnimatedTouchButtonStyle}"/>
+                            <Button Content="Admin" Command="{Binding ChangeRoleCommand}" CommandParameter="{x:Static enums:UserRole.Admin}"
+                                    Background="#E74C3C" Foreground="#FFFFFF" FontWeight="Bold" FontSize="11" Height="32" Margin="3"
+                                    Style="{StaticResource AnimatedTouchButtonStyle}"/>
+                        </UniformGrid>
+
+                        <Button Content="🗑️ Xóa Tài Khoản Này" Command="{Binding DeleteStaffCommand}"
+                                Background="#EF4444" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" Height="36"
+                                Style="{StaticResource AnimatedTouchButtonStyle}" Cursor="Hand"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

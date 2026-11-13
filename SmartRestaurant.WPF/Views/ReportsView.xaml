@@ -1,0 +1,172 @@
+<UserControl x:Class="SmartRestaurant.WPF.Views.ReportsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewmodels="clr-namespace:SmartRestaurant.WPF.ViewModels"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance Type=viewmodels:ReportsViewModel}"
+             Style="{StaticResource AnimatedPageStyle}"
+             Background="#F8FAFC">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <!-- 1. Header Toolbar -->
+            <RowDefinition Height="Auto"/>
+            <!-- 2. KPI Summary Cards -->
+            <RowDefinition Height="Auto"/>
+            <!-- 3. BCG Matrix & Strategic Engineering -->
+            <RowDefinition Height="*"/>
+            <!-- 4. Peak Volume & AI Inventory Forecast Insights -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 1. Header Toolbar -->
+        <Border Grid.Row="0" Margin="0,0,0,20">
+            <DockPanel LastChildFill="False">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="📊" FontSize="26" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <StackPanel>
+                        <TextBlock Text="TRUNG TÂM BÁO CÁO &amp; PHÂN TÍCH KINH DOANH" FontSize="20" FontWeight="Bold" Foreground="#1E293B"/>
+                        <TextBlock Text="Báo cáo doanh thu thời gian thực, ma trận thực đơn BCG và dự báo kho AI" FontSize="12" Foreground="#64748B"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <Button DockPanel.Dock="Right" Content="🔄 Làm Mới Dữ Liệu" Command="{Binding RefreshCommand}"
+                        Background="#2563EB" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="38" Padding="18,0"
+                        Style="{StaticResource AnimatedTouchButtonStyle}" Cursor="Hand"/>
+            </DockPanel>
+        </Border>
+
+        <!-- 2. KPI Summary Cards -->
+        <Grid Grid.Row="1" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- KPI 1: Doanh Thu -->
+            <Border Grid.Column="0" Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,12,0" BorderBrush="#E2E8F0" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="TỔNG DOANH THU" FontSize="11" FontWeight="Bold" Foreground="#64748B"/>
+                    <TextBlock Text="{Binding TotalRevenue, Converter={StaticResource CurrencyFormatConverter}}" FontSize="22" FontWeight="Bold" Foreground="#059669" Margin="0,8,0,0"/>
+                    <TextBlock Text="Hóa đơn đã quyết toán" FontSize="11" Foreground="#94A3B8" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- KPI 2: Số Hóa Đơn Hoàn Tất -->
+            <Border Grid.Column="1" Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="6,0,6,0" BorderBrush="#E2E8F0" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="ĐƠN ĐÃ QUYẾT TOÁN" FontSize="11" FontWeight="Bold" Foreground="#64748B"/>
+                    <TextBlock Text="{Binding CompletedOrdersCount, StringFormat='{}{0} Đơn Hàng'}" FontSize="22" FontWeight="Bold" Foreground="#2563EB" Margin="0,8,0,0"/>
+                    <TextBlock Text="{Binding AverageOrderValue, StringFormat='AOV: {0:N0} đ/đơn'}" FontSize="11" Foreground="#94A3B8" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- KPI 3: Bàn Đang Phục Vụ -->
+            <Border Grid.Column="2" Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="6,0,6,0" BorderBrush="#E2E8F0" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="BÀN ĐANG PHỤC VỤ" FontSize="11" FontWeight="Bold" Foreground="#64748B"/>
+                    <TextBlock Text="{Binding ActiveTablesCount, StringFormat='{}{0} Bàn'}" FontSize="22" FontWeight="Bold" Foreground="#D97706" Margin="0,8,0,0"/>
+                    <TextBlock Text="Khách đang dùng bữa" FontSize="11" Foreground="#94A3B8" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- KPI 4: Cảnh Báo Kho -->
+            <Border Grid.Column="3" Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="12,0,0,0" BorderBrush="#E2E8F0" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="CẢNH BÁO KHO BOM" FontSize="11" FontWeight="Bold" Foreground="#64748B"/>
+                    <TextBlock Text="{Binding LowStockCount, StringFormat='{}{0} Nguyên Liệu'}" FontSize="22" FontWeight="Bold" Foreground="#DC2626" Margin="0,8,0,0"/>
+                    <TextBlock Text="Dưới ngưỡng an toàn" FontSize="11" Foreground="#94A3B8" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- 3. BCG Matrix & Strategic Engineering -->
+        <Border Grid.Row="2" Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,20" BorderBrush="#E2E8F0" BorderThickness="1">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
+            </Border.Effect>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <DockPanel Grid.Row="0" Margin="0,0,0,16">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="📈 MA TRẬN THỰC ĐƠN BCG (MENU ENGINEERING MATRIX)" FontSize="15" FontWeight="Bold" Foreground="#1E293B"/>
+                        <Border Background="#EFF6FF" CornerRadius="6" Padding="8,3" Margin="12,0,0,0">
+                            <TextBlock Text="Phân loại theo Doanh số &amp; Biên lợi nhuận" FontSize="11" FontWeight="SemiBold" Foreground="#2563EB"/>
+                        </Border>
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- DataGrid BCG Matrix -->
+                <DataGrid Grid.Row="1" ItemsSource="{Binding BcgItems}" AutoGenerateColumns="False" IsReadOnly="True"
+                          HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F1F5F9"
+                          Background="Transparent" BorderThickness="0" RowHeight="42">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="MÓN ĂN" Binding="{Binding DishName}" Width="2*"/>
+                        <DataGridTextColumn Header="DANH MỤC" Binding="{Binding CategoryName}" Width="1.5*"/>
+                        <DataGridTextColumn Header="ĐÃ BÁN" Binding="{Binding PortionsSold, StringFormat='{}{0} phần'}" Width="1*"/>
+                        <DataGridTextColumn Header="DOANH THU" Binding="{Binding Revenue, Converter={StaticResource CurrencyFormatConverter}}" Width="1.5*"/>
+                        <DataGridTemplateColumn Header="PHÂN LOẠI BCG" Width="1.8*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Background="#FEF3C7" CornerRadius="6" Padding="8,4" HorizontalAlignment="Left">
+                                        <TextBlock Text="{Binding Classification}" FontWeight="Bold" FontSize="11" Foreground="#92400E"/>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="HÀNH ĐỘNG CHIẾN LƯỢC" Binding="{Binding StrategicAction}" Width="3.5*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+
+        <!-- 4. Peak Volume & AI Inventory Forecast Insights -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Peak Hours Insights -->
+            <Border Grid.Column="0" Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,10,0" BorderBrush="#E2E8F0" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="⏰ PHÂN TÍCH GIỜ CAO ĐIỂM (PEAK HOURS)" FontSize="14" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,8"/>
+                    <TextBlock Text="{Binding PeakHoursSummary}" TextWrapping="Wrap" FontSize="13" Foreground="#475569" LineHeight="20"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Inventory Forecast Insights -->
+            <Border Grid.Column="1" Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="10,0,0,0" BorderBrush="#E2E8F0" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="📦 DỰ BÁO NHẬP KHO 7 NGÀY (AI INVENTORY FORECAST)" FontSize="14" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,8"/>
+                    <TextBlock Text="{Binding InventoryForecastSummary}" TextWrapping="Wrap" FontSize="13" Foreground="#475569" LineHeight="20"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

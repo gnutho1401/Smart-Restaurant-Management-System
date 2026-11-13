@@ -1,0 +1,138 @@
+<UserControl x:Class="SmartRestaurant.WPF.Views.InventoryManagementView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewmodels="clr-namespace:SmartRestaurant.WPF.ViewModels"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance Type=viewmodels:InventoryManagementViewModel}"
+             Style="{StaticResource AnimatedPageStyle}"
+             Background="#F8FAFC">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <!-- 1. Header Toolbar -->
+            <RowDefinition Height="Auto"/>
+            <!-- 2. Status Banner -->
+            <RowDefinition Height="Auto"/>
+            <!-- 3. Main Workspace: Inventory Table + Restock Action Panel -->
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 1. Header Toolbar -->
+        <Border Grid.Row="0" Margin="0,0,0,16">
+            <DockPanel LastChildFill="False">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="📦" FontSize="26" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <StackPanel>
+                        <TextBlock Text="QUẢN LÝ KHO NGUYÊN VẬT LIỆU (BOM INVENTORY)" FontSize="20" FontWeight="Bold" Foreground="#1E293B"/>
+                        <TextBlock Text="Giám sát số lượng tồn kho nguyên liệu thực tế và thực hiện nhập kho bổ sung" FontSize="12" Foreground="#64748B"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <Button DockPanel.Dock="Right" Content="🔄 Làm Mới Tồn Kho" Command="{Binding LoadIngredientsCommand}"
+                        Background="#2563EB" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="38" Padding="18,0"
+                        Style="{StaticResource AnimatedTouchButtonStyle}" Cursor="Hand"/>
+            </DockPanel>
+        </Border>
+
+        <!-- 2. Status Banner -->
+        <Border Grid.Row="1" Margin="0,0,0,16" Padding="14,10" CornerRadius="8"
+                Visibility="{Binding StatusMessage, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="#FEF2F2"/>
+                    <Setter Property="BorderBrush" Value="#F87171"/>
+                    <Setter Property="BorderThickness" Value="1"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsSuccessMessage}" Value="True">
+                            <Setter Property="Background" Value="#F0FDF4"/>
+                            <Setter Property="BorderBrush" Value="#4ADE80"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <TextBlock Text="{Binding StatusMessage}" FontWeight="SemiBold" FontSize="13">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="#991B1B"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsSuccessMessage}" Value="True">
+                                <Setter Property="Foreground" Value="#166534"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Border>
+
+        <!-- 3. Main Workspace: Inventory Table + Restock Action Panel -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2.2*"/>
+                <ColumnDefinition Width="1.1*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: Inventory DataGrid -->
+            <Border Grid.Column="0" Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,16,0" BorderBrush="#E2E8F0" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
+                </Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="📋 BẢNG TỒN KHO NGUYÊN VẬT LIỆU" FontSize="15" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,16"/>
+
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding Ingredients}" SelectedItem="{Binding SelectedIngredient}"
+                              AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F1F5F9"
+                              Background="Transparent" BorderThickness="0" RowHeight="46" SelectionMode="Single">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="MÃ NL" Binding="{Binding IngredientId}" Width="70"/>
+                            <DataGridTextColumn Header="TÊN NGUYÊN LIỆU" Binding="{Binding Name}" Width="2*"/>
+                            <DataGridTextColumn Header="ĐƠN VỊ" Binding="{Binding Unit}" Width="90"/>
+                            <DataGridTextColumn Header="TỒN KHO HIỆN TẠI" Binding="{Binding CurrentStock, StringFormat='{}{0:N1}'}" Width="1.5*"/>
+                            <DataGridTextColumn Header="NGƯỠNG AN TOÀN" Binding="{Binding MinStock, StringFormat='{}{0:N1}'}" Width="1.5*"/>
+                            <DataGridTemplateColumn Header="TRẠNG THÁI" Width="1.8*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding StatusColor}" CornerRadius="6" Padding="10,4" HorizontalAlignment="Left">
+                                            <TextBlock Text="{Binding StatusText}" FontWeight="Bold" FontSize="11" Foreground="#FFFFFF"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+
+            <!-- Right: Inbound Restock Card -->
+            <Border Grid.Column="1" Background="#FFFFFF" CornerRadius="12" Padding="20" BorderBrush="#E2E8F0" BorderThickness="1" VerticalAlignment="Top">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="📥 NHẬP KHO NGUYÊN LIỆU" FontSize="15" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,16"/>
+
+                    <TextBlock Text="Nguyên Liệu Đang Chọn:" FontSize="12" FontWeight="SemiBold" Foreground="#64748B" Margin="0,0,0,4"/>
+                    <Border Background="#F1F5F9" CornerRadius="8" Padding="12" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="{Binding SelectedIngredient.Name, FallbackValue='(Chưa chọn nguyên liệu)'}" FontSize="15" FontWeight="Bold" Foreground="#1E293B"/>
+                            <TextBlock Text="{Binding SelectedIngredient.CurrentStock, StringFormat='Hiện có: {0:N1}'}" FontSize="12" Foreground="#475569" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Text="Số Lượng Nhập Bổ Sung (*)" FontSize="12" FontWeight="SemiBold" Foreground="#475569" Margin="0,0,0,4"/>
+                    <TextBox Text="{Binding RestockQuantity, UpdateSourceTrigger=PropertyChanged}" Height="40" Padding="10,8" FontSize="14" FontWeight="Bold" Margin="0,0,0,18"/>
+
+                    <Button Content="Xác Nhận Nhập Kho" Command="{Binding RestockCommand}"
+                            Background="#059669" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="42"
+                            Style="{StaticResource AnimatedTouchButtonStyle}" Cursor="Hand"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
