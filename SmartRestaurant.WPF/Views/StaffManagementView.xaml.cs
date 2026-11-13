@@ -8,21 +8,11 @@ namespace SmartRestaurant.WPF.Views;
 /// </summary>
 public partial class StaffManagementView : UserControl
 {
-    public StaffManagementView()
+    public StaffManagementView(StaffManagementViewModel viewModel)
     {
         InitializeComponent();
-        Loaded += async (s, e) =>
-        {
-            if (DataContext is StaffManagementViewModel vm)
-            {
-                await vm.LoadStaffAsync();
-            }
-        };
-    }
-
-    public StaffManagementView(StaffManagementViewModel viewModel) : this()
-    {
         DataContext = viewModel;
+        Loaded += async (s, e) => await viewModel.LoadStaffAsync();
     }
 }
 

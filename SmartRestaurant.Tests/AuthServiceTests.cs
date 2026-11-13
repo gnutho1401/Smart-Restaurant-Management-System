@@ -180,7 +180,7 @@ public class AuthServiceTests
     }
 
     [Fact]
-    public async Task HasPermission_AdminEnforcesConfiguredRolesStrictly()
+    public async Task HasPermission_AdminHasUniversalAccessAcrossAllRoles()
     {
         // Arrange
         using var context = TestDbContextFactory.CreateInMemoryContext();
@@ -196,12 +196,38 @@ public class AuthServiceTests
         var authService = new AuthService(context);
         await authService.LoginAsync("super_admin", "admin123");
 
-        // Assert: Admin only passes checks where Admin is explicitly allowed
+        // Assert: Admin as supreme authority passes all module checks
         Assert.True(authService.HasPermission(UserRole.Admin));
-        Assert.True(authService.HasPermission(UserRole.Admin, UserRole.StoreManager));
-        Assert.False(authService.HasPermission(UserRole.Cashier));
-        Assert.False(authService.HasPermission(UserRole.HeadChef));
+        Assert.True(authService.HasPermission(UserRole.StoreManager));
+        Assert.True(authService.HasPermission(UserRole.Cashier));
+        Assert.True(authService.HasPermission(UserRole.HeadChef));
         Assert.True(authService.HasPermission());
+    }
+
+    [Fact]
+    public async Task RoleHierarchy_SubordinatesCannotAccessSuperiorRoles()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var cashier = new User
+        {
+            Username = "subordinate_cashier",
+            PasswordHash = PasswordHasher.HashPassword("123"),
+            Role = UserRole.Cashier
+        };
+        context.Users.Add(cashier);
+        await context.SaveChangesAsync();
+
+        var authService = new AuthService(context);
+        await authService.LoginAsync("subordinate_cashier", "123");
+
+        // Assert: Subordinate cannot access superior roles
+        Assert.False(authService.HasPermission(UserRole.Admin));
+        Assert.False(authService.HasPermission(UserRole.StoreManager));
+        Assert.False(authService.HasPermission(UserRole.HeadChef));
+        Assert.False(authService.CanManageRole(UserRole.Admin));
+        Assert.False(authService.CanManageRole(UserRole.StoreManager));
+        Assert.False(authService.CanManageRole(UserRole.HeadChef));
     }
 
     [Fact]

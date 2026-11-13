@@ -63,6 +63,12 @@ public class StaffService : IStaffService
         var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
         if (user == null) return false;
 
+        // Invariant: Subordinates or peers cannot demote Admin
+        if (user.Role == UserRole.Admin && newRole != UserRole.Admin)
+        {
+            throw new InvalidOperationException("Không thể hạ quyền tài khoản Quản trị viên (Admin).");
+        }
+
         user.Role = newRole;
         await _context.SaveChangesAsync();
         return true;
@@ -87,6 +93,12 @@ public class StaffService : IStaffService
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
         if (user == null) return false;
+
+        // Invariant: Admin accounts are protected from deletion
+        if (user.Role == UserRole.Admin)
+        {
+            throw new InvalidOperationException("Không thể xóa tài khoản Quản trị viên (Admin).");
+        }
 
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();

@@ -65,14 +65,14 @@ public class MainViewModel : ViewModelBase
         _ => "#7F8C8D"
     };
 
-    // Role-Based Access Control (RBAC) Permissions - Strict separation of duties
-    public bool IsFloorPlanAllowed => _authService.HasPermission(UserRole.StoreManager, UserRole.Cashier);
-    public bool IsPosAllowed => _authService.HasPermission(UserRole.StoreManager, UserRole.Cashier);
-    public bool IsKdsAllowed => _authService.HasPermission(UserRole.StoreManager, UserRole.HeadChef);
-    public bool IsBillingAllowed => _authService.HasPermission(UserRole.StoreManager, UserRole.Cashier);
+    // Role-Based Access Control (RBAC) Permissions - Strict separation of duties & hierarchical protection
+    public bool IsFloorPlanAllowed => _authService.CurrentUser?.Role != UserRole.Admin && _authService.HasPermission(UserRole.StoreManager, UserRole.Cashier);
+    public bool IsPosAllowed => _authService.CurrentUser?.Role != UserRole.Admin && _authService.HasPermission(UserRole.StoreManager, UserRole.Cashier);
+    public bool IsKdsAllowed => _authService.CurrentUser?.Role != UserRole.Admin && _authService.HasPermission(UserRole.StoreManager, UserRole.HeadChef);
+    public bool IsBillingAllowed => _authService.CurrentUser?.Role != UserRole.Admin && _authService.HasPermission(UserRole.StoreManager, UserRole.Cashier);
 
     public bool IsReportsAllowed => _authService.HasPermission(UserRole.Admin, UserRole.StoreManager);
-    public bool IsStaffAllowed => _authService.HasPermission(UserRole.Admin, UserRole.StoreManager);
+    public bool IsStaffAllowed => _authService.HasPermission(UserRole.Admin);
     public bool IsInventoryAllowed => _authService.HasPermission(UserRole.Admin, UserRole.StoreManager, UserRole.HeadChef);
     public bool IsMenuAllowed => _authService.HasPermission(UserRole.Admin, UserRole.StoreManager, UserRole.HeadChef);
     public bool IsAiAssistantAllowed => true;

@@ -8,21 +8,11 @@ namespace SmartRestaurant.WPF.Views;
 /// </summary>
 public partial class InventoryManagementView : UserControl
 {
-    public InventoryManagementView()
+    public InventoryManagementView(InventoryManagementViewModel viewModel)
     {
         InitializeComponent();
-        Loaded += async (s, e) =>
-        {
-            if (DataContext is InventoryManagementViewModel vm)
-            {
-                await vm.LoadIngredientsAsync();
-            }
-        };
-    }
-
-    public InventoryManagementView(InventoryManagementViewModel viewModel) : this()
-    {
         DataContext = viewModel;
+        Loaded += async (s, e) => await viewModel.LoadIngredientsAsync();
     }
 }
 

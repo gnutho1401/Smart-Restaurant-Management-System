@@ -16,6 +16,7 @@ namespace SmartRestaurant.WPF.ViewModels;
 public class FloorPlanViewModel : ViewModelBase
 {
     private readonly ITableService _tableService;
+    private readonly IAuthService? _authService;
     private List<DiningTable> _allTables = new();
     private ObservableCollection<DiningTable> _tables = new();
     private DiningTable? _selectedTable;
@@ -82,9 +83,10 @@ public class FloorPlanViewModel : ViewModelBase
     public IAsyncRelayCommand<DiningTable> ToggleReserveCommand { get; }
     public IAsyncRelayCommand<DiningTable> PayTableCommand { get; }
 
-    public FloorPlanViewModel(ITableService tableService)
+    public FloorPlanViewModel(ITableService tableService, IAuthService? authService = null)
     {
         _tableService = tableService;
+        _authService = authService;
 
         LoadTablesCommand = new AsyncRelayCommand(LoadTablesAsync);
         OpenTableCommand = new AsyncRelayCommand<DiningTable>(ExecuteOpenTableAsync);
@@ -186,6 +188,17 @@ public class FloorPlanViewModel : ViewModelBase
         }
         else if (table.Status == TableStatus.Reserved)
         {
+            // Subordinate protection: Cashier cannot cancel reservations made by management
+            if (_authService?.CurrentUser?.Role == UserRole.Cashier)
+            {
+                System.Windows.MessageBox.Show(
+                    $"Bàn {table.TableName} đã được đặt trước bởi Quản lý hoặc Khách VIP. Thu ngân không có quyền tự ý hủy bàn đặt trước của cấp trên. Vui lòng liên hệ Quản Lý (Store Manager)!",
+                    "Chặn Can Thiệp Cấp Trên",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                return;
+            }
+
             await _tableService.TransitionTableStatusAsync(table.TableId, TableStatus.Available);
             table.Status = TableStatus.Available;
         }

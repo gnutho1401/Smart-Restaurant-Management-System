@@ -79,9 +79,29 @@ public class AuthService : IAuthService
         if (_currentUser == null)
             return false;
 
+        // Admin has universal superuser access across all modules
+        if (_currentUser.Role == UserRole.Admin)
+            return true;
+
         if (allowedRoles == null || allowedRoles.Length == 0)
             return true;
 
         return allowedRoles.Contains(_currentUser.Role);
+    }
+
+    public bool CanManageRole(UserRole targetRole)
+    {
+        if (_currentUser == null)
+            return false;
+
+        return RoleHierarchy.CanManage(_currentUser.Role, targetRole);
+    }
+
+    public bool MeetsMinimumRole(UserRole minimumRole)
+    {
+        if (_currentUser == null)
+            return false;
+
+        return RoleHierarchy.MeetsMinimumRank(_currentUser.Role, minimumRole);
     }
 }

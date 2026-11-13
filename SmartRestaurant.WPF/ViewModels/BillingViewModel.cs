@@ -16,6 +16,7 @@ public class BillingViewModel : ViewModelBase
 {
     private readonly IBillingService _billingService;
     private readonly IOrderService _orderService;
+    private readonly IAuthService? _authService;
 
     private int _orderId;
     private string _tableName = string.Empty;
@@ -61,6 +62,17 @@ public class BillingViewModel : ViewModelBase
         get => _discountAmount;
         set
         {
+            // Subordinate governance: Cashier cannot grant arbitrary discounts without Manager approval
+            if (_authService?.CurrentUser?.Role == UserRole.Cashier && SubTotal > 0)
+            {
+                decimal maxAllowed = Math.Min(SubTotal * 0.10m, 100000m);
+                if (value > maxAllowed)
+                {
+                    StatusMessage = $"⚠️ Thu ngân chỉ được áp dụng chiết khấu tối đa 10% (tối đa {maxAllowed:N0} đ). Mức chiết khấu cao hơn phải do Quản Lý (Store Manager) phê duyệt.";
+                    value = maxAllowed;
+                }
+            }
+
             if (SetProperty(ref _discountAmount, value))
             {
                 RecalculateTaxAndTotal();
@@ -145,10 +157,12 @@ public class BillingViewModel : ViewModelBase
 
     public BillingViewModel(
         IBillingService billingService,
-        IOrderService orderService)
+        IOrderService orderService,
+        IAuthService? authService = null)
     {
         _billingService = billingService;
         _orderService = orderService;
+        _authService = authService;
 
         LoadOrderCommand = new AsyncRelayCommand(LoadOrderAsync);
         SettlePaymentCommand = new AsyncRelayCommand(SettlePaymentAsync);

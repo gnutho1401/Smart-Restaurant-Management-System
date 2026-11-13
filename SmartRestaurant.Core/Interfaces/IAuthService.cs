@@ -14,5 +14,7 @@ public interface IAuthService
     Task<User?> LoginAsync(string username, string password);
     void Logout();
     bool HasPermission(params UserRole[] allowedRoles);
+    bool CanManageRole(UserRole targetRole);
+    bool MeetsMinimumRole(UserRole minimumRole);
 }
 

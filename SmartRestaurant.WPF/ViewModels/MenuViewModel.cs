@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using SmartRestaurant.Core.Entities;
+using SmartRestaurant.Core.Enums;
 using SmartRestaurant.Core.Interfaces;
 using SmartRestaurant.WPF.Common;
 
@@ -18,6 +19,7 @@ public class MenuViewModel : ViewModelBase
     private readonly IMenuService _menuService;
     private readonly IInventoryService _inventoryService;
     private readonly IAiService _aiService;
+    private readonly IAuthService? _authService;
 
     private ObservableCollection<MenuItem> _menuItems = new();
     private MenuItem? _selectedDish;
@@ -138,14 +140,18 @@ public class MenuViewModel : ViewModelBase
     public RelayCommand<RecipeItemViewModel> RemoveIngredientCommand { get; }
     public IAsyncRelayCommand GenerateAiDescriptionCommand { get; }
 
+    public bool CanEditPrice => _authService?.MeetsMinimumRole(UserRole.StoreManager) ?? true;
+
     public MenuViewModel(
         IMenuService menuService,
         IInventoryService inventoryService,
-        IAiService aiService)
+        IAiService aiService,
+        IAuthService? authService = null)
     {
         _menuService = menuService;
         _inventoryService = inventoryService;
         _aiService = aiService;
+        _authService = authService;
 
         LoadMenuCommand = new AsyncRelayCommand(LoadMenuAsync);
         NewDishCommand = new RelayCommand(ClearFormForNewDish);
@@ -248,6 +254,13 @@ public class MenuViewModel : ViewModelBase
         {
             StatusMessage = "Giá món ăn không thể là số âm.";
             return;
+        }
+
+        // Subordinate check: Chef cannot change commercial selling prices without Manager/Admin approval
+        if (!CanEditPrice && SelectedDish != null && SelectedDish.Price != DishPrice)
+        {
+            StatusMessage = "⚠️ Bếp trưởng chỉ có quyền điều chỉnh công thức định lượng BOM. Giá bán thương mại phải do Quản Lý hoặc Admin duyệt.";
+            DishPrice = SelectedDish.Price;
         }
 
         var dish = new MenuItem

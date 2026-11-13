@@ -142,11 +142,18 @@
                         <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
                     </Border.Effect>
                     <StackPanel>
-                        <TextBlock Text="⚡ THAO TÁC NHÂN VIÊN ĐƯỢC CHỌN" FontSize="14" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,12"/>
-                        <TextBlock Text="{Binding SelectedStaff.FullName, StringFormat='Đang chọn: {0}'}" FontSize="13" Foreground="#64748B" Margin="0,0,0,12"/>
+                        <TextBlock Text="⚡ THAO TÁC NHÂN VIÊN ĐƯỢC CHỌN" FontSize="14" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,8"/>
+                        <TextBlock Text="{Binding SelectedStaff.FullName, StringFormat='Đang chọn: {0}'}" FontSize="13" Foreground="#64748B" Margin="0,0,0,10"/>
+
+                        <!-- Superior / Peer Protection Warning -->
+                        <Border Background="#FFFBEB" BorderBrush="#FCD34D" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,0,0,12"
+                                Visibility="{Binding IsSuperiorOrPeerSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TextBlock Text="🔒 BẢO VỆ CẤP TRÊN: Tài khoản này thuộc cấp trên hoặc cùng cấp. Bạn không có quyền sửa đổi hoặc xóa tài khoản này."
+                                       TextWrapping="Wrap" Foreground="#B45309" FontWeight="SemiBold" FontSize="11"/>
+                        </Border>
 
                         <TextBlock Text="Cập nhật nhanh chức vụ:" FontSize="12" FontWeight="SemiBold" Foreground="#475569" Margin="0,0,0,8"/>
-                        <UniformGrid Columns="2" Rows="2" Margin="0,0,0,14">
+                        <UniformGrid Columns="2" Rows="2" Margin="0,0,0,14" IsEnabled="{Binding CanModifySelectedStaff}">
                             <Button Content="Quản Lý" Command="{Binding ChangeRoleCommand}" CommandParameter="{x:Static enums:UserRole.StoreManager}"
                                     Background="#8E44AD" Foreground="#FFFFFF" FontWeight="Bold" FontSize="11" Height="32" Margin="3"
                                     Style="{StaticResource AnimatedTouchButtonStyle}"/>
@@ -162,6 +169,7 @@
                         </UniformGrid>
 
                         <Button Content="🗑️ Xóa Tài Khoản Này" Command="{Binding DeleteStaffCommand}"
+                                IsEnabled="{Binding CanModifySelectedStaff}"
                                 Background="#EF4444" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" Height="36"
                                 Style="{StaticResource AnimatedTouchButtonStyle}" Cursor="Hand"/>
                     </StackPanel>
