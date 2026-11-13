@@ -11,6 +11,36 @@ using SmartRestaurant.WPF.Common;
 namespace SmartRestaurant.WPF.ViewModels;
 
 /// <summary>
+/// Presentation wrapper for menu item with real-time BOM portion tracking and out-of-stock badges.
+/// </summary>
+public class PosMenuItemViewModel : ViewModelBase
+{
+    public MenuItem Item { get; }
+    public int MenuItemId => Item.MenuItemId;
+    public string Name => Item.Name;
+    public decimal Price => Item.Price;
+    public int CategoryId => Item.CategoryId;
+    public string? CategoryName => Item.Category?.CategoryName;
+    public int RemainingPortions { get; set; } = 99;
+
+    public bool IsSoldOut => RemainingPortions <= 0;
+    public bool IsLowStock => RemainingPortions > 0 && RemainingPortions <= 5;
+    public bool CanOrder => RemainingPortions > 0;
+
+    public string StockBadgeText => IsSoldOut ? "TẠM HẾT HÀNG" : (IsLowStock ? $"🔥 Chỉ còn {RemainingPortions} phần" : string.Empty);
+    public string StockBadgeColor => IsSoldOut ? "#EF4444" : "#F59E0B";
+    public bool HasStockBadge => !string.IsNullOrEmpty(StockBadgeText);
+    public string AddButtonText => IsSoldOut ? "TẠM HẾT HÀNG" : "+ Chọn Món";
+    public string AddButtonBackground => IsSoldOut ? "#94A3B8" : "#2980B9";
+
+    public PosMenuItemViewModel(MenuItem item, int remainingPortions = 99)
+    {
+        Item = item;
+        RemainingPortions = remainingPortions;
+    }
+}
+
+/// <summary>
 /// ViewModel driving the touch POS ordering station, cart management, and atomic BOM inventory commitment.
 /// </summary>
 public class PosOrderViewModel : ViewModelBase
@@ -21,8 +51,8 @@ public class PosOrderViewModel : ViewModelBase
     private readonly IAuthService? _authService;
 
     private DiningTable? _currentTable;
-    private List<MenuItem> _allMenuItems = new();
-    private ObservableCollection<MenuItem> _displayMenuItems = new();
+    private List<PosMenuItemViewModel> _allPosItems = new();
+    private ObservableCollection<PosMenuItemViewModel> _displayMenuItems = new();
     private ObservableCollection<MenuCategory> _categories = new();
     private MenuCategory? _selectedCategory;
     private string _searchKeyword = string.Empty;
@@ -33,6 +63,29 @@ public class PosOrderViewModel : ViewModelBase
     private string _statusMessage = string.Empty;
     private bool _isSuccessMessage;
 
+    // AI Smart Upsell recommendation properties
+    private bool _isUpsellVisible;
+    private string _upsellMessage = string.Empty;
+    private PosMenuItemViewModel? _suggestedUpsellItem;
+
+    public bool IsUpsellVisible
+    {
+        get => _isUpsellVisible;
+        set => SetProperty(ref _isUpsellVisible, value);
+    }
+
+    public string UpsellMessage
+    {
+        get => _upsellMessage;
+        set => SetProperty(ref _upsellMessage, value);
+    }
+
+    public PosMenuItemViewModel? SuggestedUpsellItem
+    {
+        get => _suggestedUpsellItem;
+        set => SetProperty(ref _suggestedUpsellItem, value);
+    }
+
     public event Action? RequestClosePos;
 
     public DiningTable? CurrentTable
@@ -41,7 +94,7 @@ public class PosOrderViewModel : ViewModelBase
         set => SetProperty(ref _currentTable, value);
     }
 
-    public ObservableCollection<MenuItem> DisplayMenuItems
+    public ObservableCollection<PosMenuItemViewModel> DisplayMenuItems
     {
         get => _displayMenuItems;
         set => SetProperty(ref _displayMenuItems, value);
@@ -124,7 +177,7 @@ public class PosOrderViewModel : ViewModelBase
         set => SetProperty(ref _toastMessage, value);
     }
 
-    public RelayCommand<MenuItem> AddToCartCommand { get; }
+    public RelayCommand<object> AddToCartCommand { get; }
     public RelayCommand<CartItemViewModel> IncreaseQuantityCommand { get; }
     public RelayCommand<CartItemViewModel> DecreaseQuantityCommand { get; }
     public RelayCommand<CartItemViewModel> RemoveFromCartCommand { get; }
@@ -132,6 +185,8 @@ public class PosOrderViewModel : ViewModelBase
     public IAsyncRelayCommand ConfirmOrderCommand { get; }
     public RelayCommand BackCommand { get; }
     public RelayCommand UndoToastCommand { get; }
+    public RelayCommand AcceptUpsellCommand { get; }
+    public RelayCommand DismissUpsellCommand { get; }
 
     public PosOrderViewModel(
         IMenuService menuService,
@@ -144,7 +199,7 @@ public class PosOrderViewModel : ViewModelBase
         _inventoryService = inventoryService;
         _authService = authService;
 
-        AddToCartCommand = new RelayCommand<MenuItem>(AddToCart);
+        AddToCartCommand = new RelayCommand<object>(AddToCart);
         IncreaseQuantityCommand = new RelayCommand<CartItemViewModel>(IncreaseQuantity);
         DecreaseQuantityCommand = new RelayCommand<CartItemViewModel>(DecreaseQuantity);
         RemoveFromCartCommand = new RelayCommand<CartItemViewModel>(RemoveFromCart);
@@ -152,6 +207,8 @@ public class PosOrderViewModel : ViewModelBase
         ConfirmOrderCommand = new AsyncRelayCommand(ConfirmOrderAsync);
         BackCommand = new RelayCommand(() => RequestClosePos?.Invoke());
         UndoToastCommand = new RelayCommand(ExecuteUndoToast);
+        AcceptUpsellCommand = new RelayCommand(AcceptUpsell);
+        DismissUpsellCommand = new RelayCommand(DismissUpsell);
     }
 
     public async Task InitializeAsync(DiningTable table)
@@ -159,19 +216,43 @@ public class PosOrderViewModel : ViewModelBase
         CurrentTable = table;
         ClearCart();
         StatusMessage = string.Empty;
+        IsUpsellVisible = false;
 
         var cats = await _menuService.GetAllCategoriesAsync();
         Categories = new ObservableCollection<MenuCategory>(cats);
 
         var items = await _menuService.GetAvailableMenuItemsAsync();
-        _allMenuItems = items.ToList();
+        _allPosItems = items.Select(m => new PosMenuItemViewModel(m, CalculateRemainingPortions(m))).ToList();
 
         ApplyFilter();
     }
 
+    public static int CalculateRemainingPortions(MenuItem item)
+    {
+        if (item.Recipes == null || !item.Recipes.Any())
+        {
+            return 99; // Non-BOM or unconstrained
+        }
+
+        int minPortions = int.MaxValue;
+        foreach (var recipe in item.Recipes)
+        {
+            if (recipe.Ingredient != null && recipe.QuantityRequired > 0)
+            {
+                int portions = (int)Math.Floor(recipe.Ingredient.CurrentStock / recipe.QuantityRequired);
+                if (portions < minPortions)
+                {
+                    minPortions = portions;
+                }
+            }
+        }
+
+        return minPortions == int.MaxValue ? 99 : Math.Max(0, minPortions);
+    }
+
     private void ApplyFilter()
     {
-        var filtered = _allMenuItems.AsEnumerable();
+        var filtered = _allPosItems.AsEnumerable();
 
         if (SelectedCategory != null)
         {
@@ -183,12 +264,27 @@ public class PosOrderViewModel : ViewModelBase
             filtered = filtered.Where(m => m.Name.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase));
         }
 
-        DisplayMenuItems = new ObservableCollection<MenuItem>(filtered);
+        DisplayMenuItems = new ObservableCollection<PosMenuItemViewModel>(filtered);
     }
 
-    private void AddToCart(MenuItem? item)
+    public void AddToCart(object? param)
     {
+        MenuItem? item = null;
+        PosMenuItemViewModel? posItem = null;
+
+        if (param is PosMenuItemViewModel p)
+        {
+            posItem = p;
+            item = p.Item;
+        }
+        else if (param is MenuItem m)
+        {
+            item = m;
+            posItem = _allPosItems.FirstOrDefault(x => x.MenuItemId == m.MenuItemId);
+        }
+
         if (item == null) return;
+        if (posItem != null && posItem.IsSoldOut) return;
 
         var existing = CartItems.FirstOrDefault(c => c.MenuItemId == item.MenuItemId);
         if (existing != null)
@@ -209,6 +305,64 @@ public class PosOrderViewModel : ViewModelBase
         }
 
         RecalculateTotals();
+
+        // Trigger AI Smart Upsell
+        TriggerSmartUpsell(posItem ?? new PosMenuItemViewModel(item));
+    }
+
+    public void TriggerSmartUpsell(PosMenuItemViewModel selectedItem)
+    {
+        if (selectedItem == null) return;
+
+        // Smart Upsell Logic: If customer selects Food/Main Dish, suggest high-margin Beverage or Dessert
+        bool isDrinkOrDessert = (selectedItem.CategoryName?.Contains("Uống", StringComparison.OrdinalIgnoreCase) == true) ||
+                                (selectedItem.CategoryName?.Contains("Tráng miệng", StringComparison.OrdinalIgnoreCase) == true) ||
+                                selectedItem.Name.Contains("Nước", StringComparison.OrdinalIgnoreCase) ||
+                                selectedItem.Name.Contains("Trà", StringComparison.OrdinalIgnoreCase) ||
+                                selectedItem.Name.Contains("Rượu", StringComparison.OrdinalIgnoreCase) ||
+                                selectedItem.Name.Contains("Bia", StringComparison.OrdinalIgnoreCase);
+
+        bool isFood = !isDrinkOrDessert;
+
+        if (isFood)
+        {
+            IEnumerable<PosMenuItemViewModel> itemsSource = _allPosItems.Any() ? _allPosItems : DisplayMenuItems;
+            var candidate = itemsSource.FirstOrDefault(m =>
+                !m.IsSoldOut &&
+                !CartItems.Any(c => c.MenuItemId == m.MenuItemId) &&
+                ((m.CategoryName?.Contains("Uống", StringComparison.OrdinalIgnoreCase) == true) ||
+                 (m.CategoryName?.Contains("Tráng miệng", StringComparison.OrdinalIgnoreCase) == true) ||
+                 m.Name.Contains("Trà", StringComparison.OrdinalIgnoreCase) ||
+                 m.Name.Contains("Nước", StringComparison.OrdinalIgnoreCase) ||
+                 m.Name.Contains("Rượu", StringComparison.OrdinalIgnoreCase) ||
+                 m.Name.Contains("Bia", StringComparison.OrdinalIgnoreCase)));
+
+            if (candidate != null)
+            {
+                SuggestedUpsellItem = candidate;
+                UpsellMessage = $"💡 Gợi ý kết hợp hoàn hảo: Thêm {candidate.Name} (+{candidate.Price:N0} đ)?";
+                IsUpsellVisible = true;
+                return;
+            }
+        }
+
+        IsUpsellVisible = false;
+    }
+
+    private void AcceptUpsell()
+    {
+        if (SuggestedUpsellItem != null)
+        {
+            AddToCart(SuggestedUpsellItem);
+            IsUpsellVisible = false;
+            SuggestedUpsellItem = null;
+        }
+    }
+
+    private void DismissUpsell()
+    {
+        IsUpsellVisible = false;
+        SuggestedUpsellItem = null;
     }
 
     private void IncreaseQuantity(CartItemViewModel? cartItem)

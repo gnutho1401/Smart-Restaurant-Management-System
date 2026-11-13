@@ -36,6 +36,8 @@ public class MenuService : IMenuService
     {
         return await _context.MenuItems
             .Include(m => m.Category)
+            .Include(m => m.Recipes)
+                .ThenInclude(r => r.Ingredient)
             .Where(m => m.IsAvailable)
             .OrderBy(m => m.CategoryId)
             .ThenBy(m => m.Name)

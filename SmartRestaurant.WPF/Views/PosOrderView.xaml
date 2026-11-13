@@ -19,13 +19,41 @@
         <Border Grid.Column="0" Background="#FFFFFF" CornerRadius="10" Padding="14" Margin="0,0,10,0">
             <Grid>
                 <Grid.RowDefinitions>
+                    <!-- Row 0: Smart Upsell Recommendation Banner -->
                     <RowDefinition Height="Auto"/>
+                    <!-- Row 1: Search and Back Bar -->
                     <RowDefinition Height="Auto"/>
+                    <!-- Row 2: Category Selector -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Row 3: Dishes Grid -->
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
+                <!-- 0. AI Smart Upsell Recommendation Banner -->
+                <Border Grid.Row="0" Margin="0,0,0,12" Background="#FEF3C7" CornerRadius="10" Padding="14,10" BorderBrush="#F59E0B" BorderThickness="1"
+                        Visibility="{Binding IsUpsellVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="✨" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="{Binding UpsellMessage}" FontWeight="Bold" FontSize="13" Foreground="#92400E" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Button Content="+ Thêm Ngay" Command="{Binding AcceptUpsellCommand}"
+                                    Background="#D97706" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" Height="32" Padding="12,0" Cursor="Hand" BorderThickness="0" Margin="0,0,8,0">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="6"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+                            <Button Content="✕" Command="{Binding DismissUpsellCommand}"
+                                    Background="Transparent" Foreground="#92400E" FontWeight="Bold" FontSize="14" Width="28" Height="28" Cursor="Hand" BorderThickness="0"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
                 <!-- Search and Back Bar -->
-                <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                <DockPanel Grid.Row="1" Margin="0,0,0,12">
                     <Button DockPanel.Dock="Left" Content="⬅ Sơ Đồ Bàn" Command="{Binding BackCommand}"
                             Background="#7F8C8D" Foreground="#FFFFFF" FontWeight="SemiBold" Height="36" Padding="14,0" Cursor="Hand" BorderThickness="0">
                         <Button.Resources>
@@ -49,7 +77,7 @@
                 </DockPanel>
 
                 <!-- Category Selector -->
-                <ListBox Grid.Row="1" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" 
+                <ListBox Grid.Row="2" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" 
                          Margin="0,0,0,12" BorderThickness="0" Background="Transparent">
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -66,7 +94,7 @@
                 </ListBox>
 
                 <!-- Dishes Grid -->
-                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
                     <ItemsControl ItemsSource="{Binding DisplayMenuItems}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -75,7 +103,7 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Width="205" Height="185" Margin="8" Background="#FAFAFA" CornerRadius="10" Padding="12"
+                                <Border Width="215" Height="195" Margin="8" Background="#FAFAFA" CornerRadius="10" Padding="12"
                                         BorderBrush="#E0E0E0" BorderThickness="1">
                                     <Border.Effect>
                                         <DropShadowEffect BlurRadius="6" ShadowDepth="1" Direction="270" Color="#000000" Opacity="0.08"/>
@@ -83,23 +111,31 @@
                                     <Grid>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="*"/>
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
 
                                         <!-- Dish Name -->
                                         <TextBlock Grid.Row="0" Text="{Binding Name}" FontWeight="Bold" FontSize="14" 
-                                                   TextWrapping="Wrap" MaxHeight="40" Foreground="#2C3E50"/>
+                                                   TextWrapping="Wrap" MaxHeight="38" Foreground="#2C3E50"/>
+
+                                        <!-- Real-Time BOM Stock Portions Badge -->
+                                        <Border Grid.Row="1" Background="{Binding StockBadgeColor}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Margin="0,4,0,0"
+                                                Visibility="{Binding HasStockBadge, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <TextBlock Text="{Binding StockBadgeText}" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                        </Border>
 
                                         <!-- Price -->
-                                        <TextBlock Grid.Row="1" Text="{Binding Price, Converter={StaticResource CurrencyFormatConverter}}" 
+                                        <TextBlock Grid.Row="2" Text="{Binding Price, Converter={StaticResource CurrencyFormatConverter}}" 
                                                    FontSize="16" FontWeight="Bold" Foreground="#E67E22" VerticalAlignment="Center"/>
 
-                                        <!-- Add Button (Touch target >= 46px height) -->
-                                        <Button Grid.Row="2" Content="+ Chọn Món" 
+                                        <!-- Add Button (Touch target >= 46px height, disabled when out of stock) -->
+                                        <Button Grid.Row="3" Content="{Binding AddButtonText}" 
+                                                IsEnabled="{Binding CanOrder}"
                                                 Command="{Binding DataContext.AddToCartCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
-                                                Background="#2980B9" Foreground="#FFFFFF" FontWeight="Bold" FontSize="14" Height="46" Cursor="Hand" BorderThickness="0">
+                                                Background="{Binding AddButtonBackground}" Foreground="#FFFFFF" FontWeight="Bold" FontSize="14" Height="46" Cursor="Hand" BorderThickness="0">
                                             <Button.Resources>
                                                 <Style TargetType="Border">
                                                     <Setter Property="CornerRadius" Value="8"/>
