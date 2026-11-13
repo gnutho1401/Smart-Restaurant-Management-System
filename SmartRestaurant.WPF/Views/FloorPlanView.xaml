@@ -286,5 +286,26 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
+
+        <!-- 4. Floating Toast Notification Banner with 5-Second Undo Action -->
+        <Border Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,24"
+                Background="#0F172A" CornerRadius="12" Padding="20,12" BorderBrush="#334155" BorderThickness="1"
+                Visibility="{Binding IsToastVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="18" ShadowDepth="4" Direction="270" Color="#000000" Opacity="0.35"/>
+            </Border.Effect>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="💡" FontSize="16" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBlock Text="{Binding ToastMessage}" FontSize="13" FontWeight="SemiBold" Foreground="#F8FAFC" VerticalAlignment="Center" Margin="0,0,20,0"/>
+                <Button Content="↩️ Hoàn Tác (5s)" Command="{Binding UndoToastCommand}"
+                        Background="#2563EB" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" Height="34" Padding="14,0" Cursor="Hand" BorderThickness="0">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="6"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+            </StackPanel>
+        </Border>
     </Grid>
 </UserControl>

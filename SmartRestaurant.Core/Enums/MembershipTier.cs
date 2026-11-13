@@ -10,3 +10,4 @@ public enum MembershipTier
     Gold,     // Vàng (500-999 điểm) - Giảm 10%
     Diamond   // Kim Cương (1000+ điểm) - Giảm 15%
 }
+

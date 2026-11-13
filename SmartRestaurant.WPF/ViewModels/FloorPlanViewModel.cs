@@ -26,9 +26,25 @@ public class FloorPlanViewModel : ViewModelBase
     private int _occupiedCount;
     private int _reservedCount;
     private int _cleaningCount;
+    private bool _isToastVisible;
+    private string _toastMessage = string.Empty;
+    private Func<Task>? _undoAction;
+    private System.Threading.CancellationTokenSource? _toastCts;
 
     public event Action<DiningTable>? RequestOpenPos;
     public event Action<DiningTable>? RequestOpenBilling;
+
+    public bool IsToastVisible
+    {
+        get => _isToastVisible;
+        set => SetProperty(ref _isToastVisible, value);
+    }
+
+    public string ToastMessage
+    {
+        get => _toastMessage;
+        set => SetProperty(ref _toastMessage, value);
+    }
 
     public ObservableCollection<DiningTable> Tables
     {
@@ -85,6 +101,7 @@ public class FloorPlanViewModel : ViewModelBase
     public IAsyncRelayCommand<DiningTable> PayTableCommand { get; }
     public IAsyncRelayCommand<DiningTable> TransferTableCommand { get; }
     public IAsyncRelayCommand<DiningTable> MergeTableCommand { get; }
+    public IAsyncRelayCommand UndoToastCommand { get; }
 
     public FloorPlanViewModel(ITableService tableService, IAuthService? authService = null)
     {
@@ -98,6 +115,7 @@ public class FloorPlanViewModel : ViewModelBase
         PayTableCommand = new AsyncRelayCommand<DiningTable>(ExecutePayTableAsync);
         TransferTableCommand = new AsyncRelayCommand<DiningTable>(ExecuteTransferTableAsync);
         MergeTableCommand = new AsyncRelayCommand<DiningTable>(ExecuteMergeTableAsync);
+        UndoToastCommand = new AsyncRelayCommand(ExecuteUndoToastAsync);
     }
 
     public async Task LoadTablesAsync()
@@ -180,6 +198,14 @@ public class FloorPlanViewModel : ViewModelBase
         await _tableService.TransitionTableStatusAsync(table.TableId, TableStatus.Available);
         table.Status = TableStatus.Available;
         UpdateStatistics();
+
+        // 5-second Undo Banner
+        ShowToastWithUndo($"Bàn {table.TableName} đã dọn xong (Sẵn Sàng).", async () =>
+        {
+            await _tableService.RevertTableStatusAsync(table.TableId, TableStatus.Cleaning);
+            table.Status = TableStatus.Cleaning;
+            UpdateStatistics();
+        });
     }
 
     private async Task ExecuteToggleReserveAsync(DiningTable? table)
@@ -206,8 +232,65 @@ public class FloorPlanViewModel : ViewModelBase
 
             await _tableService.TransitionTableStatusAsync(table.TableId, TableStatus.Available);
             table.Status = TableStatus.Available;
+
+            // 5-second Undo Banner
+            ShowToastWithUndo($"Đã hủy đặt trước bàn {table.TableName}.", async () =>
+            {
+                await _tableService.RevertTableStatusAsync(table.TableId, TableStatus.Reserved);
+                table.Status = TableStatus.Reserved;
+                UpdateStatistics();
+            });
         }
         UpdateStatistics();
+    }
+
+    public void ShowToastWithUndo(string message, Func<Task> undoAction)
+    {
+        _toastCts?.Cancel();
+        _toastCts = new System.Threading.CancellationTokenSource();
+        var token = _toastCts.Token;
+
+        ToastMessage = message;
+        _undoAction = undoAction;
+        IsToastVisible = true;
+
+        Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(5000, token);
+                if (!token.IsCancellationRequested)
+                {
+                    if (System.Windows.Application.Current != null)
+                    {
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            IsToastVisible = false;
+                            _undoAction = null;
+                        });
+                    }
+                    else
+                    {
+                        IsToastVisible = false;
+                        _undoAction = null;
+                    }
+                }
+            }
+            catch (OperationCanceledException) { }
+        });
+    }
+
+    private async Task ExecuteUndoToastAsync()
+    {
+        _toastCts?.Cancel();
+        IsToastVisible = false;
+
+        if (_undoAction != null)
+        {
+            var action = _undoAction;
+            _undoAction = null;
+            await action.Invoke();
+        }
     }
 
     private async Task ExecuteTransferTableAsync(DiningTable? table)

@@ -8,7 +8,66 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance vm:BillingViewModel}"
         Title="Quyết Toán Hóa Đơn &amp; Quản Lý Thành Viên - SmartRestaurant" 
-        Height="780" Width="1020" MinHeight="720" MinWidth="960" WindowStartupLocation="CenterScreen" Background="#ECEFF1">
+        Height="820" Width="1060" MinHeight="750" MinWidth="980" WindowStartupLocation="CenterScreen" Background="#ECEFF1">
+    <Window.Resources>
+        <Style x:Key="NumpadBtnStyle" TargetType="Button">
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="Foreground" Value="#1E293B"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="NumpadActionBtnStyle" TargetType="Button">
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Background" Value="#EF4444"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="NumpadExactBtnStyle" TargetType="Button">
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Background" Value="#10B981"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     <Grid Margin="16">
         <Grid.ColumnDefinitions>
             <!-- Left: Paper Receipt Print Preview (50%) -->
@@ -225,16 +284,82 @@
                     <TextBlock Text="Chiết khấu phụ / Voucher (VND):" FontWeight="SemiBold" Foreground="#7F8C8D" Margin="0,0,0,4"/>
                     <TextBox Text="{Binding DiscountAmount, UpdateSourceTrigger=PropertyChanged}" Height="34" VerticalContentAlignment="Center" Padding="8,0" Margin="0,0,0,10"/>
 
-                    <!-- Amount Paid Input -->
-                    <TextBlock Text="Tiền khách đưa (VND):" FontWeight="SemiBold" Foreground="#7F8C8D" Margin="0,0,0,4"/>
-                    <TextBox Text="{Binding AmountPaid, UpdateSourceTrigger=PropertyChanged}" Height="40" FontSize="16" FontWeight="Bold" 
-                             VerticalContentAlignment="Center" Padding="10,0" Margin="0,0,0,10" Foreground="#27AE60" BorderBrush="#BDC3C7" BorderThickness="1">
+                    <!-- Amount Paid Input with Touch Numpad & Quick Cash -->
+                    <DockPanel Margin="0,0,0,4">
+                        <TextBlock Text="Tiền khách đưa (VND):" FontWeight="SemiBold" Foreground="#475569" FontSize="13" VerticalAlignment="Center"/>
+                        <TextBlock Text="📱 Bàn phím số cảm ứng POS" FontSize="11" Foreground="#0284C7" FontStyle="Italic" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <TextBox Text="{Binding AmountPaid, UpdateSourceTrigger=PropertyChanged}" Height="40" FontSize="18" FontWeight="Bold" 
+                             VerticalContentAlignment="Center" Padding="10,0" Margin="0,0,0,8" Foreground="#15803D" BorderBrush="#86EFAC" BorderThickness="2" Background="#F0FDF4">
                         <TextBox.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="6"/>
                             </Style>
                         </TextBox.Resources>
                     </TextBox>
+
+                    <!-- Quick Cash Denominations (Mệnh giá tiền nhanh) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <Button Content="Đủ Tiền" Command="{Binding ExactAmountCommand}"
+                                Background="#10B981" Foreground="#FFFFFF" FontWeight="Bold" FontSize="11" Height="30" Padding="8,0" Margin="0,0,4,0" Cursor="Hand" BorderThickness="0">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                        </Button>
+                        <Button Content="+50k" Command="{Binding QuickCashCommand}" CommandParameter="50000"
+                                Background="#F1F5F9" Foreground="#334155" FontWeight="Bold" FontSize="11" Height="30" Padding="8,0" Margin="0,0,4,0" Cursor="Hand" BorderThickness="1" BorderBrush="#CBD5E1">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                        </Button>
+                        <Button Content="+100k" Command="{Binding QuickCashCommand}" CommandParameter="100000"
+                                Background="#F1F5F9" Foreground="#334155" FontWeight="Bold" FontSize="11" Height="30" Padding="8,0" Margin="0,0,4,0" Cursor="Hand" BorderThickness="1" BorderBrush="#CBD5E1">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                        </Button>
+                        <Button Content="+200k" Command="{Binding QuickCashCommand}" CommandParameter="200000"
+                                Background="#F1F5F9" Foreground="#334155" FontWeight="Bold" FontSize="11" Height="30" Padding="8,0" Margin="0,0,4,0" Cursor="Hand" BorderThickness="1" BorderBrush="#CBD5E1">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                        </Button>
+                        <Button Content="+500k" Command="{Binding QuickCashCommand}" CommandParameter="500000"
+                                Background="#F1F5F9" Foreground="#334155" FontWeight="Bold" FontSize="11" Height="30" Padding="8,0" Margin="0,0,4,0" Cursor="Hand" BorderThickness="1" BorderBrush="#CBD5E1">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                        </Button>
+                    </StackPanel>
+
+                    <!-- Touch Numpad Grid (Zero Physical Keyboard Needed) -->
+                    <Grid Margin="0,0,0,10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="34"/>
+                            <RowDefinition Height="34"/>
+                            <RowDefinition Height="34"/>
+                            <RowDefinition Height="34"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Row 0: 7 8 9 C -->
+                        <Button Grid.Row="0" Grid.Column="0" Content="7" Command="{Binding NumpadDigitCommand}" CommandParameter="7" Style="{StaticResource NumpadBtnStyle}"/>
+                        <Button Grid.Row="0" Grid.Column="1" Content="8" Command="{Binding NumpadDigitCommand}" CommandParameter="8" Style="{StaticResource NumpadBtnStyle}"/>
+                        <Button Grid.Row="0" Grid.Column="2" Content="9" Command="{Binding NumpadDigitCommand}" CommandParameter="9" Style="{StaticResource NumpadBtnStyle}"/>
+                        <Button Grid.Row="0" Grid.Column="3" Content="C" Command="{Binding NumpadClearCommand}" Style="{StaticResource NumpadActionBtnStyle}"/>
+
+                        <!-- Row 1: 4 5 6 ⌫ -->
+                        <Button Grid.Row="1" Grid.Column="0" Content="4" Command="{Binding NumpadDigitCommand}" CommandParameter="4" Style="{StaticResource NumpadBtnStyle}"/>
+                        <Button Grid.Row="1" Grid.Column="1" Content="5" Command="{Binding NumpadDigitCommand}" CommandParameter="5" Style="{StaticResource NumpadBtnStyle}"/>
+                        <Button Grid.Row="1" Grid.Column="2" Content="6" Command="{Binding NumpadDigitCommand}" CommandParameter="6" Style="{StaticResource NumpadBtnStyle}"/>
+                        <Button Grid.Row="1" Grid.Column="3" Content="⌫" Command="{Binding NumpadBackspaceCommand}" Style="{StaticResource NumpadActionBtnStyle}"/>
+
+                        <!-- Row 2: 1 2 3 000 -->
+                        <Button Grid.Row="2" Grid.Column="0" Content="1" Command="{Binding NumpadDigitCommand}" CommandParameter="1" Style="{StaticResource NumpadBtnStyle}"/>
+                        <Button Grid.Row="2" Grid.Column="1" Content="2" Command="{Binding NumpadDigitCommand}" CommandParameter="2" Style="{StaticResource NumpadBtnStyle}"/>
+                        <Button Grid.Row="2" Grid.Column="2" Content="3" Command="{Binding NumpadDigitCommand}" CommandParameter="3" Style="{StaticResource NumpadBtnStyle}"/>
+                        <Button Grid.Row="2" Grid.Column="3" Content="000" Command="{Binding NumpadTripleZeroCommand}" Style="{StaticResource NumpadBtnStyle}"/>
+
+                        <!-- Row 3: 0 (span 2), +100k, Đủ -->
+                        <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Content="0" Command="{Binding NumpadDigitCommand}" CommandParameter="0" Style="{StaticResource NumpadBtnStyle}"/>
+                        <Button Grid.Row="3" Grid.Column="2" Content="+100k" Command="{Binding QuickCashCommand}" CommandParameter="100000" Style="{StaticResource NumpadBtnStyle}"/>
+                        <Button Grid.Row="3" Grid.Column="3" Content="Đủ Tiền" Command="{Binding ExactAmountCommand}" Style="{StaticResource NumpadExactBtnStyle}"/>
+                    </Grid>
 
                     <!-- Change Due -->
                     <DockPanel Margin="0,0,0,12">

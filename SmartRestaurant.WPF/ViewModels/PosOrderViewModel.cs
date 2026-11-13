@@ -107,6 +107,23 @@ public class PosOrderViewModel : ViewModelBase
         set => SetProperty(ref _isSuccessMessage, value);
     }
 
+    private bool _isToastVisible;
+    private string _toastMessage = string.Empty;
+    private Action? _undoAction;
+    private System.Threading.CancellationTokenSource? _toastCts;
+
+    public bool IsToastVisible
+    {
+        get => _isToastVisible;
+        set => SetProperty(ref _isToastVisible, value);
+    }
+
+    public string ToastMessage
+    {
+        get => _toastMessage;
+        set => SetProperty(ref _toastMessage, value);
+    }
+
     public RelayCommand<MenuItem> AddToCartCommand { get; }
     public RelayCommand<CartItemViewModel> IncreaseQuantityCommand { get; }
     public RelayCommand<CartItemViewModel> DecreaseQuantityCommand { get; }
@@ -114,6 +131,7 @@ public class PosOrderViewModel : ViewModelBase
     public RelayCommand ClearCartCommand { get; }
     public IAsyncRelayCommand ConfirmOrderCommand { get; }
     public RelayCommand BackCommand { get; }
+    public RelayCommand UndoToastCommand { get; }
 
     public PosOrderViewModel(
         IMenuService menuService,
@@ -130,9 +148,10 @@ public class PosOrderViewModel : ViewModelBase
         IncreaseQuantityCommand = new RelayCommand<CartItemViewModel>(IncreaseQuantity);
         DecreaseQuantityCommand = new RelayCommand<CartItemViewModel>(DecreaseQuantity);
         RemoveFromCartCommand = new RelayCommand<CartItemViewModel>(RemoveFromCart);
-        ClearCartCommand = new RelayCommand(ClearCart);
+        ClearCartCommand = new RelayCommand(ExecuteClearCartUser);
         ConfirmOrderCommand = new AsyncRelayCommand(ConfirmOrderAsync);
         BackCommand = new RelayCommand(() => RequestClosePos?.Invoke());
+        UndoToastCommand = new RelayCommand(ExecuteUndoToast);
     }
 
     public async Task InitializeAsync(DiningTable table)
@@ -217,8 +236,22 @@ public class PosOrderViewModel : ViewModelBase
     {
         if (cartItem != null)
         {
+            var index = CartItems.IndexOf(cartItem);
             CartItems.Remove(cartItem);
             RecalculateTotals();
+
+            ShowToastWithUndo($"Đã xóa món {cartItem.DishName} khỏi giỏ.", () =>
+            {
+                if (index >= 0 && index <= CartItems.Count)
+                {
+                    CartItems.Insert(index, cartItem);
+                }
+                else
+                {
+                    CartItems.Add(cartItem);
+                }
+                RecalculateTotals();
+            });
         }
     }
 
@@ -227,6 +260,70 @@ public class PosOrderViewModel : ViewModelBase
         CartItems.Clear();
         RecalculateTotals();
         StatusMessage = string.Empty;
+    }
+
+    private void ExecuteClearCartUser()
+    {
+        if (!CartItems.Any()) return;
+        var backup = CartItems.ToList();
+        ClearCart();
+        ShowToastWithUndo("Đã xóa toàn bộ giỏ món ăn.", () =>
+        {
+            foreach (var item in backup)
+            {
+                CartItems.Add(item);
+            }
+            RecalculateTotals();
+        });
+    }
+
+    public void ShowToastWithUndo(string message, Action undoAction)
+    {
+        _toastCts?.Cancel();
+        _toastCts = new System.Threading.CancellationTokenSource();
+        var token = _toastCts.Token;
+
+        ToastMessage = message;
+        _undoAction = undoAction;
+        IsToastVisible = true;
+
+        Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(5000, token);
+                if (!token.IsCancellationRequested)
+                {
+                    if (System.Windows.Application.Current != null)
+                    {
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            IsToastVisible = false;
+                            _undoAction = null;
+                        });
+                    }
+                    else
+                    {
+                        IsToastVisible = false;
+                        _undoAction = null;
+                    }
+                }
+            }
+            catch (OperationCanceledException) { }
+        });
+    }
+
+    public void ExecuteUndoToast()
+    {
+        _toastCts?.Cancel();
+        IsToastVisible = false;
+
+        if (_undoAction != null)
+        {
+            var action = _undoAction;
+            _undoAction = null;
+            action.Invoke();
+        }
     }
 
     private void RecalculateTotals()

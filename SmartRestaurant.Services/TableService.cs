@@ -87,6 +87,25 @@ public class TableService : ITableService
         }
     }
 
+    public async Task<bool> RevertTableStatusAsync(int tableId, TableStatus previousStatus)
+    {
+        var table = await _context.DiningTables.FindAsync(tableId);
+        if (table == null) return false;
+
+        table.Status = previousStatus;
+
+        try
+        {
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new ConcurrencyConflictException(
+                $"Đã xảy ra xung đột khi hoàn tác trạng thái bàn {table.TableName}. Dữ liệu đã bị thay đổi bởi người khác.", ex);
+        }
+    }
+
     public async Task<bool> TransferTableAsync(int sourceTableId, int targetTableId)
     {
         if (sourceTableId == targetTableId) return false;

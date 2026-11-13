@@ -64,7 +64,13 @@ public class BillingViewModel : ViewModelBase
     public decimal SubTotal
     {
         get => _subTotal;
-        set => SetProperty(ref _subTotal, value);
+        set
+        {
+            if (SetProperty(ref _subTotal, value))
+            {
+                RecalculateTaxAndTotal();
+            }
+        }
     }
 
     public decimal DiscountAmount
@@ -225,6 +231,14 @@ public class BillingViewModel : ViewModelBase
     public RelayCommand SwitchToPreCheckCommand { get; }
     public RelayCommand SwitchToInvoiceCommand { get; }
 
+    // Touch Ergonomics & On-Screen Numpad Commands
+    public RelayCommand<string> NumpadDigitCommand { get; }
+    public RelayCommand NumpadClearCommand { get; }
+    public RelayCommand NumpadBackspaceCommand { get; }
+    public RelayCommand NumpadTripleZeroCommand { get; }
+    public RelayCommand<string> QuickCashCommand { get; }
+    public RelayCommand ExactAmountCommand { get; }
+
     public BillingViewModel(
         IBillingService billingService,
         IOrderService orderService,
@@ -243,6 +257,14 @@ public class BillingViewModel : ViewModelBase
         ApplyPointsCommand = new AsyncRelayCommand(ApplyPointsAsync);
         SwitchToPreCheckCommand = new RelayCommand(ExecuteSwitchToPreCheck);
         SwitchToInvoiceCommand = new RelayCommand(ExecuteSwitchToInvoice);
+
+        // Initialize Touch Numpad & Quick Cash
+        NumpadDigitCommand = new RelayCommand<string>(ExecuteNumpadDigit);
+        NumpadClearCommand = new RelayCommand(ExecuteNumpadClear);
+        NumpadBackspaceCommand = new RelayCommand(ExecuteNumpadBackspace);
+        NumpadTripleZeroCommand = new RelayCommand(ExecuteNumpadTripleZero);
+        QuickCashCommand = new RelayCommand<string>(ExecuteQuickCash);
+        ExactAmountCommand = new RelayCommand(ExecuteExactAmount);
     }
 
     public async Task InitializeWithOrderAsync(int orderId)
@@ -378,6 +400,53 @@ public class BillingViewModel : ViewModelBase
         IsPreCheckMode = false;
         BillTitle = "PHIẾU THANH TOÁN (VAT 8%)";
         StatusMessage = "💳 Đang ở chế độ Quyết toán Hóa đơn chính thức.";
+    }
+
+    private void ExecuteNumpadDigit(string? digit)
+    {
+        if (string.IsNullOrEmpty(digit) || !char.IsDigit(digit[0])) return;
+        int d = digit[0] - '0';
+        decimal newAmount = AmountPaid == 0 ? d : (AmountPaid * 10m) + d;
+        if (newAmount <= 100000000m) // 100 million cap
+        {
+            AmountPaid = newAmount;
+        }
+    }
+
+    private void ExecuteNumpadTripleZero()
+    {
+        decimal newAmount = AmountPaid * 1000m;
+        if (newAmount <= 100000000m)
+        {
+            AmountPaid = newAmount;
+        }
+    }
+
+    private void ExecuteNumpadBackspace()
+    {
+        AmountPaid = Math.Floor(AmountPaid / 10m);
+    }
+
+    private void ExecuteNumpadClear()
+    {
+        AmountPaid = 0;
+    }
+
+    private void ExecuteQuickCash(string? amountStr)
+    {
+        if (decimal.TryParse(amountStr, out var addAmount))
+        {
+            decimal newAmount = AmountPaid + addAmount;
+            if (newAmount <= 100000000m)
+            {
+                AmountPaid = newAmount;
+            }
+        }
+    }
+
+    private void ExecuteExactAmount()
+    {
+        AmountPaid = TotalDue;
     }
 
     private void RecalculateTaxAndTotal()

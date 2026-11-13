@@ -7,11 +7,13 @@ namespace SmartRestaurant.WPF.Common;
 public interface IAsyncRelayCommand : ICommand
 {
     bool IsExecuting { get; }
+    Task ExecuteAsync(object? parameter = null);
 }
 
 public interface IAsyncRelayCommand<in T> : ICommand
 {
     bool IsExecuting { get; }
+    Task ExecuteAsync(T? parameter);
 }
 
 /// <summary>
@@ -47,7 +49,7 @@ public class AsyncRelayCommand : IAsyncRelayCommand
 
     public bool CanExecute(object? parameter) => !_isExecuting && (_canExecute == null || _canExecute());
 
-    public async void Execute(object? parameter)
+    public async Task ExecuteAsync(object? parameter = null)
     {
         if (CanExecute(parameter))
         {
@@ -61,6 +63,11 @@ public class AsyncRelayCommand : IAsyncRelayCommand
                 IsExecuting = false;
             }
         }
+    }
+
+    public async void Execute(object? parameter)
+    {
+        await ExecuteAsync(parameter);
     }
 }
 
@@ -99,22 +106,24 @@ public class AsyncRelayCommand<T> : IAsyncRelayCommand<T>
         return parameter is T t ? _canExecute(t) : _canExecute(default);
     }
 
-    public async void Execute(object? parameter)
+    public async Task ExecuteAsync(T? parameter)
     {
         if (CanExecute(parameter))
         {
             try
             {
                 IsExecuting = true;
-                if (parameter is T t)
-                    await _execute(t);
-                else
-                    await _execute(default);
+                await _execute(parameter);
             }
             finally
             {
                 IsExecuting = false;
             }
         }
+    }
+
+    public async void Execute(object? parameter)
+    {
+        await ExecuteAsync(parameter is T t ? t : default);
     }
 }

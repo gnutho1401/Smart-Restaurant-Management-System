@@ -24,3 +24,4 @@ public class WorkShift
 
     public virtual User? User { get; set; }
 }
+

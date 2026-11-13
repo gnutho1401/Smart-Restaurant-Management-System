@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
@@ -26,6 +27,7 @@
     <ProjectReference Include="..\SmartRestaurant.Data\SmartRestaurant.Data.csproj" />
     <ProjectReference Include="..\SmartRestaurant.Services\SmartRestaurant.Services.csproj" />
     <ProjectReference Include="..\SmartRestaurant.AIEngine\SmartRestaurant.AIEngine.csproj" />
+    <ProjectReference Include="..\SmartRestaurant.WPF\SmartRestaurant.WPF.csproj" />
   </ItemGroup>
 
 </Project>

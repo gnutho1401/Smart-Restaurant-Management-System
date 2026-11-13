@@ -23,6 +23,8 @@ public class KitchenKdsViewModel : ViewModelBase, IDisposable
     private int _pendingCount;
     private int _cookingCount;
     private int _readyCount;
+    private bool _isChimeEnabled = true;
+    private HashSet<int> _knownPendingTicketIds = new();
 
     private CancellationTokenSource? _timerCts;
     private PeriodicTimer? _periodicTimer;
@@ -51,9 +53,24 @@ public class KitchenKdsViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _readyCount, value);
     }
 
+    public bool IsChimeEnabled
+    {
+        get => _isChimeEnabled;
+        set
+        {
+            if (SetProperty(ref _isChimeEnabled, value))
+            {
+                OnPropertyChanged(nameof(ChimeButtonText));
+            }
+        }
+    }
+
+    public string ChimeButtonText => IsChimeEnabled ? "🔔 Chuông: BẬT" : "🔕 Chuông: TẮT";
+
     public IAsyncRelayCommand LoadTicketsCommand { get; }
     public IAsyncRelayCommand<KitchenTicketViewModel> AdvanceStatusCommand { get; }
     public IAsyncRelayCommand<KitchenTicketViewModel> VoidTicketCommand { get; }
+    public RelayCommand ToggleChimeCommand { get; }
 
     public KitchenKdsViewModel(
         IKdsService kdsService,
@@ -67,6 +84,7 @@ public class KitchenKdsViewModel : ViewModelBase, IDisposable
         LoadTicketsCommand = new AsyncRelayCommand(LoadTicketsAsync);
         AdvanceStatusCommand = new AsyncRelayCommand<KitchenTicketViewModel>(AdvanceStatusAsync);
         VoidTicketCommand = new AsyncRelayCommand<KitchenTicketViewModel>(VoidTicketAsync);
+        ToggleChimeCommand = new RelayCommand(() => IsChimeEnabled = !IsChimeEnabled);
 
         StartPollingEngine();
     }
@@ -74,6 +92,21 @@ public class KitchenKdsViewModel : ViewModelBase, IDisposable
     public async Task LoadTicketsAsync()
     {
         var rawTickets = await _kdsService.GetActiveKitchenTicketsAsync();
+
+        var currentPendingIds = rawTickets
+            .Where(t => t.CookingStatus == CookingStatus.Pending)
+            .Select(t => t.OrderItemId)
+            .ToHashSet();
+
+        // Trigger KDS audio chime if new order items arrived from POS
+        if (_knownPendingTicketIds.Count > 0 && currentPendingIds.Any(id => !_knownPendingTicketIds.Contains(id)))
+        {
+            if (IsChimeEnabled)
+            {
+                PlayKitchenChime();
+            }
+        }
+        _knownPendingTicketIds = currentPendingIds;
 
         var viewModels = rawTickets.Select(t => new KitchenTicketViewModel
         {
@@ -92,6 +125,21 @@ public class KitchenKdsViewModel : ViewModelBase, IDisposable
         PendingCount = Tickets.Count(t => t.Status == CookingStatus.Pending);
         CookingCount = Tickets.Count(t => t.Status == CookingStatus.Cooking);
         ReadyCount = Tickets.Count(t => t.Status == CookingStatus.Ready);
+    }
+
+    public void PlayKitchenChime()
+    {
+        Task.Run(() =>
+        {
+            try
+            {
+                System.Media.SystemSounds.Asterisk.Play();
+            }
+            catch
+            {
+                try { Console.Beep(1200, 150); Console.Beep(1600, 250); } catch { }
+            }
+        });
     }
 
     private async Task VoidTicketAsync(KitchenTicketViewModel? ticket)

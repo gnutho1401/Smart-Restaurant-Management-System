@@ -14,3 +14,4 @@ public interface IShiftService
     Task<WorkShift> CloseShiftAsync(int shiftId, decimal actualCashEnd, string? note = null);
     Task<IEnumerable<WorkShift>> GetShiftHistoryAsync();
 }
+
