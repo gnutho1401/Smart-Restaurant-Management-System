@@ -1,4 +1,4 @@
-﻿@echo off
+@echo off
 cd /d "%~dp0"
 echo ==========================================================
 echo   SMART RESTAURANT - BUILD AND PUBLISH RELEASE PIPELINE
