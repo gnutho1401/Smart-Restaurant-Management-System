@@ -159,6 +159,7 @@ public partial class App : Application
         services.AddScoped<IKdsService, KdsService>();
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<IShiftService, ShiftService>();
+        services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IAiService, LmStudioService>();
         services.AddScoped<AiAnalyticsEngine>();
 
@@ -171,6 +172,7 @@ public partial class App : Application
         services.AddSingleton<ReportsViewModel>();
         services.AddSingleton<StaffManagementViewModel>();
         services.AddSingleton<InventoryManagementViewModel>();
+        services.AddSingleton<AuditLogViewModel>();
         services.AddTransient<BillingViewModel>();
         services.AddTransient<ShiftViewModel>();
         services.AddTransient<AiChatViewModel>();
@@ -185,5 +187,6 @@ public partial class App : Application
         services.AddTransient<ReportsView>();
         services.AddTransient<StaffManagementView>();
         services.AddTransient<InventoryManagementView>();
+        services.AddTransient<AuditLogsView>();
     }
 }

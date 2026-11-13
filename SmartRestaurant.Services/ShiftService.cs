@@ -16,10 +16,12 @@ namespace SmartRestaurant.Services;
 public class ShiftService : IShiftService
 {
     private readonly RestaurantDbContext _context;
+    private readonly IAuditService? _auditService;
 
-    public ShiftService(RestaurantDbContext context)
+    public ShiftService(RestaurantDbContext context, IAuditService? auditService = null)
     {
         _context = context;
+        _auditService = auditService;
     }
 
     public async Task<WorkShift> OpenShiftAsync(int userId, decimal openingFloat)
@@ -52,6 +54,22 @@ public class ShiftService : IShiftService
 
         _context.WorkShifts.Add(shift);
         await _context.SaveChangesAsync();
+
+        if (_auditService != null)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            await _auditService.LogAsync(
+                userId,
+                user?.FullName ?? user?.Username ?? "Cashier",
+                user?.Role.ToString() ?? "Cashier",
+                "OpenShift",
+                "WorkShift",
+                shift.ShiftId.ToString(),
+                null,
+                openingFloat.ToString("N0"),
+                $"Mở ca làm việc #{shift.ShiftId} với tiền đầu ca: {openingFloat:N0} VND");
+        }
+
         return shift;
     }
 
@@ -97,6 +115,22 @@ public class ShiftService : IShiftService
         shift.Note = note;
 
         await _context.SaveChangesAsync();
+
+        if (_auditService != null)
+        {
+            var user = await _context.Users.FindAsync(shift.UserId);
+            await _auditService.LogAsync(
+                shift.UserId,
+                user?.FullName ?? user?.Username ?? "Cashier",
+                user?.Role.ToString() ?? "Cashier",
+                "CloseShift",
+                "WorkShift",
+                shift.ShiftId.ToString(),
+                shift.OpeningFloat.ToString("N0"),
+                actualCashEnd.ToString("N0"),
+                $"Chốt ca làm việc #{shift.ShiftId}. Doanh số: {shift.TotalSales:N0} VND. Chênh lệch két tiền mặt (Variance): {shift.CashVariance:N0} VND");
+        }
+
         return shift;
     }
 

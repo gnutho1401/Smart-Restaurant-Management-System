@@ -28,6 +28,7 @@ public class RestaurantDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<WorkShift> WorkShifts => Set<WorkShift>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -167,6 +168,7 @@ public class RestaurantDbContext : DbContext
             entity.HasKey(p => p.PaymentId);
             entity.Property(p => p.Method).HasConversion<string>().HasMaxLength(30).IsRequired();
             entity.Property(p => p.AmountPaid).HasPrecision(18, 2).IsRequired();
+            entity.Property(p => p.IdempotencyKey).HasMaxLength(100);
 
             entity.HasOne(p => p.Invoice)
                   .WithMany(inv => inv.Payments)
@@ -211,6 +213,19 @@ public class RestaurantDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(w => w.UserId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // 14. AuditLog (Immutable Append-Only Audit Trail)
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.HasKey(a => a.AuditLogId);
+            entity.Property(a => a.Username).HasMaxLength(50).IsRequired();
+            entity.Property(a => a.UserRole).HasMaxLength(30).IsRequired();
+            entity.Property(a => a.Action).HasMaxLength(100).IsRequired();
+            entity.Property(a => a.EntityName).HasMaxLength(100).IsRequired();
+            entity.Property(a => a.EntityId).HasMaxLength(50);
+            entity.Property(a => a.MachineName).HasMaxLength(100);
+            entity.Property(a => a.Details).HasMaxLength(1000);
         });
     }
 }

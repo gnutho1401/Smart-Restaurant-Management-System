@@ -16,10 +16,12 @@ namespace SmartRestaurant.Services;
 public class OrderService : IOrderService
 {
     private readonly RestaurantDbContext _context;
+    private readonly IAuditService? _auditService;
 
-    public OrderService(RestaurantDbContext context)
+    public OrderService(RestaurantDbContext context, IAuditService? auditService = null)
     {
         _context = context;
+        _auditService = auditService;
     }
 
     public async Task<Order> CreateOrderAsync(int tableId, int userId, List<(int menuItemId, int quantity, string? note)> items)
@@ -173,6 +175,23 @@ public class OrderService : IOrderService
         }
 
         await _context.SaveChangesAsync();
+
+        if (_auditService != null)
+        {
+            var actor = await _context.Users.FindAsync(actorUserId);
+            bool bomRefunded = item.CookingStatus == CookingStatus.Pending;
+            await _auditService.LogAsync(
+                actorUserId,
+                actor?.FullName ?? actor?.Username ?? "Staff",
+                actor?.Role.ToString() ?? "Staff",
+                "VoidOrderItem",
+                "OrderItem",
+                orderItemId.ToString(),
+                "Active",
+                "Cancelled",
+                $"Hủy món {item.Quantity}x {item.MenuItem?.Name} (Đơn #{item.OrderId:D4}). Lý do: {item.CancelReason}. Hoàn kho BOM: {(bomRefunded ? "CÓ" : "KHÔNG (Đang/đã chế biến)")}");
+        }
+
         return true;
     }
 

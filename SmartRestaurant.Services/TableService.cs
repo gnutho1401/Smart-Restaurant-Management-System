@@ -18,10 +18,12 @@ namespace SmartRestaurant.Services;
 public class TableService : ITableService
 {
     private readonly RestaurantDbContext _context;
+    private readonly IAuditService? _auditService;
 
-    public TableService(RestaurantDbContext context)
+    public TableService(RestaurantDbContext context, IAuditService? auditService = null)
     {
         _context = context;
+        _auditService = auditService;
     }
 
     public async Task<IEnumerable<DiningTable>> GetAllTablesAsync()
@@ -141,6 +143,15 @@ public class TableService : ITableService
         sourceTable.Status = TableStatus.Available;
 
         await _context.SaveChangesAsync();
+
+        if (_auditService != null)
+        {
+            await _auditService.LogAsync(
+                null, "Staff", "Staff", "TransferTable", "DiningTable", targetTableId.ToString(),
+                sourceTable.TableName, targetTable.TableName,
+                $"Chuyển toàn bộ đơn hàng từ bàn {sourceTable.TableName} sang bàn {targetTable.TableName}");
+        }
+
         return true;
     }
 
@@ -186,6 +197,15 @@ public class TableService : ITableService
         secondaryTable.Status = TableStatus.Available;
 
         await _context.SaveChangesAsync();
+
+        if (_auditService != null)
+        {
+            await _auditService.LogAsync(
+                null, "Staff", "Staff", "MergeTable", "DiningTable", primaryTableId.ToString(),
+                secondaryTable.TableName, primaryTable.TableName,
+                $"Gộp bàn {secondaryTable.TableName} vào bàn {primaryTable.TableName} (Gộp {secondaryOrder.OrderItems.Count} món)");
+        }
+
         return true;
     }
 }

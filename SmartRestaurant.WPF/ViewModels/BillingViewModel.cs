@@ -471,8 +471,9 @@ public class BillingViewModel : ViewModelBase
             var invoice = await _billingService.GenerateInvoiceAsync(OrderId, DiscountAmount);
             InvoiceCode = invoice.InvoiceCode;
 
-            // 2. Settle multi-tender payment
-            await _billingService.SettlePaymentAsync(invoice.InvoiceId, SelectedMethod, AmountPaid);
+            // 2. Settle multi-tender payment with Idempotency Key protection
+            string idempotencyKey = $"{invoice.InvoiceCode}_{SelectedMethod}_{AmountPaid:0}";
+            await _billingService.SettlePaymentAsync(invoice.InvoiceId, SelectedMethod, AmountPaid, idempotencyKey);
 
             IsSettled = true;
             StatusMessage = $"✅ Đã quyết toán thành công hóa đơn {invoice.InvoiceCode}!";

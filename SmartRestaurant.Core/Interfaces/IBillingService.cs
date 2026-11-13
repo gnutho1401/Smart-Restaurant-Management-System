@@ -10,5 +10,5 @@ namespace SmartRestaurant.Core.Interfaces;
 public interface IBillingService
 {
     Task<Invoice> GenerateInvoiceAsync(int orderId, decimal discountAmount = 0);
-    Task<Payment> SettlePaymentAsync(int invoiceId, PaymentMethod method, decimal amountPaid);
+    Task<Payment> SettlePaymentAsync(int invoiceId, PaymentMethod method, decimal amountPaid, string? idempotencyKey = null);
 }

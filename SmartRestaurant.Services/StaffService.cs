@@ -17,10 +17,12 @@ namespace SmartRestaurant.Services;
 public class StaffService : IStaffService
 {
     private readonly RestaurantDbContext _context;
+    private readonly IAuditService? _auditService;
 
-    public StaffService(RestaurantDbContext context)
+    public StaffService(RestaurantDbContext context, IAuditService? auditService = null)
     {
         _context = context;
+        _auditService = auditService;
     }
 
     public async Task<IEnumerable<User>> GetAllStaffAsync()
@@ -55,6 +57,21 @@ public class StaffService : IStaffService
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
+
+        if (_auditService != null)
+        {
+            await _auditService.LogAsync(
+                user.UserId,
+                user.Username,
+                user.Role.ToString(),
+                "CreateStaff",
+                "User",
+                user.UserId.ToString(),
+                null,
+                user.Role.ToString(),
+                $"Tạo tài khoản nhân viên mới: {user.FullName} ({user.Username}) - Vai trò: {user.Role}");
+        }
+
         return user;
     }
 
@@ -69,8 +86,24 @@ public class StaffService : IStaffService
             throw new InvalidOperationException("Không thể hạ quyền tài khoản Quản trị viên (Admin).");
         }
 
+        var oldRole = user.Role;
         user.Role = newRole;
         await _context.SaveChangesAsync();
+
+        if (_auditService != null)
+        {
+            await _auditService.LogAsync(
+                user.UserId,
+                user.Username,
+                newRole.ToString(),
+                "UpdateStaffRole",
+                "User",
+                user.UserId.ToString(),
+                oldRole.ToString(),
+                newRole.ToString(),
+                $"Cập nhật vai trò nhân viên {user.FullName} ({user.Username}): {oldRole} -> {newRole}");
+        }
+
         return true;
     }
 
@@ -102,6 +135,21 @@ public class StaffService : IStaffService
 
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
+
+        if (_auditService != null)
+        {
+            await _auditService.LogAsync(
+                user.UserId,
+                user.Username,
+                user.Role.ToString(),
+                "DeleteStaff",
+                "User",
+                user.UserId.ToString(),
+                user.Username,
+                null,
+                $"Xóa tài khoản nhân viên: {user.FullName} ({user.Username})");
+        }
+
         return true;
     }
 }

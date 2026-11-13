@@ -17,10 +17,12 @@ namespace SmartRestaurant.Services;
 public class BillingService : IBillingService
 {
     private readonly RestaurantDbContext _context;
+    private readonly IAuditService? _auditService;
 
-    public BillingService(RestaurantDbContext context)
+    public BillingService(RestaurantDbContext context, IAuditService? auditService = null)
     {
         _context = context;
+        _auditService = auditService;
     }
 
     public async Task<Invoice> GenerateInvoiceAsync(int orderId, decimal discountAmount = 0)
@@ -76,10 +78,19 @@ public class BillingService : IBillingService
         order.FinalTotal = totalDue;
 
         await _context.SaveChangesAsync();
+
+        if (_auditService != null && discountAmount > 0)
+        {
+            await _auditService.LogAsync(
+                null, "Cashier", "Cashier", "ApplyDiscount", "Order", order.OrderId.ToString(),
+                "0", discountAmount.ToString("N0"),
+                $"Áp dụng chiết khấu {discountAmount:N0} VND cho đơn #{order.OrderId:D4}");
+        }
+
         return invoice;
     }
 
-    public async Task<Payment> SettlePaymentAsync(int invoiceId, PaymentMethod method, decimal amountPaid)
+    public async Task<Payment> SettlePaymentAsync(int invoiceId, PaymentMethod method, decimal amountPaid, string? idempotencyKey = null)
     {
         var invoice = await _context.Invoices
             .Include(inv => inv.Order)
@@ -90,6 +101,16 @@ public class BillingService : IBillingService
         if (invoice == null)
         {
             throw new KeyNotFoundException($"Invoice ID {invoiceId} không tồn tại.");
+        }
+
+        // 1. Payment Idempotency Guard: prevent duplicate charges on retry/rapid clicking
+        if (!string.IsNullOrEmpty(idempotencyKey))
+        {
+            var existingPayment = invoice.Payments.FirstOrDefault(p => p.IdempotencyKey == idempotencyKey);
+            if (existingPayment != null)
+            {
+                return existingPayment;
+            }
         }
 
         if (amountPaid < invoice.TotalDue)
@@ -103,6 +124,7 @@ public class BillingService : IBillingService
             InvoiceId = invoice.InvoiceId,
             Method = method,
             AmountPaid = amountPaid,
+            IdempotencyKey = idempotencyKey,
             PaidAt = DateTime.UtcNow
         };
 
@@ -140,6 +162,15 @@ public class BillingService : IBillingService
         }
 
         await _context.SaveChangesAsync();
+
+        if (_auditService != null)
+        {
+            await _auditService.LogAsync(
+                null, "Cashier", "Cashier", "SettlePayment", "Invoice", invoice.InvoiceId.ToString(),
+                null, invoice.TotalDue.ToString("N0"),
+                $"Quyết toán thành công hóa đơn {invoice.InvoiceCode} ({method}): {amountPaid:N0} VND (Tiền thừa: {Math.Max(0, amountPaid - invoice.TotalDue):N0} VND)");
+        }
+
         return payment;
     }
 }

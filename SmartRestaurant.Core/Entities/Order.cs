@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace SmartRestaurant.Core.Entities;
 
@@ -13,6 +14,8 @@ public class Order
     public int CreatedByUserId { get; set; }
     public int? CustomerId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [ConcurrencyCheck]
     public string Status { get; set; } = "Active"; // Active, Completed, Cancelled
     public decimal SubTotal { get; set; }
     public decimal DiscountAmount { get; set; }

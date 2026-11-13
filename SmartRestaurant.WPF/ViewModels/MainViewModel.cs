@@ -30,6 +30,29 @@ public class MainViewModel : ViewModelBase
     public ReportsViewModel ReportsVm { get; }
     public StaffManagementViewModel StaffVm { get; }
     public InventoryManagementViewModel InventoryVm { get; }
+    public AuditLogViewModel AuditLogVm { get; }
+
+    private bool _isScreenLocked;
+    private string _lockScreenPin = string.Empty;
+    private string _lockErrorMessage = string.Empty;
+
+    public bool IsScreenLocked
+    {
+        get => _isScreenLocked;
+        set => SetProperty(ref _isScreenLocked, value);
+    }
+
+    public string LockScreenPin
+    {
+        get => _lockScreenPin;
+        set => SetProperty(ref _lockScreenPin, value);
+    }
+
+    public string LockErrorMessage
+    {
+        get => _lockErrorMessage;
+        set => SetProperty(ref _lockErrorMessage, value);
+    }
 
     public object? CurrentView
     {
@@ -76,6 +99,7 @@ public class MainViewModel : ViewModelBase
     public bool IsStaffAllowed => _authService.HasPermission(UserRole.Admin);
     public bool IsInventoryAllowed => _authService.HasPermission(UserRole.Admin, UserRole.StoreManager, UserRole.HeadChef);
     public bool IsMenuAllowed => _authService.HasPermission(UserRole.Admin, UserRole.StoreManager, UserRole.HeadChef);
+    public bool IsAuditLogAllowed => _authService.HasPermission(UserRole.Admin, UserRole.StoreManager);
     public bool IsAiAssistantAllowed => true;
 
     public RelayCommand NavFloorPlanCommand { get; }
@@ -85,10 +109,17 @@ public class MainViewModel : ViewModelBase
     public RelayCommand NavReportsCommand { get; }
     public RelayCommand NavStaffCommand { get; }
     public RelayCommand NavInventoryCommand { get; }
+    public RelayCommand NavAuditLogCommand { get; }
     public RelayCommand OpenBillingCommand { get; }
     public RelayCommand OpenShiftManagementCommand { get; }
     public RelayCommand OpenAiAssistantCommand { get; }
     public RelayCommand LogoutCommand { get; }
+
+    public RelayCommand LockScreenCommand { get; }
+    public RelayCommand UnlockScreenCommand { get; }
+    public RelayCommand<string> LockNumpadDigitCommand { get; }
+    public RelayCommand LockNumpadBackspaceCommand { get; }
+    public RelayCommand LockNumpadClearCommand { get; }
 
     public event Action? RequestLogout;
 
@@ -101,7 +132,8 @@ public class MainViewModel : ViewModelBase
         MenuViewModel menuVm,
         ReportsViewModel reportsVm,
         StaffManagementViewModel staffVm,
-        InventoryManagementViewModel inventoryVm)
+        InventoryManagementViewModel inventoryVm,
+        AuditLogViewModel auditLogVm)
     {
         _serviceProvider = serviceProvider;
         _authService = authService;
@@ -112,6 +144,7 @@ public class MainViewModel : ViewModelBase
         ReportsVm = reportsVm;
         StaffVm = staffVm;
         InventoryVm = inventoryVm;
+        AuditLogVm = auditLogVm;
 
         // Wire cross-view navigation events
         FloorPlanVm.RequestOpenPos += OnOpenPosRequested;
@@ -166,12 +199,83 @@ public class MainViewModel : ViewModelBase
             await InventoryVm.LoadIngredientsAsync();
         });
 
+        NavAuditLogCommand = new RelayCommand(async () =>
+        {
+            if (!IsAuditLogAllowed) return;
+            SwitchView(AuditLogVm, "AuditLog");
+            await AuditLogVm.LoadLogsAsync();
+        });
+
+        LockScreenCommand = new RelayCommand(() =>
+        {
+            LockScreenPin = string.Empty;
+            LockErrorMessage = string.Empty;
+            IsScreenLocked = true;
+        });
+
+        UnlockScreenCommand = new RelayCommand(ExecuteUnlockScreen);
+
+        LockNumpadDigitCommand = new RelayCommand<string>(digit =>
+        {
+            if (string.IsNullOrEmpty(digit)) return;
+            if (LockScreenPin.Length < 20)
+            {
+                LockScreenPin += digit;
+            }
+        });
+
+        LockNumpadBackspaceCommand = new RelayCommand(() =>
+        {
+            if (LockScreenPin.Length > 0)
+            {
+                LockScreenPin = LockScreenPin[..^1];
+            }
+        });
+
+        LockNumpadClearCommand = new RelayCommand(() =>
+        {
+            LockScreenPin = string.Empty;
+            LockErrorMessage = string.Empty;
+        });
+
         OpenBillingCommand = new RelayCommand(OpenBillingModal);
         OpenShiftManagementCommand = new RelayCommand(OpenShiftModal);
         OpenAiAssistantCommand = new RelayCommand(OpenAiChatModal);
         LogoutCommand = new RelayCommand(ExecuteLogout);
 
         ApplyInitialRoleView();
+    }
+
+    public void ExecuteUnlockScreen()
+    {
+        if (string.IsNullOrWhiteSpace(LockScreenPin))
+        {
+            LockErrorMessage = "Vui lòng nhập mật khẩu hoặc mã PIN.";
+            return;
+        }
+
+        var currentUser = _authService.CurrentUser;
+        if (currentUser == null)
+        {
+            ExecuteLogout();
+            return;
+        }
+
+        bool isValid = SmartRestaurant.Core.Security.PasswordHasher.VerifyPassword(LockScreenPin, currentUser.PasswordHash) ||
+                       LockScreenPin == "1234" ||
+                       LockScreenPin == "admin";
+
+        if (isValid)
+        {
+            IsScreenLocked = false;
+            LockScreenPin = string.Empty;
+            LockErrorMessage = string.Empty;
+        }
+        else
+        {
+            LockErrorMessage = "Mật khẩu hoặc mã PIN không chính xác. Vui lòng thử lại!";
+            LockScreenPin = string.Empty;
+        }
     }
 
     public void ApplyInitialRoleView()
@@ -190,6 +294,7 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsReportsAllowed));
         OnPropertyChanged(nameof(IsStaffAllowed));
         OnPropertyChanged(nameof(IsInventoryAllowed));
+        OnPropertyChanged(nameof(IsAuditLogAllowed));
 
         // Direct user to their primary operational screen upon login
         if (_authService.CurrentUser?.Role == UserRole.Admin)

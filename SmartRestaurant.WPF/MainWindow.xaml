@@ -34,6 +34,44 @@
         <DataTemplate DataType="{x:Type vm:InventoryManagementViewModel}">
             <views:InventoryManagementView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:AuditLogViewModel}">
+            <views:AuditLogsView/>
+        </DataTemplate>
+
+        <!-- Lock Screen PIN Numpad Key Styles -->
+        <Style x:Key="NumpadKeyStyle" TargetType="Button">
+            <Setter Property="Height" Value="48"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="Background" Value="#334155"/>
+            <Setter Property="Foreground" Value="#F8FAFC"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#475569"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#2563EB"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="NumpadClearKeyStyle" TargetType="Button" BasedOn="{StaticResource NumpadKeyStyle}">
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="FontSize" Value="16"/>
+        </Style>
 
         <!-- Modern Clean Nav Tab Button Style with Tactile Animation -->
         <Style x:Key="NavButtonStyle" TargetType="Button">
@@ -157,6 +195,17 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- Quick Lock Screen Button -->
+                    <Button Content="🔒 Khóa" Command="{Binding LockScreenCommand}"
+                            Background="#475569" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" Height="36" Padding="12,0" Margin="0,0,10,0" Cursor="Hand" BorderThickness="0"
+                            ToolTip="Khóa màn hình bảo vệ ca trực">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="8"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+
                     <!-- Logout Button -->
                     <Button Content="🚪 Đăng Xuất" Command="{Binding LogoutCommand}"
                             Background="#C0392B" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" Height="36" Padding="14,0" Cursor="Hand" BorderThickness="0">
@@ -187,6 +236,9 @@
                     <Button Content="📖 Thực Đơn &amp; Dịch Vụ" Command="{Binding NavMenuCommand}"
                             Visibility="{Binding IsMenuAllowed, Converter={StaticResource BoolToVis}}"
                             Style="{StaticResource NavButtonStyle}"/>
+                    <Button Content="🛡️ Nhật Ký Kiểm Toán" Command="{Binding NavAuditLogCommand}"
+                            Visibility="{Binding IsAuditLogAllowed, Converter={StaticResource BoolToVis}}"
+                            Style="{StaticResource NavButtonStyle}"/>
 
                     <!-- Operation Floor & Kitchen Tabs -->
                     <Button Content="🪑 Sơ Đồ Bàn (Floor Plan)" Command="{Binding NavFloorPlanCommand}"
@@ -215,5 +267,73 @@
 
         <!-- 3. Active Workspace Content Area -->
         <ContentControl Grid.Row="2" Content="{Binding CurrentView}"/>
+
+        <!-- 4. Auto-Lock Screen Modal Overlay (SEC-02 Security Protection) -->
+        <Border Grid.Row="0" Grid.RowSpan="3" Background="#EE0F172A"
+                Visibility="{Binding IsScreenLocked, Converter={StaticResource BoolToVis}}"
+                Panel.ZIndex="999">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="40" Color="#000000" Opacity="0.7"/>
+            </Border.Effect>
+            <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Border Width="400" Background="#1E293B" CornerRadius="18" Padding="28" BorderBrush="#334155" BorderThickness="2">
+                    <StackPanel HorizontalAlignment="Center">
+                        <!-- Icon & Title -->
+                        <TextBlock Text="🔒" FontSize="44" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                        <TextBlock Text="MÀN HÌNH ĐÃ KHÓA" FontSize="19" FontWeight="Bold" Foreground="#F8FAFC" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Bảo vệ ca làm việc và dữ liệu tài chính" FontSize="12" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,3,0,16"/>
+
+                        <!-- User Info Badge -->
+                        <Border Background="#0F172A" CornerRadius="10" Padding="14,10" Margin="0,0,0,16">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <Border Background="{Binding RoleBadgeColor}" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                                    <TextBlock Text="{Binding RoleBadgeText}" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                </Border>
+                                <TextBlock Text="{Binding CurrentUserName}" FontWeight="Bold" FontSize="13" Foreground="#E2E8F0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- PIN / Password Display (Masked Dots) -->
+                        <TextBlock Text="Nhập mật khẩu hoặc mã PIN để mở khóa:" FontSize="12" Foreground="#CBD5E1" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                        <Border Background="#0F172A" CornerRadius="10" Height="48" BorderBrush="#475569" BorderThickness="1" Margin="0,0,0,8" Padding="16,0">
+                            <TextBlock Text="{Binding LockScreenPin}" FontSize="24" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+
+                        <!-- Error Message -->
+                        <TextBlock Text="{Binding LockErrorMessage}" FontSize="12" Foreground="#EF4444" FontWeight="SemiBold" TextWrapping="Wrap" HorizontalAlignment="Center" Margin="0,0,0,10"
+                                   Visibility="{Binding LockErrorMessage, Converter={StaticResource BoolToVis}}"/>
+
+                        <!-- Touch PIN Numpad 4x3 Grid -->
+                        <UniformGrid Columns="3" Margin="0,0,0,14" Width="260">
+                            <Button Content="1" Command="{Binding LockNumpadDigitCommand}" CommandParameter="1" Style="{StaticResource NumpadKeyStyle}"/>
+                            <Button Content="2" Command="{Binding LockNumpadDigitCommand}" CommandParameter="2" Style="{StaticResource NumpadKeyStyle}"/>
+                            <Button Content="3" Command="{Binding LockNumpadDigitCommand}" CommandParameter="3" Style="{StaticResource NumpadKeyStyle}"/>
+                            <Button Content="4" Command="{Binding LockNumpadDigitCommand}" CommandParameter="4" Style="{StaticResource NumpadKeyStyle}"/>
+                            <Button Content="5" Command="{Binding LockNumpadDigitCommand}" CommandParameter="5" Style="{StaticResource NumpadKeyStyle}"/>
+                            <Button Content="6" Command="{Binding LockNumpadDigitCommand}" CommandParameter="6" Style="{StaticResource NumpadKeyStyle}"/>
+                            <Button Content="7" Command="{Binding LockNumpadDigitCommand}" CommandParameter="7" Style="{StaticResource NumpadKeyStyle}"/>
+                            <Button Content="8" Command="{Binding LockNumpadDigitCommand}" CommandParameter="8" Style="{StaticResource NumpadKeyStyle}"/>
+                            <Button Content="9" Command="{Binding LockNumpadDigitCommand}" CommandParameter="9" Style="{StaticResource NumpadKeyStyle}"/>
+                            <Button Content="C" Command="{Binding LockNumpadClearCommand}" Style="{StaticResource NumpadClearKeyStyle}"/>
+                            <Button Content="0" Command="{Binding LockNumpadDigitCommand}" CommandParameter="0" Style="{StaticResource NumpadKeyStyle}"/>
+                            <Button Content="⌫" Command="{Binding LockNumpadBackspaceCommand}" Style="{StaticResource NumpadClearKeyStyle}"/>
+                        </UniformGrid>
+
+                        <!-- Action Buttons: Unlock & Logout -->
+                        <Button Content="🔓 MỞ KHÓA MÀN HÌNH" Command="{Binding UnlockScreenCommand}"
+                                Background="#2563EB" Foreground="#FFFFFF" FontWeight="Bold" FontSize="14" Height="46" Width="260" Margin="0,0,0,8" Cursor="Hand" BorderThickness="0">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="10"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+
+                        <Button Content="🚪 Đăng Xuất (Chuyển Ca Khác)" Command="{Binding LogoutCommand}"
+                                Background="Transparent" Foreground="#94A3B8" FontWeight="SemiBold" FontSize="12" Height="32" Cursor="Hand" BorderThickness="0"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

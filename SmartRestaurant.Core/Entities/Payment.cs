@@ -12,6 +12,7 @@ public class Payment
     public int InvoiceId { get; set; }
     public PaymentMethod Method { get; set; } = PaymentMethod.Cash;
     public decimal AmountPaid { get; set; }
+    public string? IdempotencyKey { get; set; }
     public DateTime PaidAt { get; set; } = DateTime.UtcNow;
 
     public virtual Invoice? Invoice { get; set; }
