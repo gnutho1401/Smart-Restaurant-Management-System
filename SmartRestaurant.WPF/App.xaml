@@ -9,6 +9,10 @@
         <converters:CurrencyFormatConverter x:Key="CurrencyFormatConverter" />
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
+        <converters:TableStatusToVisibilityConverter x:Key="TableStatusToVisibilityConverter" />
+        <converters:TableStatusToBadgeBackgroundConverter x:Key="TableStatusToBadgeBackgroundConverter" />
+        <converters:TableStatusToBadgeForegroundConverter x:Key="TableStatusToBadgeForegroundConverter" />
+        <converters:TableStatusToTextConverter x:Key="TableStatusToTextConverter" />
 
         <!-- Modern UI Global Palette -->
         <Color x:Key="PrimaryColor">#1A252F</Color>

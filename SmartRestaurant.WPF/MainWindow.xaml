@@ -25,6 +25,38 @@
         <DataTemplate DataType="{x:Type vm:MenuViewModel}">
             <views:MenuView/>
         </DataTemplate>
+
+        <!-- Modern Clean Nav Tab Button Style -->
+        <Style x:Key="NavButtonStyle" TargetType="Button">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#334155"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Height" Value="44"/>
+            <Setter Property="Padding" Value="16,0"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#F1F5F9"/>
+                                <Setter Property="Foreground" Value="#0F172A"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#E2E8F0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -89,16 +121,16 @@
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
                     <Button Content="🪑 Sơ Đồ Bàn (Floor Plan)" Command="{Binding NavFloorPlanCommand}"
                             Visibility="{Binding IsFloorPlanAllowed, Converter={StaticResource BoolToVis}}"
-                            Background="Transparent" Foreground="#2C3E50" FontWeight="Bold" FontSize="14" Height="48" Padding="18,0" Margin="0,0,6,0" Cursor="Hand" BorderThickness="0"/>
+                            Style="{StaticResource NavButtonStyle}"/>
                     <Button Content="📱 Gọi Món POS (Touch POS)" Command="{Binding NavPosCommand}"
                             Visibility="{Binding IsPosAllowed, Converter={StaticResource BoolToVis}}"
-                            Background="Transparent" Foreground="#2C3E50" FontWeight="Bold" FontSize="14" Height="48" Padding="18,0" Margin="0,0,6,0" Cursor="Hand" BorderThickness="0"/>
+                            Style="{StaticResource NavButtonStyle}"/>
                     <Button Content="👨‍🍳 Màn Hình Bếp (Kitchen KDS)" Command="{Binding NavKdsCommand}"
                             Visibility="{Binding IsKdsAllowed, Converter={StaticResource BoolToVis}}"
-                            Background="Transparent" Foreground="#2C3E50" FontWeight="Bold" FontSize="14" Height="48" Padding="18,0" Margin="0,0,6,0" Cursor="Hand" BorderThickness="0"/>
+                            Style="{StaticResource NavButtonStyle}"/>
                     <Button Content="📖 Thực Đơn &amp; Định Lượng BOM" Command="{Binding NavMenuCommand}"
                             Visibility="{Binding IsMenuAllowed, Converter={StaticResource BoolToVis}}"
-                            Background="Transparent" Foreground="#2C3E50" FontWeight="Bold" FontSize="14" Height="48" Padding="18,0" Margin="0,0,6,0" Cursor="Hand" BorderThickness="0"/>
+                            Style="{StaticResource NavButtonStyle}"/>
                 </StackPanel>
 
                 <Button DockPanel.Dock="Right" Content="💳 Quyết Toán Hóa Đơn (VAT 8%)" Command="{Binding OpenBillingCommand}"

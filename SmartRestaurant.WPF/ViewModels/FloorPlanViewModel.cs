@@ -111,13 +111,13 @@ public class FloorPlanViewModel : ViewModelBase
 
     private void ApplyFilter()
     {
-        if (SelectedArea == "Tất cả")
+        if (string.IsNullOrWhiteSpace(SelectedArea) || SelectedArea == "Tất cả")
         {
             Tables = new ObservableCollection<DiningTable>(_allTables);
         }
         else
         {
-            Tables = new ObservableCollection<DiningTable>(_allTables.Where(t => t.Area != null && t.Area.AreaName.Contains(SelectedArea)));
+            Tables = new ObservableCollection<DiningTable>(_allTables.Where(t => t.Area != null && t.Area.AreaName.Contains(SelectedArea, StringComparison.OrdinalIgnoreCase)));
         }
     }
 
