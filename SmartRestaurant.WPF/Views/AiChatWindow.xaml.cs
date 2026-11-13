@@ -8,9 +8,13 @@ namespace SmartRestaurant.WPF.Views;
 /// </summary>
 public partial class AiChatWindow : Window
 {
-    public AiChatWindow(AiChatViewModel viewModel)
+    public AiChatWindow()
     {
         InitializeComponent();
+    }
+
+    public AiChatWindow(AiChatViewModel viewModel) : this()
+    {
         DataContext = viewModel;
     }
 }

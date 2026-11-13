@@ -8,11 +8,21 @@ namespace SmartRestaurant.WPF.Views;
 /// </summary>
 public partial class ReportsView : UserControl
 {
-    public ReportsView(ReportsViewModel viewModel)
+    public ReportsView()
     {
         InitializeComponent();
+        Loaded += async (s, e) =>
+        {
+            if (DataContext is ReportsViewModel vm)
+            {
+                await vm.LoadDashboardAsync();
+            }
+        };
+    }
+
+    public ReportsView(ReportsViewModel viewModel) : this()
+    {
         DataContext = viewModel;
-        Loaded += async (s, e) => await viewModel.LoadDashboardAsync();
     }
 }
 

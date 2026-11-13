@@ -156,3 +156,4 @@ public class Phase4AiAndStressTests
         Assert.Equal(0m, updatedRice.CurrentStock); // 3000g - (30 * 100g) = 0g
     }
 }
+

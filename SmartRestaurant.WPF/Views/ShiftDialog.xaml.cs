@@ -10,11 +10,21 @@ namespace SmartRestaurant.WPF.Views;
 /// </summary>
 public partial class ShiftDialog : Window
 {
-    public ShiftDialog(ShiftViewModel viewModel)
+    public ShiftDialog()
     {
         InitializeComponent();
+        Loaded += async (s, e) =>
+        {
+            if (DataContext is ShiftViewModel vm)
+            {
+                await vm.LoadShiftAsync();
+            }
+        };
+    }
+
+    public ShiftDialog(ShiftViewModel viewModel) : this()
+    {
         DataContext = viewModel;
-        Loaded += async (s, e) => await viewModel.LoadShiftAsync();
     }
 
     private void PrintZReport_Click(object sender, RoutedEventArgs e)

@@ -9,10 +9,9 @@ namespace SmartRestaurant.WPF.Views;
 /// </summary>
 public partial class LoginWindow : Window
 {
-    public LoginWindow(LoginViewModel viewModel)
+    public LoginWindow()
     {
         InitializeComponent();
-        DataContext = viewModel;
 
         // Allow window dragging
         MouseDown += (s, e) =>
@@ -20,6 +19,11 @@ public partial class LoginWindow : Window
             if (e.ChangedButton == MouseButton.Left)
                 DragMove();
         };
+    }
+
+    public LoginWindow(LoginViewModel viewModel) : this()
+    {
+        DataContext = viewModel;
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
