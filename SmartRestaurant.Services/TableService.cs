@@ -36,7 +36,7 @@ public class TableService : ITableService
     {
         return await _context.DiningTables
             .Include(t => t.Area)
-            .Include(t => t.Orders.Where(o => o.Status == "Active"))
+            .Include(t => t.Orders)
             .FirstOrDefaultAsync(t => t.TableId == tableId);
     }
 
@@ -85,5 +85,88 @@ public class TableService : ITableService
             throw new ConcurrencyConflictException(
                 $"Bàn {table.TableName} vừa được cập nhật bởi một quầy khác. Vui lòng tải lại dữ liệu.", ex);
         }
+    }
+
+    public async Task<bool> TransferTableAsync(int sourceTableId, int targetTableId)
+    {
+        if (sourceTableId == targetTableId) return false;
+
+        var sourceTable = await _context.DiningTables
+            .Include(t => t.Orders)
+            .FirstOrDefaultAsync(t => t.TableId == sourceTableId);
+
+        var targetTable = await _context.DiningTables.FirstOrDefaultAsync(t => t.TableId == targetTableId);
+
+        if (sourceTable == null || targetTable == null)
+        {
+            throw new KeyNotFoundException("Không tìm thấy bàn nguồn hoặc bàn đích.");
+        }
+
+        if (sourceTable.Status != TableStatus.Occupied)
+        {
+            throw new InvalidOperationException($"Bàn nguồn '{sourceTable.TableName}' không có khách để chuyển.");
+        }
+
+        if (targetTable.Status != TableStatus.Available)
+        {
+            throw new InvalidOperationException($"Bàn đích '{targetTable.TableName}' đang bận hoặc chưa dọn dẹp, không thể chuyển sang.");
+        }
+
+        var activeOrder = sourceTable.Orders.FirstOrDefault(o => o.Status == "Active");
+        if (activeOrder != null)
+        {
+            activeOrder.TableId = targetTableId;
+        }
+
+        targetTable.Status = TableStatus.Occupied;
+        sourceTable.Status = TableStatus.Available;
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> MergeTablesAsync(int primaryTableId, int secondaryTableId)
+    {
+        if (primaryTableId == secondaryTableId) return false;
+
+        var primaryTable = await _context.DiningTables
+            .Include(t => t.Orders)
+                .ThenInclude(o => o.OrderItems)
+            .FirstOrDefaultAsync(t => t.TableId == primaryTableId);
+
+        var secondaryTable = await _context.DiningTables
+            .Include(t => t.Orders)
+                .ThenInclude(o => o.OrderItems)
+            .FirstOrDefaultAsync(t => t.TableId == secondaryTableId);
+
+        if (primaryTable == null || secondaryTable == null)
+        {
+            throw new KeyNotFoundException("Không tìm thấy bàn chính hoặc bàn phụ.");
+        }
+
+        var primaryOrder = primaryTable.Orders.FirstOrDefault(o => o.Status == "Active");
+        var secondaryOrder = secondaryTable.Orders.FirstOrDefault(o => o.Status == "Active");
+
+        if (primaryOrder == null || secondaryOrder == null)
+        {
+            throw new InvalidOperationException("Cả hai bàn đều phải có đơn hàng đang hoạt động để gộp bàn.");
+        }
+
+        // Move all items from secondary order into primary order
+        foreach (var item in secondaryOrder.OrderItems.ToList())
+        {
+            item.OrderId = primaryOrder.OrderId;
+            primaryOrder.OrderItems.Add(item);
+        }
+
+        primaryOrder.SubTotal = primaryOrder.OrderItems.Sum(oi => oi.UnitPrice * oi.Quantity);
+        primaryOrder.FinalTotal = Math.Max(0, primaryOrder.SubTotal - primaryOrder.DiscountAmount);
+
+        // Mark secondary order merged
+        secondaryOrder.Status = "Completed";
+        secondaryTable.Status = TableStatus.Available;
+
+        await _context.SaveChangesAsync();
+        return true;
     }
 }

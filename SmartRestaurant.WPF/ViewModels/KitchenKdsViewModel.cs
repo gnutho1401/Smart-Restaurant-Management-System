@@ -17,6 +17,8 @@ namespace SmartRestaurant.WPF.ViewModels;
 public class KitchenKdsViewModel : ViewModelBase, IDisposable
 {
     private readonly IKdsService _kdsService;
+    private readonly IOrderService _orderService;
+    private readonly IAuthService? _authService;
     private ObservableCollection<KitchenTicketViewModel> _tickets = new();
     private int _pendingCount;
     private int _cookingCount;
@@ -51,13 +53,20 @@ public class KitchenKdsViewModel : ViewModelBase, IDisposable
 
     public IAsyncRelayCommand LoadTicketsCommand { get; }
     public IAsyncRelayCommand<KitchenTicketViewModel> AdvanceStatusCommand { get; }
+    public IAsyncRelayCommand<KitchenTicketViewModel> VoidTicketCommand { get; }
 
-    public KitchenKdsViewModel(IKdsService kdsService)
+    public KitchenKdsViewModel(
+        IKdsService kdsService,
+        IOrderService orderService,
+        IAuthService? authService = null)
     {
         _kdsService = kdsService;
+        _orderService = orderService;
+        _authService = authService;
 
         LoadTicketsCommand = new AsyncRelayCommand(LoadTicketsAsync);
         AdvanceStatusCommand = new AsyncRelayCommand<KitchenTicketViewModel>(AdvanceStatusAsync);
+        VoidTicketCommand = new AsyncRelayCommand<KitchenTicketViewModel>(VoidTicketAsync);
 
         StartPollingEngine();
     }
@@ -83,6 +92,40 @@ public class KitchenKdsViewModel : ViewModelBase, IDisposable
         PendingCount = Tickets.Count(t => t.Status == CookingStatus.Pending);
         CookingCount = Tickets.Count(t => t.Status == CookingStatus.Cooking);
         ReadyCount = Tickets.Count(t => t.Status == CookingStatus.Ready);
+    }
+
+    private async Task VoidTicketAsync(KitchenTicketViewModel? ticket)
+    {
+        if (ticket == null) return;
+
+        var confirm = MessageBox.Show(
+            $"Bạn có chắc chắn muốn HỦY món '{ticket.DishName}' ({ticket.TableName}) không?\n\nLưu ý: Nếu món đang ở trạng thái 'Chờ Nấu', nguyên liệu BOM sẽ tự động được hoàn trả vào kho.",
+            "Xác Nhận Hủy Món Nhà Bếp",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (confirm != MessageBoxResult.Yes) return;
+
+        int userId = _authService?.CurrentUser?.UserId ?? 1;
+        bool success = await _orderService.VoidOrderItemAsync(ticket.OrderItemId, "Khách yêu cầu hủy món qua KDS", userId);
+
+        if (success)
+        {
+            Tickets.Remove(ticket);
+            PendingCount = Tickets.Count(t => t.Status == CookingStatus.Pending);
+            CookingCount = Tickets.Count(t => t.Status == CookingStatus.Cooking);
+            ReadyCount = Tickets.Count(t => t.Status == CookingStatus.Ready);
+
+            MessageBox.Show(
+                $"Đã hủy thành công món '{ticket.DishName}' của {ticket.TableName}!",
+                "Đã Hủy Món",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        else
+        {
+            MessageBox.Show("Không thể hủy món này hoặc món đã bị hủy trước đó.", "Lỗi Hủy Món", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private async Task AdvanceStatusAsync(KitchenTicketViewModel? ticket)

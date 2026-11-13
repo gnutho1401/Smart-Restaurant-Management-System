@@ -1,0 +1,170 @@
+<Window x:Class="SmartRestaurant.WPF.Views.ShiftDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:SmartRestaurant.WPF.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance vm:ShiftViewModel}"
+        Title="Quản Lý Ca Làm Việc &amp; Báo Cáo Z-Report - Smart Restaurant" 
+        Height="620" Width="680" WindowStartupLocation="CenterScreen" 
+        ResizeMode="NoResize" Background="#F8FAFC">
+    <Border Padding="22">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- 1. Header -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                <TextBlock Text="⏱️ QUẢN LÝ CA THU NGÂN &amp; BÁO CÁO Z-REPORT" FontSize="18" FontWeight="Bold" Foreground="#1E293B"/>
+                <TextBlock Text="Kiểm soát bàn giao két tiền mặt, doanh thu thanh toán đa kênh và đối soát doanh số" FontSize="12" Foreground="#64748B" Margin="0,4,0,0"/>
+            </StackPanel>
+
+            <!-- 2. Main Content Area -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <!-- Mode A: Open New Shift -->
+                    <Border Background="#FFFFFF" CornerRadius="10" Padding="18" Margin="0,0,0,16" BorderBrush="#E2E8F0" BorderThickness="1"
+                            Visibility="{Binding HasActiveShift, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=Inverse}">
+                        <StackPanel>
+                            <TextBlock Text="🟢 BẮT ĐẦU CA LÀM VIỆC MỚI" FontSize="15" FontWeight="Bold" Foreground="#059669" Margin="0,0,0,12"/>
+                            
+                            <DockPanel Margin="0,0,0,10">
+                                <TextBlock Text="Thu ngân phụ trách:" FontWeight="SemiBold" FontSize="13" Foreground="#475569" Width="180" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding CashierName}" FontWeight="Bold" FontSize="14" Foreground="#1E293B"/>
+                            </DockPanel>
+
+                            <DockPanel Margin="0,0,0,16">
+                                <TextBlock Text="Tiền mặt đầu ca (Opening Float):" FontWeight="SemiBold" FontSize="13" Foreground="#475569" Width="180" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding OpeningFloatInput, UpdateSourceTrigger=PropertyChanged}" 
+                                         Height="38" FontSize="16" FontWeight="Bold" VerticalContentAlignment="Center" Padding="10,0" Foreground="#2563EB"/>
+                            </DockPanel>
+
+                            <Button Content="🟢 Xác Nhận Mở Ca Làm Việc" Command="{Binding StartShiftCommand}"
+                                    Background="#059669" Foreground="#FFFFFF" FontWeight="Bold" FontSize="14" Height="44" Cursor="Hand" BorderThickness="0">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="8"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Mode B: Active Shift Overview & Z-Report Reconcile -->
+                    <Border Background="#FFFFFF" CornerRadius="10" Padding="18" Margin="0,0,0,16" BorderBrush="#E2E8F0" BorderThickness="1"
+                            Visibility="{Binding HasActiveShift, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            x:Name="ZReportPrintArea">
+                        <StackPanel>
+                            <!-- Shift Metadata -->
+                            <DockPanel Margin="0,0,0,12">
+                                <TextBlock Text="🏁 CA LÀM VIỆC HIỆN TẠI (ĐANG MỞ)" FontSize="15" FontWeight="Bold" Foreground="#1E293B"/>
+                                <Border Background="#ECFDF5" CornerRadius="6" Padding="8,4" HorizontalAlignment="Right">
+                                    <TextBlock Text="Đang Hoạt Động" FontWeight="Bold" FontSize="11" Foreground="#059669"/>
+                                </Border>
+                            </DockPanel>
+
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="{Binding CashierName, StringFormat='Thu ngân: {0}'}" FontSize="13" FontWeight="SemiBold" Foreground="#334155"/>
+                                    <TextBlock Text="{Binding ShiftStartTimeText, StringFormat='Giờ mở ca: {0}'}" FontSize="12" Foreground="#64748B" Margin="0,4,0,0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                    <TextBlock Text="{Binding OpeningFloatText, StringFormat='Tiền đầu ca: {0}'}" FontSize="13" FontWeight="Bold" Foreground="#2563EB"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Separator Background="#CBD5E1" Margin="0,0,0,12"/>
+
+                            <!-- Revenue Summary Breakdown -->
+                            <TextBlock Text="DOANH THU THEO PHƯƠNG THỨC:" FontSize="13" FontWeight="Bold" Foreground="#475569" Margin="0,0,0,8"/>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="💵 Doanh thu Tiền mặt (Cash):" FontSize="13" Foreground="#475569"/>
+                                <TextBlock Text="{Binding CashSalesText}" FontWeight="SemiBold" FontSize="13" Foreground="#1E293B" HorizontalAlignment="Right"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="💳 Doanh thu Thẻ (Card):" FontSize="13" Foreground="#475569"/>
+                                <TextBlock Text="{Binding CardSalesText}" FontWeight="SemiBold" FontSize="13" Foreground="#1E293B" HorizontalAlignment="Right"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="📲 Doanh thu QR Chuyển khoản:" FontSize="13" Foreground="#475569"/>
+                                <TextBlock Text="{Binding QrSalesText}" FontWeight="SemiBold" FontSize="13" Foreground="#1E293B" HorizontalAlignment="Right"/>
+                            </DockPanel>
+
+                            <Separator Background="#E2E8F0" Margin="0,8"/>
+
+                            <DockPanel Margin="0,4">
+                                <TextBlock Text="TỔNG DOANH SỐ CA:" FontWeight="Bold" FontSize="15" Foreground="#0F172A"/>
+                                <TextBlock Text="{Binding TotalSalesText}" FontWeight="Bold" FontSize="17" Foreground="#059669" HorizontalAlignment="Right"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,4">
+                                <TextBlock Text="Két tiền mặt kỳ vọng (Đầu ca + Thu tiền mặt):" FontSize="13" FontWeight="SemiBold" Foreground="#64748B"/>
+                                <TextBlock Text="{Binding ExpectedCashEndText}" FontWeight="Bold" FontSize="14" Foreground="#2563EB" HorizontalAlignment="Right"/>
+                            </DockPanel>
+
+                            <Separator Background="#CBD5E1" Margin="0,12"/>
+
+                            <!-- Reconciliation Field -->
+                            <TextBlock Text="ĐỐI SOÁT TIỀN MẶT CUỐI CA (Z-REPORT):" FontSize="13" FontWeight="Bold" Foreground="#DC2626" Margin="0,0,0,8"/>
+                            <DockPanel Margin="0,0,0,10">
+                                <TextBlock Text="Tiền mặt thực tế đếm được:" FontWeight="SemiBold" FontSize="13" Foreground="#334155" Width="200" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding ActualCashEndInput, UpdateSourceTrigger=PropertyChanged}" 
+                                         Height="38" FontSize="16" FontWeight="Bold" VerticalContentAlignment="Center" Padding="10,0" Foreground="#059669"/>
+                            </DockPanel>
+
+                            <!-- Variance Notification Banner -->
+                            <Border Background="#FEF2F2" CornerRadius="8" Padding="12,10" Margin="0,0,0,14" BorderBrush="#FCA5A5" BorderThickness="1">
+                                <TextBlock Text="{Binding VarianceDescription}" FontWeight="Bold" FontSize="13" Foreground="#991B1B"/>
+                            </Border>
+
+                            <!-- Close Shift & Print Buttons -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="1.4*"/>
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Content="🖨️ In Z-Report" Click="PrintZReport_Click"
+                                        Background="#334155" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="44" Cursor="Hand" BorderThickness="0">
+                                    <Button.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="8"/>
+                                        </Style>
+                                    </Button.Resources>
+                                </Button>
+                                <Button Grid.Column="2" Content="🏁 Chốt Ca &amp; Xuất Báo Cáo" Command="{Binding CloseShiftCommand}"
+                                        Background="#DC2626" Foreground="#FFFFFF" FontWeight="Bold" FontSize="14" Height="44" Cursor="Hand" BorderThickness="0">
+                                    <Button.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="8"/>
+                                        </Style>
+                                    </Button.Resources>
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- 3. Status Bar & Close -->
+            <DockPanel Grid.Row="2" Margin="0,10,0,0">
+                <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="#2563EB" FontWeight="SemiBold" VerticalAlignment="Center" Width="520" TextWrapping="Wrap"/>
+                <Button Content="Đóng" Width="90" Height="34" Background="#E2E8F0" Foreground="#334155" 
+                        FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Right" Cursor="Hand" BorderThickness="0" Click="Close_Click">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="6"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+            </DockPanel>
+        </Grid>
+    </Border>
+</Window>

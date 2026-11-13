@@ -7,6 +7,7 @@ using SmartRestaurant.Core.Entities;
 using SmartRestaurant.Core.Enums;
 using SmartRestaurant.Core.Interfaces;
 using SmartRestaurant.WPF.Common;
+using SmartRestaurant.WPF.Views;
 
 namespace SmartRestaurant.WPF.ViewModels;
 
@@ -82,6 +83,8 @@ public class FloorPlanViewModel : ViewModelBase
     public IAsyncRelayCommand<DiningTable> CleanTableDoneCommand { get; }
     public IAsyncRelayCommand<DiningTable> ToggleReserveCommand { get; }
     public IAsyncRelayCommand<DiningTable> PayTableCommand { get; }
+    public IAsyncRelayCommand<DiningTable> TransferTableCommand { get; }
+    public IAsyncRelayCommand<DiningTable> MergeTableCommand { get; }
 
     public FloorPlanViewModel(ITableService tableService, IAuthService? authService = null)
     {
@@ -93,6 +96,8 @@ public class FloorPlanViewModel : ViewModelBase
         CleanTableDoneCommand = new AsyncRelayCommand<DiningTable>(ExecuteCleanTableDoneAsync);
         ToggleReserveCommand = new AsyncRelayCommand<DiningTable>(ExecuteToggleReserveAsync);
         PayTableCommand = new AsyncRelayCommand<DiningTable>(ExecutePayTableAsync);
+        TransferTableCommand = new AsyncRelayCommand<DiningTable>(ExecuteTransferTableAsync);
+        MergeTableCommand = new AsyncRelayCommand<DiningTable>(ExecuteMergeTableAsync);
     }
 
     public async Task LoadTablesAsync()
@@ -203,5 +208,47 @@ public class FloorPlanViewModel : ViewModelBase
             table.Status = TableStatus.Available;
         }
         UpdateStatistics();
+    }
+
+    private async Task ExecuteTransferTableAsync(DiningTable? table)
+    {
+        if (table == null) return;
+
+        if (table.Status != TableStatus.Occupied)
+        {
+            System.Windows.MessageBox.Show(
+                $"Chỉ có thể chuyển bàn đang có khách dùng bữa (Occupied). Bàn {table.TableName} hiện đang ở trạng thái {table.Status}.",
+                "Nghiệp Vụ Chuyển Bàn",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new TableTransferMergeDialog(table, _allTables, _tableService, defaultToMerge: false);
+        if (dialog.ShowDialog() == true)
+        {
+            await LoadTablesAsync();
+        }
+    }
+
+    private async Task ExecuteMergeTableAsync(DiningTable? table)
+    {
+        if (table == null) return;
+
+        if (table.Status != TableStatus.Occupied)
+        {
+            System.Windows.MessageBox.Show(
+                $"Chỉ có thể gộp bàn đang có khách dùng bữa (Occupied). Bàn {table.TableName} hiện đang ở trạng thái {table.Status}.",
+                "Nghiệp Vụ Gộp Bàn",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new TableTransferMergeDialog(table, _allTables, _tableService, defaultToMerge: true);
+        if (dialog.ShowDialog() == true)
+        {
+            await LoadTablesAsync();
+        }
     }
 }

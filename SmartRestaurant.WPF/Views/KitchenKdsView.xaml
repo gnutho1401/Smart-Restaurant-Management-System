@@ -94,17 +94,35 @@
                                     </Border>
                                 </StackPanel>
 
-                                <!-- Big Touch Action Button (52px) -->
-                                <Button Grid.Row="3" Content="{Binding ActionButtonText}" 
-                                        Command="{Binding DataContext.AdvanceStatusCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        CommandParameter="{Binding}"
-                                        Background="{Binding UrgencyBrush}" Foreground="#1E272E" FontWeight="Bold" FontSize="16" Height="52" Cursor="Hand" BorderThickness="0">
-                                    <Button.Resources>
-                                        <Style TargetType="Border">
-                                            <Setter Property="CornerRadius" Value="8"/>
-                                        </Style>
-                                    </Button.Resources>
-                                </Button>
+                                <!-- Action Buttons (Advance Status + Void with Smart BOM return) -->
+                                <Grid Grid.Row="3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="8"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button Grid.Column="0" Content="{Binding ActionButtonText}" 
+                                            Command="{Binding DataContext.AdvanceStatusCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Background="{Binding UrgencyBrush}" Foreground="#1E272E" FontWeight="Bold" FontSize="15" Height="48" Cursor="Hand" BorderThickness="0">
+                                        <Button.Resources>
+                                            <Style TargetType="Border">
+                                                <Setter Property="CornerRadius" Value="8"/>
+                                            </Style>
+                                        </Button.Resources>
+                                    </Button>
+                                    <Button Grid.Column="2" Content="❌ Hủy" 
+                                            Command="{Binding DataContext.VoidTicketCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Background="#C0392B" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" Height="48" Padding="12,0" Cursor="Hand" BorderThickness="0"
+                                            ToolTip="Hủy món và hoàn nguyên liệu BOM vào kho nếu chưa nấu">
+                                        <Button.Resources>
+                                            <Style TargetType="Border">
+                                                <Setter Property="CornerRadius" Value="8"/>
+                                            </Style>
+                                        </Button.Resources>
+                                    </Button>
+                                </Grid>
                             </Grid>
                         </Border>
                     </DataTemplate>

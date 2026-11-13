@@ -200,10 +200,16 @@
                             Style="{StaticResource NavButtonStyle}"/>
                 </StackPanel>
 
-                <Button DockPanel.Dock="Right" Content="💳 Quyết Toán Hóa Đơn (VAT 8%)" Command="{Binding OpenBillingCommand}"
-                        Visibility="{Binding IsBillingAllowed, Converter={StaticResource BoolToVis}}"
-                        Background="#E67E22" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="40" Padding="18,0" Cursor="Hand" BorderThickness="0" VerticalAlignment="Center"
-                        Style="{StaticResource AnimatedTouchButtonStyle}"/>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="⏱️ Ca Làm Việc (Z-Report)" Command="{Binding OpenShiftManagementCommand}"
+                            Visibility="{Binding IsShiftAllowed, Converter={StaticResource BoolToVis}}"
+                            Background="#0D9488" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="40" Padding="14,0" Margin="0,0,10,0" Cursor="Hand" BorderThickness="0"
+                            Style="{StaticResource AnimatedTouchButtonStyle}"/>
+                    <Button Content="💳 Quyết Toán Hóa Đơn (VAT 8%)" Command="{Binding OpenBillingCommand}"
+                            Visibility="{Binding IsBillingAllowed, Converter={StaticResource BoolToVis}}"
+                            Background="#E67E22" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="40" Padding="18,0" Cursor="Hand" BorderThickness="0"
+                            Style="{StaticResource AnimatedTouchButtonStyle}"/>
+                </StackPanel>
             </DockPanel>
         </Border>
 

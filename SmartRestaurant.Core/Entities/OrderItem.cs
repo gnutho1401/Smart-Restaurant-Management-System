@@ -14,6 +14,9 @@ public class OrderItem
     public decimal UnitPrice { get; set; }
     public CookingStatus CookingStatus { get; set; } = CookingStatus.Pending;
     public string? Note { get; set; }
+    public bool IsCancelled { get; set; }
+    public string? CancelReason { get; set; }
+    public DateTime? CancelledAt { get; set; }
 
     public virtual Order? Order { get; set; }
     public virtual MenuItem? MenuItem { get; set; }

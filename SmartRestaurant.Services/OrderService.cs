@@ -92,8 +92,8 @@ public class OrderService : IOrderService
             order.OrderItems.Add(orderItem);
         }
 
-        // Recalculate SubTotal
-        order.SubTotal = order.OrderItems.Sum(i => i.UnitPrice * i.Quantity);
+        // Recalculate SubTotal ignoring cancelled items
+        order.SubTotal = order.OrderItems.Where(i => !i.IsCancelled).Sum(i => i.UnitPrice * i.Quantity);
         order.FinalTotal = Math.Max(0, order.SubTotal - order.DiscountAmount);
 
         await _context.SaveChangesAsync();
@@ -104,6 +104,7 @@ public class OrderService : IOrderService
     {
         return await _context.Orders
             .Include(o => o.Table)
+            .Include(o => o.Customer)
             .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.MenuItem)
             .FirstOrDefaultAsync(o => o.TableId == tableId && o.Status == "Active");
@@ -113,6 +114,7 @@ public class OrderService : IOrderService
     {
         return await _context.Orders
             .Include(o => o.Table)
+            .Include(o => o.Customer)
             .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.MenuItem)
             .Include(o => o.Invoice!)
@@ -126,6 +128,113 @@ public class OrderService : IOrderService
         if (item == null) return false;
 
         item.CookingStatus = newStatus;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> VoidOrderItemAsync(int orderItemId, string reason, int actorUserId)
+    {
+        var item = await _context.OrderItems
+            .Include(oi => oi.MenuItem)
+                .ThenInclude(m => m!.Recipes)
+                    .ThenInclude(r => r.Ingredient)
+            .FirstOrDefaultAsync(oi => oi.OrderItemId == orderItemId);
+
+        if (item == null || item.IsCancelled)
+        {
+            return false;
+        }
+
+        // Smart BOM return: if kitchen hasn't started yet (Pending), return raw ingredients to inventory
+        if (item.CookingStatus == CookingStatus.Pending && item.MenuItem?.Recipes != null)
+        {
+            foreach (var recipe in item.MenuItem.Recipes)
+            {
+                if (recipe.Ingredient != null)
+                {
+                    recipe.Ingredient.CurrentStock += (recipe.QuantityRequired * item.Quantity);
+                }
+            }
+        }
+        // If Cooking or Ready: ingredients are already wasted/consumed in the kitchen, not returned.
+
+        item.IsCancelled = true;
+        item.CancelReason = string.IsNullOrWhiteSpace(reason) ? "Khách yêu cầu hủy món" : reason.Trim();
+        item.CancelledAt = DateTime.UtcNow;
+
+        var order = await _context.Orders
+            .Include(o => o.OrderItems)
+            .FirstOrDefaultAsync(o => o.OrderId == item.OrderId);
+
+        if (order != null)
+        {
+            order.SubTotal = order.OrderItems.Where(i => !i.IsCancelled).Sum(i => i.UnitPrice * i.Quantity);
+            order.FinalTotal = Math.Max(0, order.SubTotal - order.DiscountAmount);
+        }
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> AttachCustomerToOrderAsync(int orderId, int customerId)
+    {
+        var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId);
+        var customer = await _context.Customers.FirstOrDefaultAsync(c => c.CustomerId == customerId);
+
+        if (order == null || customer == null)
+        {
+            return false;
+        }
+
+        order.CustomerId = customerId;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> ApplyMemberDiscountAsync(int orderId, int customerId, int pointsToUse)
+    {
+        var order = await _context.Orders
+            .Include(o => o.OrderItems)
+            .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+        var customer = await _context.Customers.FirstOrDefaultAsync(c => c.CustomerId == customerId);
+
+        if (order == null || customer == null)
+        {
+            return false;
+        }
+
+        order.CustomerId = customerId;
+        decimal subTotal = order.OrderItems.Where(i => !i.IsCancelled).Sum(i => i.UnitPrice * i.Quantity);
+
+        // Tier discount percentage
+        decimal tierDiscountRate = customer.Tier switch
+        {
+            MembershipTier.Silver => 0.05m,
+            MembershipTier.Gold => 0.10m,
+            MembershipTier.Diamond => 0.15m,
+            _ => 0m
+        };
+
+        decimal tierDiscountAmount = Math.Round(subTotal * tierDiscountRate, 0);
+
+        // Loyalty points discount (1 point = 1,000 VND)
+        decimal pointsDiscount = 0;
+        if (pointsToUse > 0)
+        {
+            int usablePoints = Math.Min(pointsToUse, customer.LoyaltyPoints);
+            pointsDiscount = usablePoints * 1000m;
+        }
+
+        decimal totalDiscount = tierDiscountAmount + pointsDiscount;
+        if (totalDiscount > subTotal)
+        {
+            totalDiscount = subTotal;
+        }
+
+        order.DiscountAmount = totalDiscount;
+        order.FinalTotal = Math.Max(0, subTotal - totalDiscount);
+
         await _context.SaveChangesAsync();
         return true;
     }

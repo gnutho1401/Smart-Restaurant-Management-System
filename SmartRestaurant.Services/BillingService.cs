@@ -35,8 +35,8 @@ public class BillingService : IBillingService
             throw new KeyNotFoundException($"Order ID {orderId} không tồn tại.");
         }
 
-        // Financial Invariant Computation
-        decimal subTotal = order.OrderItems.Sum(oi => oi.UnitPrice * oi.Quantity);
+        // Financial Invariant Computation (ignoring cancelled items)
+        decimal subTotal = order.OrderItems.Where(oi => !oi.IsCancelled).Sum(oi => oi.UnitPrice * oi.Quantity);
 
         if (discountAmount < 0 || discountAmount > subTotal)
         {
@@ -116,6 +116,26 @@ public class BillingService : IBillingService
             if (invoice.Order.Table != null && invoice.Order.Table.Status == TableStatus.Occupied)
             {
                 invoice.Order.Table.Status = TableStatus.Cleaning;
+            }
+
+            // Award loyalty points to customer (1 point per 10,000 VND)
+            if (invoice.Order.CustomerId.HasValue)
+            {
+                var customer = await _context.Customers.FirstOrDefaultAsync(c => c.CustomerId == invoice.Order.CustomerId.Value);
+                if (customer != null)
+                {
+                    int earnedPoints = (int)(invoice.TotalDue / 10000m);
+                    customer.LoyaltyPoints += earnedPoints;
+                    customer.TotalSpent += invoice.TotalDue;
+
+                    customer.Tier = customer.LoyaltyPoints switch
+                    {
+                        >= 1000 => MembershipTier.Diamond,
+                        >= 500 => MembershipTier.Gold,
+                        >= 100 => MembershipTier.Silver,
+                        _ => MembershipTier.Standard
+                    };
+                }
             }
         }
 

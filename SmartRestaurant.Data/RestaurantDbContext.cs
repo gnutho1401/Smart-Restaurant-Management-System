@@ -26,6 +26,8 @@ public class RestaurantDbContext : DbContext
     public DbSet<Invoice> Invoices => Set<Invoice>();
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<WorkShift> WorkShifts => Set<WorkShift>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -179,6 +181,36 @@ public class RestaurantDbContext : DbContext
             entity.Property(u => u.Username).HasMaxLength(50).IsRequired();
             entity.Property(u => u.Role).HasConversion<string>().HasMaxLength(30).IsRequired();
             entity.Property(u => u.FullName).HasMaxLength(100);
+        });
+
+        // 12. Customer (Loyalty Member - Strictly Unique Phone Number)
+        modelBuilder.Entity<Customer>(entity =>
+        {
+            entity.HasKey(c => c.CustomerId);
+            entity.HasIndex(c => c.PhoneNumber).IsUnique();
+            entity.Property(c => c.PhoneNumber).HasMaxLength(20).IsRequired();
+            entity.Property(c => c.FullName).HasMaxLength(100).IsRequired();
+            entity.Property(c => c.Email).HasMaxLength(100);
+            entity.Property(c => c.Tier).HasConversion<string>().HasMaxLength(20);
+            entity.Property(c => c.TotalSpent).HasPrecision(18, 2);
+        });
+
+        // 13. WorkShift (Cashier Shift & Z-Report)
+        modelBuilder.Entity<WorkShift>(entity =>
+        {
+            entity.HasKey(w => w.ShiftId);
+            entity.Property(w => w.OpeningFloat).HasPrecision(18, 2);
+            entity.Property(w => w.CashSales).HasPrecision(18, 2);
+            entity.Property(w => w.CardSales).HasPrecision(18, 2);
+            entity.Property(w => w.QrSales).HasPrecision(18, 2);
+            entity.Property(w => w.TotalSales).HasPrecision(18, 2);
+            entity.Property(w => w.ActualCashEnd).HasPrecision(18, 2);
+            entity.Property(w => w.CashVariance).HasPrecision(18, 2);
+
+            entity.HasOne(w => w.User)
+                  .WithMany()
+                  .HasForeignKey(w => w.UserId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

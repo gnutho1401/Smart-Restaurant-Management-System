@@ -14,4 +14,7 @@ public interface IOrderService
     Task<Order?> GetActiveOrderByTableIdAsync(int tableId);
     Task<Order?> GetOrderByIdAsync(int orderId);
     Task<bool> UpdateItemCookingStatusAsync(int orderItemId, CookingStatus newStatus);
+    Task<bool> VoidOrderItemAsync(int orderItemId, string reason, int actorUserId);
+    Task<bool> AttachCustomerToOrderAsync(int orderId, int customerId);
+    Task<bool> ApplyMemberDiscountAsync(int orderId, int customerId, int pointsToUse);
 }

@@ -70,6 +70,7 @@ public class MainViewModel : ViewModelBase
     public bool IsPosAllowed => _authService.CurrentUser?.Role != UserRole.Admin && _authService.HasPermission(UserRole.StoreManager, UserRole.Cashier);
     public bool IsKdsAllowed => _authService.CurrentUser?.Role != UserRole.Admin && _authService.HasPermission(UserRole.StoreManager, UserRole.HeadChef);
     public bool IsBillingAllowed => _authService.CurrentUser?.Role != UserRole.Admin && _authService.HasPermission(UserRole.StoreManager, UserRole.Cashier);
+    public bool IsShiftAllowed => _authService.HasPermission(UserRole.Admin, UserRole.StoreManager, UserRole.Cashier);
 
     public bool IsReportsAllowed => _authService.HasPermission(UserRole.Admin, UserRole.StoreManager);
     public bool IsStaffAllowed => _authService.HasPermission(UserRole.Admin);
@@ -85,6 +86,7 @@ public class MainViewModel : ViewModelBase
     public RelayCommand NavStaffCommand { get; }
     public RelayCommand NavInventoryCommand { get; }
     public RelayCommand OpenBillingCommand { get; }
+    public RelayCommand OpenShiftManagementCommand { get; }
     public RelayCommand OpenAiAssistantCommand { get; }
     public RelayCommand LogoutCommand { get; }
 
@@ -165,6 +167,7 @@ public class MainViewModel : ViewModelBase
         });
 
         OpenBillingCommand = new RelayCommand(OpenBillingModal);
+        OpenShiftManagementCommand = new RelayCommand(OpenShiftModal);
         OpenAiAssistantCommand = new RelayCommand(OpenAiChatModal);
         LogoutCommand = new RelayCommand(ExecuteLogout);
 
@@ -183,6 +186,7 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsKdsAllowed));
         OnPropertyChanged(nameof(IsMenuAllowed));
         OnPropertyChanged(nameof(IsBillingAllowed));
+        OnPropertyChanged(nameof(IsShiftAllowed));
         OnPropertyChanged(nameof(IsReportsAllowed));
         OnPropertyChanged(nameof(IsStaffAllowed));
         OnPropertyChanged(nameof(IsInventoryAllowed));
@@ -288,6 +292,23 @@ public class MainViewModel : ViewModelBase
         dialog.ShowDialog();
 
         await FloorPlanVm.LoadTablesAsync();
+    }
+
+    private void OpenShiftModal()
+    {
+        if (!IsShiftAllowed)
+        {
+            System.Windows.MessageBox.Show(
+                "Bạn không có quyền quản lý ca làm việc.\nChức năng này chỉ dành cho Thu Ngân, Quản Lý và Admin.",
+                "Từ Chối Quyền Truy Cập (RBAC)",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
+        var shiftDialog = _serviceProvider.GetRequiredService<ShiftDialog>();
+        shiftDialog.Owner = System.Windows.Application.Current.MainWindow;
+        shiftDialog.ShowDialog();
     }
 
     private void OpenAiChatModal()

@@ -121,7 +121,7 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Width="260" Height="220" Margin="10" Background="#FFFFFF" CornerRadius="14" Padding="16"
+                        <Border Width="270" Height="235" Margin="10" Background="#FFFFFF" CornerRadius="14" Padding="16"
                                 BorderBrush="{Binding Status, Converter={StaticResource TableStatusToBrushConverter}}" BorderThickness="2">
                             <Border.Effect>
                                 <DropShadowEffect BlurRadius="12" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.08"/>
@@ -178,30 +178,61 @@
                                         </Button.Resources>
                                     </Button>
 
-                                    <!-- STATE 2: OCCUPIED (ĐANG DÙNG BỮA) -> 2 Nút Cân Đối: Gọi Món & Thanh Toán -->
+                                    <!-- STATE 2: OCCUPIED (ĐANG DÙNG BỮA) -> Gọi Món & Thanh Toán + Đổi/Gộp Bàn -->
                                     <Grid Visibility="{Binding Status, Converter={StaticResource TableStatusToVisibilityConverter}, ConverterParameter=Occupied}">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="6"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="8"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <Button Grid.Column="0" Content="📱 Gọi Món" 
+
+                                        <!-- Primary Actions -->
+                                        <Button Grid.Row="0" Grid.Column="0" Content="📱 Gọi Món" 
                                                 Command="{Binding DataContext.OpenTableCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
-                                                Background="#2980B9" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="42" Cursor="Hand" BorderThickness="0">
+                                                Background="#2980B9" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="38" Cursor="Hand" BorderThickness="0">
                                             <Button.Resources>
                                                 <Style TargetType="Border">
                                                     <Setter Property="CornerRadius" Value="8"/>
                                                 </Style>
                                             </Button.Resources>
                                         </Button>
-                                        <Button Grid.Column="2" Content="💳 Thanh Toán" 
+                                        <Button Grid.Row="0" Grid.Column="2" Content="💳 Thanh Toán" 
                                                 Command="{Binding DataContext.PayTableCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
-                                                Background="#E67E22" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="42" Cursor="Hand" BorderThickness="0">
+                                                Background="#E67E22" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="38" Cursor="Hand" BorderThickness="0">
                                             <Button.Resources>
                                                 <Style TargetType="Border">
                                                     <Setter Property="CornerRadius" Value="8"/>
+                                                </Style>
+                                            </Button.Resources>
+                                        </Button>
+
+                                        <!-- Secondary Transfer & Merge Actions -->
+                                        <Button Grid.Row="2" Grid.Column="0" Content="🔀 Đổi Bàn" 
+                                                Command="{Binding DataContext.TransferTableCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Background="#475569" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="11" Height="26" Cursor="Hand" BorderThickness="0"
+                                                ToolTip="Chuyển đơn và dọn sang bàn trống khác">
+                                            <Button.Resources>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="CornerRadius" Value="6"/>
+                                                </Style>
+                                            </Button.Resources>
+                                        </Button>
+                                        <Button Grid.Row="2" Grid.Column="2" Content="🔗 Gộp Bàn" 
+                                                Command="{Binding DataContext.MergeTableCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Background="#64748B" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="11" Height="26" Cursor="Hand" BorderThickness="0"
+                                                ToolTip="Gộp món ăn của bàn này vào bàn khác">
+                                            <Button.Resources>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="CornerRadius" Value="6"/>
                                                 </Style>
                                             </Button.Resources>
                                         </Button>

@@ -185,5 +185,15 @@ public static class DbInitializer
         };
         context.Users.AddRange(users);
         await context.SaveChangesAsync();
+
+        // 8. Seed Sample Loyalty Member Customers
+        var customers = new List<Customer>
+        {
+            new() { FullName = "Đặng Hoàng Giang (VIP)", PhoneNumber = "0901234567", Email = "giang.dh@gmail.com", LoyaltyPoints = 650, Tier = MembershipTier.Gold, TotalSpent = 15800000m },
+            new() { FullName = "Nguyễn Thị Mai Lan", PhoneNumber = "0987654321", Email = "lan.ntm@gmail.com", LoyaltyPoints = 220, Tier = MembershipTier.Silver, TotalSpent = 4500000m },
+            new() { FullName = "Trần Quốc Hưng", PhoneNumber = "0912345678", Email = "hung.tq@gmail.com", LoyaltyPoints = 1250, Tier = MembershipTier.Diamond, TotalSpent = 38500000m }
+        };
+        context.Customers.AddRange(customers);
+        await context.SaveChangesAsync();
     }
 }
