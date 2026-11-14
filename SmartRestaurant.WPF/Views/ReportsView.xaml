@@ -120,20 +120,55 @@
                           HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F1F5F9"
                           Background="Transparent" BorderThickness="0" RowHeight="42">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="MÓN ĂN" Binding="{Binding DishName}" Width="2*"/>
-                        <DataGridTextColumn Header="DANH MỤC" Binding="{Binding CategoryName}" Width="1.5*"/>
+                        <DataGridTextColumn Header="MÓN ĂN" Binding="{Binding DishName}" Width="1.8*"/>
+                        <DataGridTextColumn Header="GIÁ BÁN" Binding="{Binding UnitPrice, Converter={StaticResource CurrencyFormatConverter}}" Width="1.2*"/>
+                        <DataGridTextColumn Header="GIÁ VỐN BOM" Binding="{Binding UnitCost, Converter={StaticResource CurrencyFormatConverter}}" Width="1.2*"/>
+                        <DataGridTextColumn Header="LÃI GỘP (CM)" Binding="{Binding ContributionMargin, Converter={StaticResource CurrencyFormatConverter}}" Width="1.2*"/>
+                        <DataGridTextColumn Header="TỶ SUẤT" Binding="{Binding MarginPercentage, StringFormat='{}{0:N0}%'}" Width="0.9*"/>
                         <DataGridTextColumn Header="ĐÃ BÁN" Binding="{Binding PortionsSold, StringFormat='{}{0} phần'}" Width="1*"/>
-                        <DataGridTextColumn Header="DOANH THU" Binding="{Binding Revenue, Converter={StaticResource CurrencyFormatConverter}}" Width="1.5*"/>
                         <DataGridTemplateColumn Header="PHÂN LOẠI BCG" Width="1.8*">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Border Background="#FEF3C7" CornerRadius="6" Padding="8,4" HorizontalAlignment="Left">
-                                        <TextBlock Text="{Binding Classification}" FontWeight="Bold" FontSize="11" Foreground="#92400E"/>
+                                    <Border CornerRadius="6" Padding="8,4" HorizontalAlignment="Left">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#FEF3C7"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Classification}" Value="Star (Ngôi Sao)">
+                                                        <Setter Property="Background" Value="#D1FAE5"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Classification}" Value="Plowhorse (Bò Sữa)">
+                                                        <Setter Property="Background" Value="#DBEAFE"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Classification}" Value="Dog (Chó Mực)">
+                                                        <Setter Property="Background" Value="#FFE4E6"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="{Binding Classification}" FontWeight="Bold" FontSize="11">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="#92400E"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Classification}" Value="Star (Ngôi Sao)">
+                                                            <Setter Property="Foreground" Value="#065F46"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Classification}" Value="Plowhorse (Bò Sữa)">
+                                                            <Setter Property="Foreground" Value="#1E40AF"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Classification}" Value="Dog (Chó Mực)">
+                                                            <Setter Property="Foreground" Value="#9F1239"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
                                     </Border>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="HÀNH ĐỘNG CHIẾN LƯỢC" Binding="{Binding StrategicAction}" Width="3.5*"/>
+                        <DataGridTextColumn Header="HÀNH ĐỘNG CHIẾN LƯỢC" Binding="{Binding StrategicAction}" Width="3.2*"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>

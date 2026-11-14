@@ -13,4 +13,5 @@ public interface IInventoryService
     Task<IEnumerable<Ingredient>> GetAllIngredientsAsync();
     Task<IEnumerable<Ingredient>> GetLowStockAlertsAsync();
     Task<bool> RestockIngredientAsync(int ingredientId, decimal quantity);
+    Task<int> ApplyPurchaseOrderDraftAsync(IEnumerable<PurchaseOrderDraftItem> poItems);
 }

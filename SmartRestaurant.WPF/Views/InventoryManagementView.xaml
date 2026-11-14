@@ -29,9 +29,14 @@
                     </StackPanel>
                 </StackPanel>
 
-                <Button DockPanel.Dock="Right" Content="🔄 Làm Mới Tồn Kho" Command="{Binding LoadIngredientsCommand}"
-                        Background="#2563EB" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="38" Padding="18,0"
-                        Style="{StaticResource AnimatedTouchButtonStyle}" Cursor="Hand"/>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Content="🤖 Nhập Kho Theo Đề Xuất AI" Command="{Binding AutoRestockFromAiCommand}"
+                            Background="#7C3AED" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="38" Padding="16,0"
+                            Margin="0,0,10,0" Style="{StaticResource AnimatedTouchButtonStyle}" Cursor="Hand"/>
+                    <Button Content="🔄 Làm Mới Tồn Kho" Command="{Binding LoadIngredientsCommand}"
+                            Background="#2563EB" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="38" Padding="18,0"
+                            Style="{StaticResource AnimatedTouchButtonStyle}" Cursor="Hand"/>
+                </StackPanel>
             </DockPanel>
         </Border>
 

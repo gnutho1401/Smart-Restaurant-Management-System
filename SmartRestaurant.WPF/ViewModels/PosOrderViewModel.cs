@@ -49,6 +49,7 @@ public class PosOrderViewModel : ViewModelBase
     private readonly IOrderService _orderService;
     private readonly IInventoryService _inventoryService;
     private readonly IAuthService? _authService;
+    private readonly SmartRestaurant.AIEngine.AiAnalyticsEngine? _analyticsEngine;
 
     private DiningTable? _currentTable;
     private List<PosMenuItemViewModel> _allPosItems = new();
@@ -192,12 +193,14 @@ public class PosOrderViewModel : ViewModelBase
         IMenuService menuService,
         IOrderService orderService,
         IInventoryService inventoryService,
-        IAuthService? authService = null)
+        IAuthService? authService = null,
+        SmartRestaurant.AIEngine.AiAnalyticsEngine? analyticsEngine = null)
     {
         _menuService = menuService;
         _orderService = orderService;
         _inventoryService = inventoryService;
         _authService = authService;
+        _analyticsEngine = analyticsEngine;
 
         AddToCartCommand = new RelayCommand<object>(AddToCart);
         IncreaseQuantityCommand = new RelayCommand<CartItemViewModel>(IncreaseQuantity);
@@ -310,11 +313,40 @@ public class PosOrderViewModel : ViewModelBase
         TriggerSmartUpsell(posItem ?? new PosMenuItemViewModel(item));
     }
 
-    public void TriggerSmartUpsell(PosMenuItemViewModel selectedItem)
+    public async void TriggerSmartUpsell(PosMenuItemViewModel selectedItem)
     {
         if (selectedItem == null) return;
 
-        // Smart Upsell Logic: If customer selects Food/Main Dish, suggest high-margin Beverage or Dessert
+        IEnumerable<PosMenuItemViewModel> itemsSource = _allPosItems.Any() ? _allPosItems : DisplayMenuItems;
+
+        // 1. Data-Driven Market Basket Analysis (Apriori Rule Mining: Lift >= 1.0)
+        if (_analyticsEngine != null && selectedItem.Item != null)
+        {
+            try
+            {
+                var rule = await _analyticsEngine.GetSmartUpsellRecommendationAsync(
+                    selectedItem.Item.MenuItemId,
+                    CartItems.Select(c => c.MenuItemId));
+
+                if (rule != null)
+                {
+                    var match = itemsSource.FirstOrDefault(m => m.MenuItemId == rule.SuggestedDishId && !m.IsSoldOut);
+                    if (match != null)
+                    {
+                        SuggestedUpsellItem = match;
+                        UpsellMessage = rule.MarketingPitch;
+                        IsUpsellVisible = true;
+                        return;
+                    }
+                }
+            }
+            catch
+            {
+                // Fallback gracefully to domain heuristics if query encounters errors
+            }
+        }
+
+        // 2. High-margin Beverage/Dessert Domain Heuristics Fallback
         bool isDrinkOrDessert = (selectedItem.CategoryName?.Contains("Uống", StringComparison.OrdinalIgnoreCase) == true) ||
                                 (selectedItem.CategoryName?.Contains("Tráng miệng", StringComparison.OrdinalIgnoreCase) == true) ||
                                 selectedItem.Name.Contains("Nước", StringComparison.OrdinalIgnoreCase) ||
@@ -326,7 +358,6 @@ public class PosOrderViewModel : ViewModelBase
 
         if (isFood)
         {
-            IEnumerable<PosMenuItemViewModel> itemsSource = _allPosItems.Any() ? _allPosItems : DisplayMenuItems;
             var candidate = itemsSource.FirstOrDefault(m =>
                 !m.IsSoldOut &&
                 !CartItems.Any(c => c.MenuItemId == m.MenuItemId) &&

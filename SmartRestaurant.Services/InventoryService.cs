@@ -19,10 +19,12 @@ namespace SmartRestaurant.Services;
 public class InventoryService : IInventoryService
 {
     private readonly RestaurantDbContext _context;
+    private readonly IAuditService? _auditService;
 
-    public InventoryService(RestaurantDbContext context)
+    public InventoryService(RestaurantDbContext context, IAuditService? auditService = null)
     {
         _context = context;
+        _auditService = auditService;
     }
 
     public async Task<bool> DeductBomIngredientsAsync(int orderId)
@@ -165,5 +167,45 @@ public class InventoryService : IInventoryService
         ingredient.CurrentStock += quantity;
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<int> ApplyPurchaseOrderDraftAsync(IEnumerable<PurchaseOrderDraftItem> poItems)
+    {
+        if (poItems == null || !poItems.Any()) return 0;
+
+        int successCount = 0;
+        foreach (var item in poItems)
+        {
+            if (item.QuantityToOrder <= 0) continue;
+
+            var ingredient = await _context.Ingredients.FirstOrDefaultAsync(i => i.IngredientId == item.IngredientId);
+            if (ingredient != null)
+            {
+                decimal oldStock = ingredient.CurrentStock;
+                ingredient.CurrentStock += item.QuantityToOrder;
+                successCount++;
+
+                if (_auditService != null)
+                {
+                    await _auditService.LogAsync(
+                        null,
+                        "System_AI",
+                        "AI_Automation",
+                        "RESTOCK_AI_PO",
+                        "Ingredient",
+                        ingredient.IngredientId.ToString(),
+                        oldStock.ToString(),
+                        ingredient.CurrentStock.ToString(),
+                        $"Tự động nhập kho từ Đề xuất AI PO: +{item.QuantityToOrder:N1} {item.Unit} ({item.Urgency})");
+                }
+            }
+        }
+
+        if (successCount > 0)
+        {
+            await _context.SaveChangesAsync();
+        }
+
+        return successCount;
     }
 }

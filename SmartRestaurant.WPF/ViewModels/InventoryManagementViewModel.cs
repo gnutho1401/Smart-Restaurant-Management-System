@@ -56,6 +56,7 @@ public class IngredientItemViewModel : ViewModelBase
 public class InventoryManagementViewModel : ViewModelBase
 {
     private readonly IInventoryService _inventoryService;
+    private readonly SmartRestaurant.AIEngine.AiAnalyticsEngine? _analyticsEngine;
 
     private ObservableCollection<IngredientItemViewModel> _ingredients = new();
     private IngredientItemViewModel? _selectedIngredient;
@@ -102,13 +103,18 @@ public class InventoryManagementViewModel : ViewModelBase
 
     public IAsyncRelayCommand LoadIngredientsCommand { get; }
     public IAsyncRelayCommand RestockCommand { get; }
+    public IAsyncRelayCommand AutoRestockFromAiCommand { get; }
 
-    public InventoryManagementViewModel(IInventoryService inventoryService)
+    public InventoryManagementViewModel(
+        IInventoryService inventoryService,
+        SmartRestaurant.AIEngine.AiAnalyticsEngine? analyticsEngine = null)
     {
         _inventoryService = inventoryService;
+        _analyticsEngine = analyticsEngine;
 
         LoadIngredientsCommand = new AsyncRelayCommand(LoadIngredientsAsync);
         RestockCommand = new AsyncRelayCommand(RestockAsync);
+        AutoRestockFromAiCommand = new AsyncRelayCommand(AutoRestockFromAiAsync);
     }
 
     public async Task LoadIngredientsAsync()
@@ -178,6 +184,46 @@ public class InventoryManagementViewModel : ViewModelBase
         catch (Exception ex)
         {
             StatusMessage = $"❌ Lỗi nhập kho: {ex.Message}";
+            IsSuccessMessage = false;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task AutoRestockFromAiAsync()
+    {
+        if (_analyticsEngine == null)
+        {
+            StatusMessage = "AI Analytics Engine chưa được khởi tạo.";
+            IsSuccessMessage = false;
+            return;
+        }
+
+        IsBusy = true;
+        StatusMessage = "🤖 Đang phân tích tồn kho và ngưỡng an toàn chuỗi cung ứng...";
+        IsSuccessMessage = true;
+
+        try
+        {
+            var forecast = await _analyticsEngine.ComputeWeeklyReorderForecastAsync();
+            if (forecast.PurchaseOrderDraft == null || !forecast.PurchaseOrderDraft.Any())
+            {
+                StatusMessage = "✅ Tồn kho toàn bộ nguyên vật liệu hiện đang ở mức an toàn. Chưa cần nhập thêm.";
+                IsSuccessMessage = true;
+                return;
+            }
+
+            int count = await _inventoryService.ApplyPurchaseOrderDraftAsync(forecast.PurchaseOrderDraft);
+            await LoadIngredientsAsync();
+
+            StatusMessage = $"🤖 AI Đã Tự Động Tạo Phiếu PO & Nhập Kho Thành Công {count} Nguyên Vật Liệu Cảnh Báo!";
+            IsSuccessMessage = true;
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"❌ Lỗi tự động nhập kho AI: {ex.Message}";
             IsSuccessMessage = false;
         }
         finally

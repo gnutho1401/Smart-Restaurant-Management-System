@@ -23,6 +23,7 @@ public class AiServiceTests
         public Task<string> GenerateMenuInsightsAsync() => Task.FromResult("Mock BCG Strategy Advice");
         public Task<string> AnalyzePeakHoursAsync() => Task.FromResult("Mock Peak Hour Advice");
         public Task<string> PredictWeeklyReorderAsync() => Task.FromResult("Mock Reorder Advice");
+        public void UpdateGeminiConfig(string apiKey, string? model = null) { }
     }
 
     private class ThrowingHttpMessageHandler : HttpMessageHandler

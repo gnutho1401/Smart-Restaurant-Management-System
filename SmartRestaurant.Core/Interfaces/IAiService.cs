@@ -15,4 +15,5 @@ public interface IAiService
     Task<string> GenerateMenuInsightsAsync();
     Task<string> AnalyzePeakHoursAsync();
     Task<string> PredictWeeklyReorderAsync();
+    void UpdateGeminiConfig(string apiKey, string? model = null);
 }

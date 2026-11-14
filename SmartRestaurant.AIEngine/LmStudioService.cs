@@ -64,6 +64,18 @@ public class LmStudioService : IAiService
         }
     }
 
+    public void UpdateGeminiConfig(string apiKey, string? model = null)
+    {
+        _geminiApiKey = apiKey?.Trim();
+        if (!string.IsNullOrWhiteSpace(model))
+        {
+            _geminiModel = model.Trim();
+        }
+    }
+
+    public string? GetGeminiApiKey() => _geminiApiKey;
+    public string GetGeminiModel() => _geminiModel;
+
     private void LoadConfigurationFromEnvironmentOrFile()
     {
         try
