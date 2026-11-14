@@ -171,6 +171,13 @@ CREATE TABLE dbo.Customers (
 CREATE NONCLUSTERED INDEX IX_Customers_PhoneNumber ON dbo.Customers(PhoneNumber);
 GO
 
+IF COL_LENGTH('dbo.Orders', 'CustomerId') IS NULL
+BEGIN
+    ALTER TABLE dbo.Orders ADD CustomerId INT NULL CONSTRAINT FK_Orders_Customers FOREIGN KEY REFERENCES dbo.Customers(CustomerId);
+    CREATE NONCLUSTERED INDEX IX_Orders_CustomerId ON dbo.Orders(CustomerId);
+END
+GO
+
 CREATE TABLE dbo.WorkShifts (
     ShiftId INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_WorkShifts PRIMARY KEY CLUSTERED,
     UserId INT NOT NULL CONSTRAINT FK_WorkShifts_Users FOREIGN KEY REFERENCES dbo.Users(UserId),

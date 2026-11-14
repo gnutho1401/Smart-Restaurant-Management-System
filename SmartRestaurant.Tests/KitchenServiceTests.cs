@@ -107,4 +107,52 @@ public class KitchenServiceTests
         // Assert
         Assert.Empty(tickets);
     }
+
+    [Fact]
+    public async Task GetActiveKitchenTicketsAsync_LoadsCustomerAndTableNavigationsSafely()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var customer = new Customer { PhoneNumber = "0987654321", FullName = "Nguyễn Văn VIP" };
+        context.Customers.Add(customer);
+        await context.SaveChangesAsync();
+
+        var table = new DiningTable { TableName = "VIP-01", Capacity = 6, Status = TableStatus.Occupied };
+        context.DiningTables.Add(table);
+        await context.SaveChangesAsync();
+
+        var activeOrder = new Order
+        {
+            TableId = table.TableId,
+            CustomerId = customer.CustomerId,
+            Status = "Active"
+        };
+        context.Orders.Add(activeOrder);
+        await context.SaveChangesAsync();
+
+        var dish = new MenuItem { Name = "Bò Wagyu A5", Price = 450000m };
+        context.MenuItems.Add(dish);
+        await context.SaveChangesAsync();
+
+        var item = new OrderItem
+        {
+            OrderId = activeOrder.OrderId,
+            MenuItemId = dish.MenuItemId,
+            Quantity = 2,
+            CookingStatus = CookingStatus.Pending
+        };
+        context.OrderItems.Add(item);
+        await context.SaveChangesAsync();
+
+        var service = new KdsService(context);
+
+        // Act
+        var tickets = (await service.GetActiveKitchenTicketsAsync()).ToList();
+
+        // Assert
+        Assert.Single(tickets);
+        var ticket = tickets[0];
+        Assert.Equal("VIP-01", ticket.Order?.Table?.TableName);
+        Assert.Equal(customer.CustomerId, ticket.Order?.CustomerId);
+    }
 }

@@ -118,6 +118,7 @@ public class RestaurantDbContext : DbContext
             entity.HasKey(o => o.OrderId);
             entity.HasIndex(o => new { o.CreatedAt, o.Status });
             entity.HasIndex(o => o.TableId);
+            entity.HasIndex(o => o.CustomerId);
             entity.Property(o => o.Status).HasMaxLength(20).IsRequired();
             entity.Property(o => o.SubTotal).HasPrecision(18, 2);
             entity.Property(o => o.DiscountAmount).HasPrecision(18, 2);
@@ -127,6 +128,11 @@ public class RestaurantDbContext : DbContext
                   .WithMany(t => t.Orders)
                   .HasForeignKey(o => o.TableId)
                   .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(o => o.Customer)
+                  .WithMany()
+                  .HasForeignKey(o => o.CustomerId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         // 8. OrderItem

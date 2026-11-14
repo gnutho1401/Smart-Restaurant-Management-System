@@ -243,6 +243,17 @@ public static class DbInitializer
                 );
             END",
 
+            // 3.1 Orders table missing CustomerId (CRM & Loyalty Points Link)
+            @"IF COL_LENGTH('Orders', 'CustomerId') IS NULL
+                ALTER TABLE Orders ADD CustomerId INT NULL;",
+
+            @"IF NOT EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_Orders_Customers')
+               AND OBJECT_ID('Customers', 'U') IS NOT NULL
+                ALTER TABLE Orders ADD CONSTRAINT FK_Orders_Customers FOREIGN KEY (CustomerId) REFERENCES Customers(CustomerId) ON DELETE SET NULL;",
+
+            @"IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Orders_CustomerId' AND object_id = OBJECT_ID('Orders'))
+                CREATE NONCLUSTERED INDEX IX_Orders_CustomerId ON Orders(CustomerId);",
+
             // 4. WorkShifts table (Cashier Shift Management & Z-Report)
             @"IF OBJECT_ID('WorkShifts', 'U') IS NULL
             BEGIN

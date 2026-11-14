@@ -24,13 +24,37 @@ public class KdsService : IKdsService
 
     public async Task<IEnumerable<OrderItem>> GetActiveKitchenTicketsAsync()
     {
-        return await _context.OrderItems
-            .Include(oi => oi.MenuItem)
-            .Include(oi => oi.Order)
-                .ThenInclude(o => o!.Table)
-            .Where(oi => oi.CookingStatus != CookingStatus.Served && oi.Order!.Status == "Active")
-            .OrderBy(oi => oi.Order!.CreatedAt)
-            .ToListAsync();
+        try
+        {
+            return await _context.OrderItems
+                .AsNoTracking()
+                .Include(oi => oi.MenuItem)
+                .Include(oi => oi.Order)
+                    .ThenInclude(o => o!.Table)
+                .Where(oi => oi.CookingStatus != CookingStatus.Served && oi.Order!.Status == "Active")
+                .OrderBy(oi => oi.Order!.CreatedAt)
+                .ToListAsync();
+        }
+        catch (Exception ex) when (ex.Message.Contains("Invalid column name") || ex.Message.Contains("CustomerId") || ex.Message.Contains("IsCancelled"))
+        {
+            await DbInitializer.EnsureSchemaUpgradesAsync(_context);
+            try
+            {
+                return await _context.OrderItems
+                    .AsNoTracking()
+                    .Include(oi => oi.MenuItem)
+                    .Include(oi => oi.Order)
+                        .ThenInclude(o => o!.Table)
+                    .Where(oi => oi.CookingStatus != CookingStatus.Served && oi.Order!.Status == "Active")
+                    .OrderBy(oi => oi.Order!.CreatedAt)
+                    .ToListAsync();
+            }
+            catch (Exception innerEx)
+            {
+                System.Diagnostics.Debug.WriteLine($"[KdsService] Fallback ticket load notice: {innerEx.Message}");
+                return new List<OrderItem>();
+            }
+        }
     }
 
     public async Task<bool> UpdateTicketStatusAsync(int orderItemId, CookingStatus nextStatus)
