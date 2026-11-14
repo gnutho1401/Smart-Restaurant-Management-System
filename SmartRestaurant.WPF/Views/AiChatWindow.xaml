@@ -35,6 +35,15 @@
                             <TextBlock Text="🤖 TRỢ LÝ GENAI (MISTRAL-7B / GEMINI BACKUP)" FontSize="18" FontWeight="Bold" Foreground="#8E44AD"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Button Content="🔍 Kiểm Tra Kết Nối AI" Command="{Binding TestConnectionCommand}"
+                                    Background="#E0E7FF" Foreground="#3730A3" FontWeight="SemiBold" FontSize="11" Padding="10,5" Margin="0,0,8,0"
+                                    Cursor="Hand" BorderThickness="1" BorderBrush="#C7D2FE" ToolTip="Kiểm tra độ trễ và khả năng kết nối tới LM Studio (1235) hoặc Gemini">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="6"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
                             <Button Content="⚙️ Cấu Hình Gemini / Model" Command="{Binding OpenAiSettingsCommand}"
                                     Background="#F1F5F9" Foreground="#334155" FontWeight="SemiBold" FontSize="11" Padding="10,5" Margin="0,0,8,0"
                                     Cursor="Hand" BorderThickness="1" BorderBrush="#CBD5E1">
@@ -44,7 +53,9 @@
                                     </Style>
                                 </Button.Resources>
                             </Button>
-                            <TextBlock Text="Cổng: 1234/1235 | Cloud Gemini | Anti-Hallucination" FontSize="11" Foreground="#7F8C8D" VerticalAlignment="Center"/>
+                            <Border Background="#F3F4F6" CornerRadius="12" Padding="8,4" BorderThickness="1" BorderBrush="#E5E7EB">
+                                <TextBlock Text="{Binding ConnectionBadgeText}" FontSize="11" FontWeight="Medium" Foreground="#4B5563" VerticalAlignment="Center"/>
+                            </Border>
                         </StackPanel>
                     </DockPanel>
 

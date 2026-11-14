@@ -39,6 +39,8 @@ public class AiChatViewModel : ViewModelBase
     // 1-Click PO Draft State
     private List<PurchaseOrderDraftItem>? _lastPoDraft;
     private bool _isPoDraftAvailable;
+    private string _connectionBadgeText = "🔍 Kiểm tra kết nối AI";
+    private bool _isConnectionHealthy;
 
     public ObservableCollection<ChatMessageViewModel> Messages
     {
@@ -68,6 +70,18 @@ public class AiChatViewModel : ViewModelBase
     {
         get => _isSettingsOpen;
         set => SetProperty(ref _isSettingsOpen, value);
+    }
+
+    public string ConnectionBadgeText
+    {
+        get => _connectionBadgeText;
+        set => SetProperty(ref _connectionBadgeText, value);
+    }
+
+    public bool IsConnectionHealthy
+    {
+        get => _isConnectionHealthy;
+        set => SetProperty(ref _isConnectionHealthy, value);
     }
 
     public string GeminiApiKeyInput
@@ -107,6 +121,7 @@ public class AiChatViewModel : ViewModelBase
     public IAsyncRelayCommand RunReorderCommand { get; }
     public IAsyncRelayCommand RunRevenueTrendCommand { get; }
     public IAsyncRelayCommand ApplyAiPoDraftCommand { get; }
+    public IAsyncRelayCommand TestConnectionCommand { get; }
     public RelayCommand OpenAiSettingsCommand { get; }
     public RelayCommand CloseAiSettingsCommand { get; }
     public RelayCommand SaveAiSettingsCommand { get; }
@@ -127,6 +142,7 @@ public class AiChatViewModel : ViewModelBase
         RunReorderCommand = new AsyncRelayCommand(RunReorderAsync);
         RunRevenueTrendCommand = new AsyncRelayCommand(RunRevenueTrendAsync);
         ApplyAiPoDraftCommand = new AsyncRelayCommand(ApplyAiPoDraftAsync);
+        TestConnectionCommand = new AsyncRelayCommand(TestConnectionAsync);
 
         OpenAiSettingsCommand = new RelayCommand(() => IsSettingsOpen = true);
         CloseAiSettingsCommand = new RelayCommand(() => IsSettingsOpen = false);
@@ -141,6 +157,8 @@ public class AiChatViewModel : ViewModelBase
                       "Tôi được cung cấp dữ liệu thực tế từ thực đơn và kho nội bộ qua LINQ Context Grounding để hỗ trợ bạn tư vấn món và phân tích kinh doanh mà không sợ ảo giác số liệu.",
             Timestamp = DateTime.Now
         });
+
+        _ = TestConnectionSilentlyAsync();
     }
 
     private void CopyMessage(string? content)
@@ -163,6 +181,73 @@ public class AiChatViewModel : ViewModelBase
         SettingsFeedback = "✅ Đã lưu cấu hình Google Gemini thành công!";
         StatusInfo = $"Đã cập nhật Gemini Model: {SelectedGeminiModel}";
         Task.Delay(1500).ContinueWith(_ => IsSettingsOpen = false, TaskScheduler.FromCurrentSynchronizationContext());
+        _ = TestConnectionSilentlyAsync();
+    }
+
+    private async Task TestConnectionSilentlyAsync()
+    {
+        try
+        {
+            var report = await _aiService.TestConnectionAsync();
+            IsConnectionHealthy = report.IsConnected;
+            ConnectionBadgeText = report.IsConnected
+                ? $"🟢 {report.Provider} ({report.LatencyMs}ms) - {report.ModelName}"
+                : $"⚠️ {report.Provider}";
+        }
+        catch
+        {
+            IsConnectionHealthy = false;
+            ConnectionBadgeText = "⚠️ AI Ngoại tuyến";
+        }
+    }
+
+    public async Task TestConnectionAsync()
+    {
+        IsBusy = true;
+        StatusInfo = "Đang kiểm tra kết nối tới LM Studio (Cổng 1235/1234) & Google Gemini Cloud...";
+
+        try
+        {
+            var report = await _aiService.TestConnectionAsync();
+            IsConnectionHealthy = report.IsConnected;
+            ConnectionBadgeText = report.IsConnected
+                ? $"🟢 {report.Provider} ({report.LatencyMs}ms) - {report.ModelName}"
+                : $"⚠️ {report.Provider}";
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("🔍 **KẾT QUẢ CHẨN ĐOÁN KẾT NỐI AI:**\n");
+            sb.AppendLine($"• **Trạng thái:** {(report.IsConnected ? "✅ Kết Nối Tốt (Sẵn Sàng)" : "⚠️ Không Có Kết Nối Trực Tiếp")}");
+            sb.AppendLine($"• **Nguồn xử lý (Provider):** {report.Provider}");
+            sb.AppendLine($"• **Địa chỉ kết nối (Endpoint):** `{report.Endpoint}`");
+            sb.AppendLine($"• **Mô hình AI:** `{report.ModelName}`");
+            sb.AppendLine($"• **Thời gian phản hồi (Latency):** `{report.LatencyMs} ms`\n");
+            sb.AppendLine($"💬 **Chi tiết:** {report.Message}");
+
+            Messages.Add(new ChatMessageViewModel
+            {
+                Sender = "Assistant",
+                Content = sb.ToString(),
+                Timestamp = DateTime.Now
+            });
+
+            StatusInfo = $"Hoàn tất chẩn đoán AI: {report.Provider} ({report.LatencyMs}ms).";
+        }
+        catch (Exception ex)
+        {
+            IsConnectionHealthy = false;
+            ConnectionBadgeText = "❌ Lỗi kết nối";
+            Messages.Add(new ChatMessageViewModel
+            {
+                Sender = "Assistant",
+                Content = $"⚠️ Lỗi kiểm tra kết nối: {ex.Message}",
+                Timestamp = DateTime.Now
+            });
+            StatusInfo = "Lỗi khi kiểm tra kết nối AI.";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     private async Task SendQueryAsync()

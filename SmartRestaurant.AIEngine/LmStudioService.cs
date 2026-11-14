@@ -19,13 +19,14 @@ public class LmStudioService : IAiService
 {
     private readonly HttpClient _httpClient;
     private readonly RestaurantDbContext _context;
-    private static readonly string[] CandidateEndpoints = new[]
+    private static readonly string[] DefaultEndpoints = new[]
     {
-        "http://localhost:1234/v1/chat/completions",
-        "http://localhost:1235/v1/chat/completions"
+        "http://localhost:1235/v1/chat/completions",
+        "http://localhost:1234/v1/chat/completions"
     };
 
-    private static string _activeEndpoint = CandidateEndpoints[0];
+    private static List<string> _candidateEndpoints = new(DefaultEndpoints);
+    private static string _activeEndpoint = DefaultEndpoints[0];
     private static string _targetModel = "mistral-7b-instruct-v0.3";
 
     private string? _geminiApiKey;
@@ -46,7 +47,7 @@ public class LmStudioService : IAiService
     {
         _httpClient = httpClient;
         _context = context;
-        _httpClient.Timeout = TimeSpan.FromSeconds(45.0);
+        _httpClient.Timeout = TimeSpan.FromSeconds(90.0);
 
         _geminiApiKey = geminiApiKey;
         if (!string.IsNullOrWhiteSpace(geminiModel))
@@ -58,10 +59,7 @@ public class LmStudioService : IAiService
             _geminiTimeoutSeconds = geminiTimeoutSeconds.Value;
         }
 
-        if (string.IsNullOrWhiteSpace(_geminiApiKey))
-        {
-            LoadConfigurationFromEnvironmentOrFile();
-        }
+        LoadConfigurationFromEnvironmentOrFile();
     }
 
     public void UpdateGeminiConfig(string apiKey, string? model = null)
@@ -104,6 +102,39 @@ public class LmStudioService : IAiService
                 {
                     string json = File.ReadAllText(path);
                     using var doc = JsonDocument.Parse(json);
+
+                    // Parse LmStudio configurations
+                    if (doc.RootElement.TryGetProperty("LmStudio", out var lmElem))
+                    {
+                        if (lmElem.TryGetProperty("Endpoints", out var epElem) && epElem.ValueKind == JsonValueKind.Array)
+                        {
+                            var loadedEps = new List<string>();
+                            foreach (var item in epElem.EnumerateArray())
+                            {
+                                var ep = item.GetString();
+                                if (!string.IsNullOrWhiteSpace(ep)) loadedEps.Add(ep.Trim());
+                            }
+                            if (loadedEps.Any())
+                            {
+                                _candidateEndpoints = loadedEps;
+                                _activeEndpoint = loadedEps[0];
+                            }
+                        }
+
+                        if (lmElem.TryGetProperty("DefaultModel", out var defModelElem))
+                        {
+                            var modelStr = defModelElem.GetString();
+                            if (!string.IsNullOrWhiteSpace(modelStr)) _targetModel = modelStr.Trim();
+                        }
+
+                        if (lmElem.TryGetProperty("TimeoutSeconds", out var lmTimeoutElem) &&
+                            lmTimeoutElem.TryGetInt32(out int lmTimeoutVal) && lmTimeoutVal > 0)
+                        {
+                            _httpClient.Timeout = TimeSpan.FromSeconds(lmTimeoutVal);
+                        }
+                    }
+
+                    // Parse Gemini configurations
                     if (doc.RootElement.TryGetProperty("Gemini", out var geminiElem))
                     {
                         if (string.IsNullOrWhiteSpace(_geminiApiKey) &&
@@ -136,6 +167,133 @@ public class LmStudioService : IAiService
         {
             // Configuration loading should never throw
         }
+    }
+
+    /// <summary>
+    /// Fast non-blocking endpoint probe to detect active LM Studio port (1235 vs 1234) under 1.5 seconds.
+    /// Eliminates wasted 45s wait on dead candidate ports.
+    /// </summary>
+    public static async Task<string?> ProbeActiveEndpointAsync()
+    {
+        using var probeClient = new HttpClient { Timeout = TimeSpan.FromSeconds(1.5) };
+
+        foreach (var endpoint in _candidateEndpoints)
+        {
+            try
+            {
+                string modelsUrl = endpoint.Replace("/chat/completions", "/models");
+                var resp = await probeClient.GetAsync(modelsUrl);
+                if (resp.IsSuccessStatusCode)
+                {
+                    _activeEndpoint = endpoint;
+                    string json = await resp.Content.ReadAsStringAsync();
+                    using var doc = JsonDocument.Parse(json);
+                    if (doc.RootElement.TryGetProperty("data", out var data) && data.GetArrayLength() > 0)
+                    {
+                        var id = data[0].GetProperty("id").GetString();
+                        if (!string.IsNullOrWhiteSpace(id)) _targetModel = id;
+                    }
+                    return endpoint;
+                }
+            }
+            catch
+            {
+                // Port inactive, immediately test next candidate without waiting
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Comprehensive connectivity diagnosis for LM Studio Local server and Google Gemini Cloud.
+    /// </summary>
+    public async Task<AiConnectionReport> TestConnectionAsync()
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
+        // 1. Try local LM Studio endpoints
+        using var probeClient = new HttpClient { Timeout = TimeSpan.FromSeconds(2.0) };
+        foreach (var endpoint in _candidateEndpoints)
+        {
+            try
+            {
+                string modelsUrl = endpoint.Replace("/chat/completions", "/models");
+                var resp = await probeClient.GetAsync(modelsUrl);
+                if (resp.IsSuccessStatusCode)
+                {
+                    sw.Stop();
+                    _activeEndpoint = endpoint;
+                    string json = await resp.Content.ReadAsStringAsync();
+                    using var doc = JsonDocument.Parse(json);
+                    string modelId = _targetModel;
+                    if (doc.RootElement.TryGetProperty("data", out var data) && data.GetArrayLength() > 0)
+                    {
+                        var id = data[0].GetProperty("id").GetString();
+                        if (!string.IsNullOrWhiteSpace(id)) modelId = id;
+                    }
+                    _targetModel = modelId;
+
+                    return new AiConnectionReport
+                    {
+                        IsConnected = true,
+                        Provider = "LM Studio (Cục bộ)",
+                        Endpoint = endpoint,
+                        ModelName = modelId,
+                        LatencyMs = sw.ElapsedMilliseconds,
+                        Message = $"Kết nối thành công tới LM Studio ({endpoint})! Mô hình: '{modelId}', độ trễ: {sw.ElapsedMilliseconds}ms."
+                    };
+                }
+            }
+            catch
+            {
+                // Continue probing
+            }
+        }
+
+        // 2. Fallback to Google Gemini Cloud if configured
+        if (!string.IsNullOrWhiteSpace(_geminiApiKey))
+        {
+            try
+            {
+                string endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/{_geminiModel}:generateContent?key={_geminiApiKey}";
+                var pingPayload = new
+                {
+                    contents = new[] { new { role = "user", parts = new[] { new { text = "ping" } } } }
+                };
+                var content = new StringContent(JsonSerializer.Serialize(pingPayload), Encoding.UTF8, "application/json");
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                var geminiResp = await _httpClient.PostAsync(endpoint, content, cts.Token);
+                sw.Stop();
+
+                if (geminiResp.IsSuccessStatusCode)
+                {
+                    return new AiConnectionReport
+                    {
+                        IsConnected = true,
+                        Provider = "Google Gemini (Đám mây)",
+                        Endpoint = "Google AI Studio API",
+                        ModelName = _geminiModel,
+                        LatencyMs = sw.ElapsedMilliseconds,
+                        Message = $"LM Studio chưa mở. Đang kết nối Google Gemini Cloud Backup! Mô hình: '{_geminiModel}', độ trễ: {sw.ElapsedMilliseconds}ms."
+                    };
+                }
+            }
+            catch
+            {
+                // Gemini call failed
+            }
+        }
+
+        sw.Stop();
+        return new AiConnectionReport
+        {
+            IsConnected = false,
+            Provider = "Offline Grounding CSDL",
+            Endpoint = "Ngoại tuyến (Local Database)",
+            ModelName = "Anti-Hallucination Heuristic Engine",
+            LatencyMs = sw.ElapsedMilliseconds,
+            Message = "Không thể kết nối LM Studio (Cổng 1235/1234) hoặc Google Gemini. Hệ thống chuyển sang chế độ Grounding CSDL Cục bộ dự phòng an toàn."
+        };
     }
 
     public async Task<string> GetDishRecommendationAsync(string customerQuery)
@@ -362,9 +520,16 @@ public class LmStudioService : IAiService
         {
             model = _targetModel,
             temperature = temperature, // Dynamic temperature: 0.3 for factual grounding, 0.5 for culinary copywriting
+            max_tokens = 650, // Capped to guarantee fast inference and eliminate runaway generation (e.g. 1,800+ tokens)
+            tools = (object?)null,
+            tool_choice = "none",
             messages = new[]
             {
-                new { role = "system", content = systemPrompt },
+                new
+                {
+                    role = "system",
+                    content = systemPrompt + "\n\n[QUY TẮC PHẢN HỒI BẮT BUỘC]:\n- Trả lời bằng tiếng Việt ngắn gọn, súc tích, định dạng Markdown rõ ràng.\n- Đi thẳng vào kết quả phân tích và khuyến nghị, không lặp lại nguyên văn bảng số liệu thô.\n- Tuyệt đối không tạo cấu trúc gọi hàm (tool call)."
+                },
                 new { role = "user", content = userPrompt }
             }
         };
@@ -375,9 +540,16 @@ public class LmStudioService : IAiService
         };
         string jsonPayload = JsonSerializer.Serialize(payload, options);
 
-        // Try active endpoint first, fallback to alternatives (ports 1234 / 1235) if connection fails
+        // Fast probe active port to avoid wasting timeout on closed ports
+        var detected = await ProbeActiveEndpointAsync();
+        if (!string.IsNullOrEmpty(detected))
+        {
+            _activeEndpoint = detected;
+        }
+
+        // Try active endpoint first, fallback to alternatives (ports 1235 / 1234) if connection fails
         var endpointsToTry = new List<string> { _activeEndpoint };
-        endpointsToTry.AddRange(CandidateEndpoints.Where(e => e != _activeEndpoint));
+        endpointsToTry.AddRange(_candidateEndpoints.Where(e => e != _activeEndpoint));
 
         HttpResponseMessage? response = null;
         Exception? lastEx = null;
@@ -429,17 +601,17 @@ public class LmStudioService : IAiService
                         ? $"\n\n📋 **PHÂN TÍCH DỰ PHÒNG NỘI BỘ (GROUNDING):**\n{offlineRec}"
                         : string.Empty;
 
-                    return $"⚠️ [Hết thời gian chờ] LM Studio phản hồi quá lâu (> 15 giây). Vui lòng kiểm tra tải GPU/CPU của máy tính hoặc khởi chạy lại file 'start_ai.bat'.{fallbackSection}";
+                    return $"⚠️ [Hết thời gian chờ] LM Studio phản hồi quá lâu (> 90 giây). Vui lòng kiểm tra tải GPU/CPU của máy tính hoặc khởi chạy lại file 'start_ai.bat'.{fallbackSection}";
                 }
 
                 if (!string.IsNullOrEmpty(offlineRec))
                 {
-                    return "⚠️ [Chế độ Ngoại tuyến] Máy chủ LM Studio chưa được khởi động trên cổng 1234 hoặc 1235.\n" +
+                    return "⚠️ [Chế độ Ngoại tuyến] Máy chủ LM Studio chưa được khởi động trên cổng 1235 hoặc 1234.\n" +
                            "Hệ thống đã tự động kích hoạt bộ lọc Grounding CSDL Cục bộ để hỗ trợ bạn:\n\n" +
                            offlineRec;
                 }
 
-                return "⚠️ [Chế độ Ngoại tuyến] Máy chủ LM Studio chưa được khởi động trên cổng 1234 hoặc 1235. " +
+                return "⚠️ [Chế độ Ngoại tuyến] Máy chủ LM Studio chưa được khởi động trên cổng 1235 hoặc 1234. " +
                        "Vui lòng mở file 'start_ai.bat' trong thư mục dự án để kích hoạt mô hình Local AI.";
             }
 

@@ -24,6 +24,15 @@ public class AiServiceTests
         public Task<string> AnalyzePeakHoursAsync() => Task.FromResult("Mock Peak Hour Advice");
         public Task<string> PredictWeeklyReorderAsync() => Task.FromResult("Mock Reorder Advice");
         public void UpdateGeminiConfig(string apiKey, string? model = null) { }
+        public Task<AiConnectionReport> TestConnectionAsync() => Task.FromResult(new AiConnectionReport
+        {
+            IsConnected = true,
+            Provider = "Mock Provider",
+            Endpoint = "http://localhost:1235",
+            ModelName = "mock-model",
+            LatencyMs = 5,
+            Message = "Mock connection OK"
+        });
     }
 
     private class ThrowingHttpMessageHandler : HttpMessageHandler

@@ -34,6 +34,16 @@ public class AiAdvancedIntelligenceTests
             ConfiguredApiKey = apiKey;
             ConfiguredModel = model;
         }
+
+        public Task<AiConnectionReport> TestConnectionAsync() => Task.FromResult(new AiConnectionReport
+        {
+            IsConnected = true,
+            Provider = "Mock Provider",
+            Endpoint = "http://localhost:1235",
+            ModelName = "dummy-model",
+            LatencyMs = 10,
+            Message = "Test connection OK"
+        });
     }
 
     [Fact]

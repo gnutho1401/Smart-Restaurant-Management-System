@@ -169,11 +169,24 @@ public class AiAnalyticsEngine
 
     public async Task<RevenueInsightResult> ComputeRevenueInsightsAsync(DateTime startDate, DateTime endDate)
     {
-        var orders = await _context.Orders
-            .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status == "Completed")
-            .Include(o => o.OrderItems.Where(oi => !oi.IsCancelled))
-                .ThenInclude(oi => oi.MenuItem)
-            .ToListAsync();
+        List<Order> orders;
+        try
+        {
+            orders = await _context.Orders
+                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status == "Completed")
+                .Include(o => o.OrderItems.Where(oi => !oi.IsCancelled))
+                    .ThenInclude(oi => oi.MenuItem)
+                .ToListAsync();
+        }
+        catch (Exception ex) when (ex.Message.Contains("Invalid column name") || ex.Message.Contains("IsCancelled"))
+        {
+            await DbInitializer.EnsureSchemaUpgradesAsync(_context);
+            orders = await _context.Orders
+                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status == "Completed")
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.MenuItem)
+                .ToListAsync();
+        }
 
         decimal totalRevenue = orders.Sum(o => o.FinalTotal);
         int totalOrders = orders.Count;
@@ -204,11 +217,24 @@ public class AiAnalyticsEngine
     public async Task<WeeklyReorderResult> ComputeWeeklyReorderForecastAsync()
     {
         var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
-        var recentOrderItems = await _context.OrderItems
-            .Where(oi => !oi.IsCancelled && oi.Order != null && oi.Order.CreatedAt >= sevenDaysAgo && oi.Order.Status == "Completed")
-            .Include(oi => oi.MenuItem)
-                .ThenInclude(m => m!.Recipes)
-            .ToListAsync();
+        List<OrderItem> recentOrderItems;
+        try
+        {
+            recentOrderItems = await _context.OrderItems
+                .Where(oi => !oi.IsCancelled && oi.Order != null && oi.Order.CreatedAt >= sevenDaysAgo && oi.Order.Status == "Completed")
+                .Include(oi => oi.MenuItem)
+                    .ThenInclude(m => m!.Recipes)
+                .ToListAsync();
+        }
+        catch (Exception ex) when (ex.Message.Contains("Invalid column name") || ex.Message.Contains("IsCancelled"))
+        {
+            await DbInitializer.EnsureSchemaUpgradesAsync(_context);
+            recentOrderItems = await _context.OrderItems
+                .Where(oi => oi.Order != null && oi.Order.CreatedAt >= sevenDaysAgo && oi.Order.Status == "Completed")
+                .Include(oi => oi.MenuItem)
+                    .ThenInclude(m => m!.Recipes)
+                .ToListAsync();
+        }
 
         var usageDict = new Dictionary<int, decimal>();
         foreach (var oi in recentOrderItems)
