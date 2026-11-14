@@ -21,7 +21,9 @@ public class LmStudioService : IAiService
     private readonly RestaurantDbContext _context;
     private static readonly string[] DefaultEndpoints = new[]
     {
+        "http://127.0.0.1:1235/v1/chat/completions",
         "http://localhost:1235/v1/chat/completions",
+        "http://127.0.0.1:1234/v1/chat/completions",
         "http://localhost:1234/v1/chat/completions"
     };
 
@@ -32,6 +34,16 @@ public class LmStudioService : IAiService
     private string? _geminiApiKey;
     private string _geminiModel = "gemini-flash-lite-latest";
     private int _geminiTimeoutSeconds = 20;
+
+    private static HttpClient CreateProbeClient(double timeoutSeconds)
+    {
+        var handler = new SocketsHttpHandler
+        {
+            UseProxy = false,
+            ConnectTimeout = TimeSpan.FromSeconds(timeoutSeconds)
+        };
+        return new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(timeoutSeconds) };
+    }
 
     public LmStudioService(HttpClient httpClient, RestaurantDbContext context)
         : this(httpClient, context, null, null, null)
@@ -175,7 +187,7 @@ public class LmStudioService : IAiService
     /// </summary>
     public static async Task<string?> ProbeActiveEndpointAsync()
     {
-        using var probeClient = new HttpClient { Timeout = TimeSpan.FromSeconds(1.5) };
+        using var probeClient = CreateProbeClient(1.5);
 
         foreach (var endpoint in _candidateEndpoints)
         {
@@ -212,7 +224,7 @@ public class LmStudioService : IAiService
         var sw = System.Diagnostics.Stopwatch.StartNew();
 
         // 1. Try local LM Studio endpoints
-        using var probeClient = new HttpClient { Timeout = TimeSpan.FromSeconds(2.0) };
+        using var probeClient = CreateProbeClient(2.0);
         foreach (var endpoint in _candidateEndpoints)
         {
             try
@@ -346,22 +358,35 @@ public class LmStudioService : IAiService
     public async Task<string> AnalyzeRevenueTrendsAsync(DateTime startDate, DateTime endDate)
     {
         // 1. LINQ Grounding: Aggregate sales numbers
-        var orders = await _context.Orders
-            .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status == "Completed")
-            .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.MenuItem)
-            .ToListAsync();
+        decimal totalRevenue = 0m;
+        int totalOrders = 0;
+        var topDishes = new List<object>();
 
-        decimal totalRevenue = orders.Sum(o => o.FinalTotal);
-        int totalOrders = orders.Count;
+        try
+        {
+            var orders = await _context.Orders
+                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status == "Completed")
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.MenuItem)
+                .ToListAsync();
 
-        var topDishes = orders
-            .SelectMany(o => o.OrderItems)
-            .GroupBy(oi => oi.MenuItem != null ? oi.MenuItem.Name : "Khác")
-            .Select(g => new { Dish = g.Key, Portions = g.Sum(x => x.Quantity), Revenue = g.Sum(x => x.UnitPrice * x.Quantity) })
-            .OrderByDescending(x => x.Revenue)
-            .Take(5)
-            .ToList();
+            totalRevenue = orders.Sum(o => o.FinalTotal);
+            totalOrders = orders.Count;
+
+            topDishes = orders
+                .SelectMany(o => o.OrderItems)
+                .GroupBy(oi => oi.MenuItem != null ? oi.MenuItem.Name : "Khác")
+                .Select(g => (object)new { Dish = g.Key, Portions = g.Sum(x => x.Quantity), Revenue = g.Sum(x => x.UnitPrice * x.Quantity) })
+                .OrderByDescending(x => ((dynamic)x).Revenue)
+                .Take(5)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AnalyzeRevenueTrendsAsync] Fallback notice: {ex.Message}");
+            totalOrders = await _context.Orders.CountAsync(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status == "Completed");
+            totalRevenue = await _context.Orders.Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status == "Completed").SumAsync(o => (decimal?)o.FinalTotal) ?? 0m;
+        }
 
         var snapshot = new
         {
@@ -468,20 +493,33 @@ public class LmStudioService : IAiService
     public async Task<string> PredictWeeklyReorderAsync()
     {
         var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
-        var recentOrderItems = await _context.OrderItems
-            .Where(oi => oi.Order != null && oi.Order.CreatedAt >= sevenDaysAgo && oi.Order.Status == "Completed")
-            .Include(oi => oi.MenuItem)
-                .ThenInclude(m => m!.Recipes)
-            .ToListAsync();
-
         var usageDict = new Dictionary<int, decimal>();
-        foreach (var oi in recentOrderItems)
+
+        try
         {
-            if (oi.MenuItem?.Recipes == null) continue;
-            foreach (var recipe in oi.MenuItem.Recipes)
+            var rawItems = await _context.Orders
+                .Where(o => o.CreatedAt >= sevenDaysAgo && o.Status == "Completed")
+                .SelectMany(o => o.OrderItems.Select(oi => new { oi.MenuItemId, oi.Quantity }))
+                .ToListAsync();
+
+            var menuItemsWithRecipes = await _context.MenuItems
+                .Include(m => m.Recipes)
+                .ToDictionaryAsync(m => m.MenuItemId);
+
+            foreach (var oi in rawItems)
             {
-                usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + (recipe.QuantityRequired * oi.Quantity);
+                if (menuItemsWithRecipes.TryGetValue(oi.MenuItemId, out var mi) && mi.Recipes != null)
+                {
+                    foreach (var recipe in mi.Recipes)
+                    {
+                        usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + (recipe.QuantityRequired * oi.Quantity);
+                    }
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[PredictWeeklyReorderAsync] Notice: {ex.Message}");
         }
 
         var ingredients = await _context.Ingredients.ToListAsync();
@@ -690,7 +728,7 @@ public class LmStudioService : IAiService
                             string reply = textElem.GetString() ?? string.Empty;
                             if (!string.IsNullOrWhiteSpace(reply))
                             {
-                                return reply.Trim();
+                                return $"[Trợ lý GenAI - Google Gemini Backup ({_geminiModel})]:\n\n{reply.Trim()}";
                             }
                         }
                     }

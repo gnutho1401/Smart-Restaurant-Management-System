@@ -145,8 +145,19 @@ public partial class App : Application
             }
         });
 
-        // 2. HTTP Client for LM Studio Local LLM
-        services.AddSingleton<HttpClient>();
+        // 2. HTTP Client for LM Studio Local LLM (UseProxy = false to avoid WPAD delay on localhost/127.0.0.1)
+        services.AddSingleton<HttpClient>(sp =>
+        {
+            var handler = new SocketsHttpHandler
+            {
+                UseProxy = false,
+                ConnectTimeout = TimeSpan.FromSeconds(5)
+            };
+            return new HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(90.0)
+            };
+        });
 
         // 3. Domain Business & Security Services
         services.AddSingleton<IAuthService>(sp => new AuthService(sp.GetRequiredService<IServiceScopeFactory>()));

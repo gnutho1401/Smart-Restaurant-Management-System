@@ -245,40 +245,58 @@ public class AiAnalyticsEngine
     public async Task<WeeklyReorderResult> ComputeWeeklyReorderForecastAsync()
     {
         var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
-        List<OrderItem> recentOrderItems;
+        var usageDict = new Dictionary<int, decimal>();
+
         try
         {
-            recentOrderItems = await _context.OrderItems
-                .Where(oi => !oi.IsCancelled && oi.Order != null && oi.Order.CreatedAt >= sevenDaysAgo && oi.Order.Status == "Completed")
-                .Include(oi => oi.MenuItem)
-                    .ThenInclude(m => m!.Recipes)
+            var rawItems = await _context.Orders
+                .Where(o => o.CreatedAt >= sevenDaysAgo && o.Status == "Completed")
+                .SelectMany(o => o.OrderItems.Where(oi => !oi.IsCancelled).Select(oi => new { oi.MenuItemId, oi.Quantity }))
                 .ToListAsync();
+
+            var menuItemsWithRecipes = await _context.MenuItems
+                .Include(m => m.Recipes)
+                .ToDictionaryAsync(m => m.MenuItemId);
+
+            foreach (var oi in rawItems)
+            {
+                if (menuItemsWithRecipes.TryGetValue(oi.MenuItemId, out var mi) && mi.Recipes != null)
+                {
+                    foreach (var recipe in mi.Recipes)
+                    {
+                        usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + (recipe.QuantityRequired * oi.Quantity);
+                    }
+                }
+            }
         }
-        catch (Exception ex) when (ex.Message.Contains("Invalid column name") || ex.Message.Contains("IsCancelled"))
+        catch
         {
             await DbInitializer.EnsureSchemaUpgradesAsync(_context);
             try
             {
-                recentOrderItems = await _context.OrderItems
-                    .Where(oi => !oi.IsCancelled && oi.Order != null && oi.Order.CreatedAt >= sevenDaysAgo && oi.Order.Status == "Completed")
-                    .Include(oi => oi.MenuItem)
-                        .ThenInclude(m => m!.Recipes)
+                var rawItems = await _context.Orders
+                    .Where(o => o.CreatedAt >= sevenDaysAgo && o.Status == "Completed")
+                    .SelectMany(o => o.OrderItems.Select(oi => new { oi.MenuItemId, oi.Quantity }))
                     .ToListAsync();
-            }
-            catch
-            {
-                recentOrderItems = new List<OrderItem>();
-            }
-        }
 
-        var usageDict = new Dictionary<int, decimal>();
-        foreach (var oi in recentOrderItems)
-        {
-            if (oi.MenuItem?.Recipes == null) continue;
-            foreach (var recipe in oi.MenuItem.Recipes)
+                var menuItemsWithRecipes = await _context.MenuItems
+                    .Include(m => m.Recipes)
+                    .ToDictionaryAsync(m => m.MenuItemId);
+
+                foreach (var oi in rawItems)
+                {
+                    if (menuItemsWithRecipes.TryGetValue(oi.MenuItemId, out var mi) && mi.Recipes != null)
+                    {
+                        foreach (var recipe in mi.Recipes)
+                        {
+                            usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + (recipe.QuantityRequired * oi.Quantity);
+                        }
+                    }
+                }
+            }
+            catch (Exception innerEx)
             {
-                decimal used = recipe.QuantityRequired * oi.Quantity;
-                usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + used;
+                System.Diagnostics.Debug.WriteLine($"[ComputeWeeklyReorderForecastAsync] Schema fallback notice: {innerEx.Message}");
             }
         }
 
