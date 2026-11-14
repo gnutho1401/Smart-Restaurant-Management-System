@@ -259,7 +259,7 @@ public class MenuViewModel : ViewModelBase
         // Subordinate check: Chef cannot change commercial selling prices without Manager/Admin approval
         if (!CanEditPrice && SelectedDish != null && SelectedDish.Price != DishPrice)
         {
-            StatusMessage = "⚠️ Bếp trưởng chỉ có quyền điều chỉnh công thức định lượng BOM. Giá bán thương mại phải do Quản Lý hoặc Admin duyệt.";
+            StatusMessage = "Bếp trưởng chỉ có quyền điều chỉnh công thức định lượng BOM. Giá bán thương mại phải do Quản Lý hoặc Admin duyệt.";
             DishPrice = SelectedDish.Price;
         }
 
@@ -279,7 +279,7 @@ public class MenuViewModel : ViewModelBase
         };
 
         await _menuService.UpsertMenuItemAsync(dish);
-        StatusMessage = $"✅ Đã lưu món '{dish.Name}' và cấu hình BOM thành công!";
+        StatusMessage = $"Đã lưu món '{dish.Name}' và cấu hình BOM thành công!";
 
         await LoadMenuAsync();
     }
@@ -289,7 +289,7 @@ public class MenuViewModel : ViewModelBase
         if (_editingDishId == 0) return;
 
         await _menuService.DeleteMenuItemAsync(_editingDishId);
-        StatusMessage = "✅ Đã gỡ món khỏi thực đơn bán hàng.";
+        StatusMessage = "Đã gỡ món khỏi thực đơn bán hàng.";
         await LoadMenuAsync();
     }
 

@@ -105,7 +105,7 @@
                     <!-- Culinary Description with AI Assist -->
                     <DockPanel Margin="0,0,0,4">
                         <TextBlock Text="Mô Tả Ẩm Thực:" FontWeight="SemiBold" Foreground="#7F8C8D" VerticalAlignment="Center"/>
-                        <Button DockPanel.Dock="Right" Content="✨ Sinh Mô Tả Bằng AI (LM Studio)" 
+                        <Button DockPanel.Dock="Right" Content="Sinh Mô Tả Bằng AI (LM Studio)" 
                                 Command="{Binding GenerateAiDescriptionCommand}"
                                 Background="#8E44AD" Foreground="#FFFFFF" FontWeight="Bold" FontSize="11" Height="28" Padding="10,0" Cursor="Hand" BorderThickness="0">
                             <Button.Resources>
@@ -131,7 +131,7 @@
                                             <TextBox Text="{Binding QuantityRequired, UpdateSourceTrigger=PropertyChanged}" Width="70" Height="28" 
                                                      VerticalContentAlignment="Center" TextAlignment="Center" Margin="10,0"/>
                                             <TextBlock Text="{Binding Unit}" Foreground="#7F8C8D" VerticalAlignment="Center" Width="40"/>
-                                            <Button Content="✕ Xóa" 
+                                            <Button Content="Xóa" 
                                                     Command="{Binding DataContext.RemoveIngredientCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"
                                                     Background="#E74C3C" Foreground="#FFFFFF" FontWeight="Bold" FontSize="11" Height="26" Padding="8,0" Cursor="Hand" BorderThickness="0"/>

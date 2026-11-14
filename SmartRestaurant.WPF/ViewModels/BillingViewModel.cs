@@ -84,7 +84,7 @@ public class BillingViewModel : ViewModelBase
                 decimal maxAllowed = Math.Min(SubTotal * 0.10m, 100000m);
                 if (value > maxAllowed)
                 {
-                    StatusMessage = $"⚠️ Thu ngân chỉ được áp dụng chiết khấu tối đa 10% (tối đa {maxAllowed:N0} đ). Mức chiết khấu cao hơn phải do Quản Lý (Store Manager) phê duyệt.";
+                    StatusMessage = $"Thu ngân chỉ được áp dụng chiết khấu tối đa 10% (tối đa {maxAllowed:N0} đ). Mức chiết khấu cao hơn phải do Quản Lý (Store Manager) phê duyệt.";
                     value = maxAllowed;
                 }
             }
@@ -329,7 +329,7 @@ public class BillingViewModel : ViewModelBase
         {
             FoundCustomer = null;
             IsCustomerFound = false;
-            StatusMessage = "ℹ️ Số điện thoại chưa đăng ký hội viên. Vui lòng nhập họ tên để đăng ký mới ngay bên dưới.";
+            StatusMessage = "Số điện thoại chưa đăng ký hội viên. Vui lòng nhập họ tên để đăng ký mới ngay bên dưới.";
         }
     }
 
@@ -350,11 +350,11 @@ public class BillingViewModel : ViewModelBase
 
             await _orderService.AttachCustomerToOrderAsync(OrderId, newCustomer.CustomerId);
 
-            StatusMessage = $"✅ Đăng ký thành công hội viên VIP: {newCustomer.FullName} ({newCustomer.PhoneNumber})!";
+            StatusMessage = $"Đăng ký thành công hội viên VIP: {newCustomer.FullName} ({newCustomer.PhoneNumber})!";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ Không thể đăng ký: {ex.Message}";
+            StatusMessage = $"Không thể đăng ký: {ex.Message}";
         }
     }
 
@@ -374,7 +374,7 @@ public class BillingViewModel : ViewModelBase
 
         if (PointsToRedeem > FoundCustomer.LoyaltyPoints)
         {
-            StatusMessage = $"⚠️ Hội viên chỉ có {FoundCustomer.LoyaltyPoints:N0} điểm khả dụng. Không thể đổi {PointsToRedeem:N0} điểm.";
+            StatusMessage = $"Hội viên chỉ có {FoundCustomer.LoyaltyPoints:N0} điểm khả dụng. Không thể đổi {PointsToRedeem:N0} điểm.";
             return;
         }
 
@@ -461,7 +461,7 @@ public class BillingViewModel : ViewModelBase
     {
         if (AmountPaid < TotalDue)
         {
-            StatusMessage = "❌ Số tiền khách trả không đủ quyết toán hóa đơn.";
+            StatusMessage = "Số tiền khách trả không đủ quyết toán hóa đơn.";
             return;
         }
 
@@ -476,11 +476,11 @@ public class BillingViewModel : ViewModelBase
             await _billingService.SettlePaymentAsync(invoice.InvoiceId, SelectedMethod, AmountPaid, idempotencyKey);
 
             IsSettled = true;
-            StatusMessage = $"✅ Đã quyết toán thành công hóa đơn {invoice.InvoiceCode}!";
+            StatusMessage = $"Đã quyết toán thành công hóa đơn {invoice.InvoiceCode}!";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ Lỗi thanh toán: {ex.Message}";
+            StatusMessage = $"Lỗi thanh toán: {ex.Message}";
         }
     }
 }

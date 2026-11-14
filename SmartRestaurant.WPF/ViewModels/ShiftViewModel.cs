@@ -139,11 +139,11 @@ public class ShiftViewModel : ViewModelBase
             CurrentShift = shift;
             ActualCashEndInput = shift.OpeningFloat;
             RecalculateVariance();
-            StatusMessage = $"✅ Đã mở ca làm việc thành công lúc {shift.StartTime.ToLocalTime():HH:mm}!";
+            StatusMessage = $"Đã mở ca làm việc thành công lúc {shift.StartTime.ToLocalTime():HH:mm}!";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ Không thể mở ca: {ex.Message}";
+            StatusMessage = $"Không thể mở ca: {ex.Message}";
         }
     }
 

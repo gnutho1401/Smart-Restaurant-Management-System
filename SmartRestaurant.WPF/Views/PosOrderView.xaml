@@ -34,11 +34,10 @@
                         Visibility="{Binding IsUpsellVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="✨" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <TextBlock Text="{Binding UpsellMessage}" FontWeight="Bold" FontSize="13" Foreground="#92400E" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <Button Content="+ Thêm Ngay" Command="{Binding AcceptUpsellCommand}"
+                            <Button Content="Thêm Ngay" Command="{Binding AcceptUpsellCommand}"
                                     Background="#D97706" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" Height="32" Padding="12,0" Cursor="Hand" BorderThickness="0" Margin="0,0,8,0">
                                 <Button.Resources>
                                     <Style TargetType="Border">

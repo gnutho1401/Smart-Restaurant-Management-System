@@ -223,7 +223,7 @@ public class StaffManagementViewModel : ViewModelBase
         var currentRole = _authService.CurrentUser?.Role ?? UserRole.Cashier;
         if (!RoleHierarchy.CanManage(currentRole, NewRole))
         {
-            StatusMessage = $"❌ Cấp bậc không hợp lệ: Bạn không có quyền khởi tạo tài khoản có chức vụ '{NewRole}' ngang bằng hoặc cao hơn chức vụ của bạn.";
+            StatusMessage = $"Cấp bậc không hợp lệ: Bạn không có quyền khởi tạo tài khoản có chức vụ '{NewRole}' ngang bằng hoặc cao hơn chức vụ của bạn.";
             IsSuccessMessage = false;
             return;
         }
@@ -232,7 +232,7 @@ public class StaffManagementViewModel : ViewModelBase
         try
         {
             var user = await _staffService.CreateStaffAsync(NewUsername, NewPassword, NewFullName, NewRole);
-            StatusMessage = $"✅ Đã thêm nhân viên '{user.FullName}' ({user.Username}) thành công!";
+            StatusMessage = $"Đã thêm nhân viên '{user.FullName}' ({user.Username}) thành công!";
             IsSuccessMessage = true;
 
             NewUsername = string.Empty;
@@ -243,7 +243,7 @@ public class StaffManagementViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ Lỗi thêm nhân viên: {ex.Message}";
+            StatusMessage = $"Lỗi thêm nhân viên: {ex.Message}";
             IsSuccessMessage = false;
         }
         finally
@@ -266,7 +266,7 @@ public class StaffManagementViewModel : ViewModelBase
         // Subordinate cannot interfere with superior or peer
         if (!RoleHierarchy.CanManage(currentRole, SelectedStaff.Role))
         {
-            StatusMessage = $"❌ Cấp dưới không thể can thiệp hoặc thay đổi chức vụ của cấp trên/cùng cấp ({SelectedStaff.FullName}).";
+            StatusMessage = $"Cấp dưới không thể can thiệp hoặc thay đổi chức vụ của cấp trên/cùng cấp ({SelectedStaff.FullName}).";
             IsSuccessMessage = false;
             return;
         }
@@ -274,7 +274,7 @@ public class StaffManagementViewModel : ViewModelBase
         // Subordinate cannot elevate anyone to equal or higher role than self
         if (!RoleHierarchy.CanManage(currentRole, newRole))
         {
-            StatusMessage = $"❌ Bạn không có quyền phân bổ vai trò '{newRole}' ngang bằng hoặc cao hơn cấp bậc của bạn.";
+            StatusMessage = $"Bạn không có quyền phân bổ vai trò '{newRole}' ngang bằng hoặc cao hơn cấp bậc của bạn.";
             IsSuccessMessage = false;
             return;
         }
@@ -283,14 +283,14 @@ public class StaffManagementViewModel : ViewModelBase
         {
             await _staffService.UpdateStaffRoleAsync(SelectedStaff.UserId, newRole);
             SelectedStaff.Role = newRole;
-            StatusMessage = $"✅ Đã cập nhật vai trò nhân viên {SelectedStaff.FullName} thành '{newRole}'!";
+            StatusMessage = $"Đã cập nhật vai trò nhân viên {SelectedStaff.FullName} thành '{newRole}'!";
             IsSuccessMessage = true;
             OnPropertyChanged(nameof(CanModifySelectedStaff));
             OnPropertyChanged(nameof(IsSuperiorOrPeerSelected));
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ Lỗi đổi vai trò: {ex.Message}";
+            StatusMessage = $"Lỗi đổi vai trò: {ex.Message}";
             IsSuccessMessage = false;
         }
     }
@@ -309,7 +309,7 @@ public class StaffManagementViewModel : ViewModelBase
         // Subordinate cannot delete superior or peer
         if (!RoleHierarchy.CanManage(currentRole, SelectedStaff.Role))
         {
-            StatusMessage = $"❌ Cấp dưới không thể xóa tài khoản của cấp trên hoặc cùng cấp ({SelectedStaff.FullName}).";
+            StatusMessage = $"Cấp dưới không thể xóa tài khoản của cấp trên hoặc cùng cấp ({SelectedStaff.FullName}).";
             IsSuccessMessage = false;
             return;
         }
@@ -317,14 +317,14 @@ public class StaffManagementViewModel : ViewModelBase
         try
         {
             await _staffService.DeleteStaffAsync(SelectedStaff.UserId);
-            StatusMessage = $"✅ Đã xóa nhân viên '{SelectedStaff.FullName}'!";
+            StatusMessage = $"Đã xóa nhân viên '{SelectedStaff.FullName}'!";
             IsSuccessMessage = true;
             SelectedStaff = null;
             await LoadStaffAsync();
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ Lỗi xóa nhân viên: {ex.Message}";
+            StatusMessage = $"Lỗi xóa nhân viên: {ex.Message}";
             IsSuccessMessage = false;
         }
     }

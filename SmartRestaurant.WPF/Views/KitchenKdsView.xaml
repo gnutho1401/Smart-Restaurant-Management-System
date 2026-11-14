@@ -109,7 +109,7 @@
                                     <!-- Allergy Note Callout Badge -->
                                     <Border Background="#C0392B" CornerRadius="6" Padding="10,6" Margin="0,4,0,0"
                                             Visibility="{Binding AllergyNote, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                        <TextBlock Text="{Binding AllergyNote, StringFormat='⚠️ LƯU Ý DỊ ỨNG: {0}'}" 
+                                        <TextBlock Text="{Binding AllergyNote, StringFormat='LƯU Ý DỊ ỨNG: {0}'}" 
                                                    Foreground="#FFFFFF" FontSize="13" FontWeight="Bold" TextWrapping="Wrap"/>
                                     </Border>
                                 </StackPanel>
@@ -131,7 +131,7 @@
                                             </Style>
                                         </Button.Resources>
                                     </Button>
-                                    <Button Grid.Column="2" Content="❌ Hủy" 
+                                    <Button Grid.Column="2" Content="Hủy Món" 
                                             Command="{Binding DataContext.VoidTicketCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
                                             Background="#C0392B" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" Height="48" Padding="12,0" Cursor="Hand" BorderThickness="0"

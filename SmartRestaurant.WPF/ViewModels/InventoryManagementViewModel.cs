@@ -172,18 +172,18 @@ public class InventoryManagementViewModel : ViewModelBase
             if (success)
             {
                 SelectedIngredient.CurrentStock += RestockQuantity;
-                StatusMessage = $"✅ Đã nhập kho thành công +{RestockQuantity:N0} {SelectedIngredient.Unit} cho '{SelectedIngredient.Name}'!";
+                StatusMessage = $"Đã nhập kho thành công +{RestockQuantity:N0} {SelectedIngredient.Unit} cho '{SelectedIngredient.Name}'!";
                 IsSuccessMessage = true;
             }
             else
             {
-                StatusMessage = "❌ Không tìm thấy nguyên liệu để cập nhật.";
+                StatusMessage = "Không tìm thấy nguyên liệu để cập nhật.";
                 IsSuccessMessage = false;
             }
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ Lỗi nhập kho: {ex.Message}";
+            StatusMessage = $"Lỗi nhập kho: {ex.Message}";
             IsSuccessMessage = false;
         }
         finally

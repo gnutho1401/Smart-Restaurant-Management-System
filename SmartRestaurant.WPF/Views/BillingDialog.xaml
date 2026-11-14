@@ -251,7 +251,7 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBox Grid.Column="0" Text="{Binding NewCustomerName, UpdateSourceTrigger=PropertyChanged}" 
                                                      Height="32" VerticalContentAlignment="Center" Padding="8,0" FontSize="12"/>
-                                            <Button Grid.Column="2" Content="➕ Đăng Ký Mới" Command="{Binding RegisterCustomerCommand}"
+                                            <Button Grid.Column="2" Content="Đăng Ký Mới" Command="{Binding RegisterCustomerCommand}"
                                                     Background="#F59E0B" Foreground="#FFFFFF" FontWeight="Bold" FontSize="11" Padding="10,0" Height="32" Cursor="Hand" BorderThickness="0">
                                                 <Button.Resources>
                                                     <Style TargetType="Border">

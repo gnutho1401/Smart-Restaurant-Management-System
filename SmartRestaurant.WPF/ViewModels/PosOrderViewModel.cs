@@ -545,24 +545,24 @@ public class PosOrderViewModel : ViewModelBase
             // 3. Atomic BOM Inventory Deduction with Optimistic Locking
             await _inventoryService.DeductBomIngredientsAsync(order.OrderId);
 
-            StatusMessage = $"✅ Đã gửi đơn #{order.OrderId:D4} vào bếp và trừ kho BOM thành công!";
+            StatusMessage = $"Đã gửi đơn #{order.OrderId:D4} vào bếp và trừ kho BOM thành công!";
             IsSuccessMessage = true;
 
             ClearCart();
         }
         catch (InsufficientStockException ex)
         {
-            StatusMessage = $"❌ Không đủ kho nguyên liệu: {ex.Message}";
+            StatusMessage = $"Không đủ kho nguyên liệu: {ex.Message}";
             IsSuccessMessage = false;
         }
         catch (ConcurrencyConflictException ex)
         {
-            StatusMessage = $"⚠️ Xung đột kho đồng thời: {ex.Message}";
+            StatusMessage = $"Xung đột kho đồng thời: {ex.Message}";
             IsSuccessMessage = false;
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ Lỗi gọi món: {ex.Message}";
+            StatusMessage = $"Lỗi gọi món: {ex.Message}";
             IsSuccessMessage = false;
         }
     }
