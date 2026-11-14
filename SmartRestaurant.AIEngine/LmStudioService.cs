@@ -62,6 +62,9 @@ public class LmStudioService : IAiService
         LoadConfigurationFromEnvironmentOrFile();
     }
 
+    public string LastUsedProvider { get; private set; } = "LM Studio (Cục bộ)";
+    public string GetLastUsedProvider() => LastUsedProvider;
+
     public void UpdateGeminiConfig(string apiKey, string? model = null)
     {
         _geminiApiKey = apiKey?.Trim();
@@ -315,10 +318,16 @@ public class LmStudioService : IAiService
             .ToListAsync();
 
         string instruction =
-            "1. Tư vấn món ăn phù hợp với yêu cầu, sở thích hoặc chế độ ăn của khách hàng.\n" +
-            "2. Luôn báo đúng tên món và giá niêm yết theo dữ liệu CSDL.\n" +
-            "3. Khi khách hỏi về nguyên liệu hoặc dị ứng (chay, hải sản, bò, đậu phộng...), hãy đối chiếu trường 'Ingredients' để cảnh báo hoặc xác nhận an toàn tuyệt đối.\n" +
-            "4. Nếu khách hỏi món ngoài danh sách, thông báo lịch sự nhà hàng chưa có và đề xuất món thay thế tương tự.";
+            "Bạn là Chuyên gia Tư vấn Ẩm thực (Head Sommelier & Gastronomy Consultant) của nhà hàng cao cấp SmartRestaurant.\n" +
+            "QUY TẮC TRÌNH BÀY SANG TRỌNG & CHUYÊN NGHIỆP:\n" +
+            "1. Phân nhóm thực đơn mạch lạc theo các tiêu đề: '### 🍽️ <Tên Nhóm Món>'.\n" +
+            "2. Với mỗi món ăn, trình bày rõ ràng:\n" +
+            "   • **<Tên Món>** — `<Giá> VND`\n" +
+            "     *Hương vị:* Mô tả cô đọng 1 câu lôi cuốn về sự kết hợp hương vị và độ tươi ngon.\n" +
+            "     💡 *Gợi ý dùng kèm:* Đề xuất 1 món hoặc đồ uống phối hợp hoàn hảo.\n" +
+            "3. Khi khách hỏi về nguyên liệu hoặc dị ứng (chay, hải sản, thịt bò, đậu phộng...): Đặt thẻ '[🚨 CẢNH BÁO DỊ ỨNG]' hoặc '[✅ AN TOÀN TUYỆT ĐỐI]' nổi bật.\n" +
+            "4. Tuyệt đối báo đúng tên món và giá niêm yết theo dữ liệu CSDL.\n" +
+            "5. Tránh văn phong liệt kê khô khan, sử dụng ngôn từ hiếu khách, tinh tế của nhà hàng cao cấp.";
 
         string systemPrompt = ContextGroundingHelper.BuildGroundedSystemPrompt(liveMenu, instruction);
 
@@ -417,9 +426,10 @@ public class LmStudioService : IAiService
 
         string instruction =
             "Bạn là Giám đốc Vận hành Ẩm thực (F&B Director). Hãy phân tích báo cáo ma trận BCG Menu Engineering:\n" +
-            "1. Phân loại và đánh giá từng nhóm: Stars (Ngôi sao), Plowhorses (Bò sữa), Puzzles (Thử thách), Dogs (Chó mực).\n" +
-            "2. Đưa ra chiến lược cụ thể cho từng nhóm: điều chỉnh giá, định lượng nguyên liệu (BOM), hay kỹ năng upselling của nhân viên.\n" +
-            "3. Trình bày rõ ràng theo tiêu đề markdown, súc tích và có tính hành động cao.";
+            "1. Phân loại và đánh giá từng nhóm theo thẻ: '[⭐ Stars]', '[🐄 Plowhorses]', '[❓ Puzzles]', '[🐕 Dogs]'.\n" +
+            "2. Đưa ra chiến lược tài chính cụ thể cho từng nhóm: điều chỉnh giá, định lượng nguyên liệu (BOM), hay kỹ năng upselling của nhân viên.\n" +
+            "3. Đề xuất 3 hành động trọng tâm trong tuần để tối ưu hóa biên lợi nhuận đóng góp (Contribution Margin).\n" +
+            "Trình bày chuyên nghiệp theo tiêu đề markdown '###', súc tích và có tính thực thi cao.";
 
         string systemPrompt = ContextGroundingHelper.BuildGroundedSystemPrompt(matrixSnapshot, instruction);
 
@@ -468,19 +478,53 @@ public class LmStudioService : IAiService
     public async Task<string> PredictWeeklyReorderAsync()
     {
         var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
-        var recentOrderItems = await _context.OrderItems
-            .Where(oi => oi.Order != null && oi.Order.CreatedAt >= sevenDaysAgo && oi.Order.Status == "Completed")
-            .Include(oi => oi.MenuItem)
-                .ThenInclude(m => m!.Recipes)
-            .ToListAsync();
-
         var usageDict = new Dictionary<int, decimal>();
-        foreach (var oi in recentOrderItems)
+
+        try
         {
-            if (oi.MenuItem?.Recipes == null) continue;
-            foreach (var recipe in oi.MenuItem.Recipes)
+            var recentOrderItems = await _context.OrderItems
+                .Where(oi => oi.Order != null && oi.Order.CreatedAt >= sevenDaysAgo && oi.Order.Status == "Completed")
+                .Include(oi => oi.MenuItem)
+                    .ThenInclude(m => m!.Recipes)
+                .ToListAsync();
+
+            foreach (var oi in recentOrderItems)
             {
-                usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + (recipe.QuantityRequired * oi.Quantity);
+                if (oi.MenuItem?.Recipes == null) continue;
+                foreach (var recipe in oi.MenuItem.Recipes)
+                {
+                    usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + (recipe.QuantityRequired * oi.Quantity);
+                }
+            }
+        }
+        catch
+        {
+            try
+            {
+                // Resilient projection fallback: Avoid selecting newly introduced OrderItems columns
+                var rawItems = await _context.Orders
+                    .Where(o => o.CreatedAt >= sevenDaysAgo && o.Status == "Completed")
+                    .SelectMany(o => o.OrderItems.Select(oi => new { oi.MenuItemId, oi.Quantity }))
+                    .ToListAsync();
+
+                var menuItemsWithRecipes = await _context.MenuItems
+                    .Include(m => m.Recipes)
+                    .ToDictionaryAsync(m => m.MenuItemId);
+
+                foreach (var oi in rawItems)
+                {
+                    if (menuItemsWithRecipes.TryGetValue(oi.MenuItemId, out var mi) && mi.Recipes != null)
+                    {
+                        foreach (var recipe in mi.Recipes)
+                        {
+                            usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + (recipe.QuantityRequired * oi.Quantity);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[PredictWeeklyReorderAsync] Fallback query notice: {ex.Message}");
             }
         }
 
@@ -502,12 +546,15 @@ public class LmStudioService : IAiService
         }).ToList();
 
         string instruction =
-            "Bạn là Chuyên gia Quản lý Kho Vận và Cung ứng (Supply Chain Manager) của nhà hàng.\n" +
-            "Dựa trên dữ liệu tồn kho thực tế, ngưỡng an toàn và tốc độ tiêu thụ 7 ngày qua:\n" +
-            "1. Lập danh sách ưu tiên các nguyên liệu cần đặt hàng gấp trong 24-48 giờ tới.\n" +
-            "2. Đề xuất số lượng đặt hàng ước tính cho từng nguyên vật liệu để tránh đứt gãy phục vụ.\n" +
-            "3. Đưa ra lưu ý bảo quản nguyên liệu tươi sống (rau củ, thịt, gia vị).\n" +
-            "Trình bày chuyên nghiệp, gạch đầu dòng rõ ràng theo từng nhóm nguyên liệu.";
+            "Bạn là Giám đốc Quản lý Chuỗi Cung ứng (Supply Chain Director) của nhà hàng SmartRestaurant.\n" +
+            "QUY TẮC BÁO CÁO HẬU CẦN CHUẨN MỰC:\n" +
+            "1. Lập BẢNG TỔNG HỢP MARKDOWN cho các nguyên liệu cần lưu ý theo định dạng:\n" +
+            "| Nguyên Liệu | Tồn Kho Hiện Tại | Mức Tối Thiểu | Tiêu Thụ 7 Ngày | Đề Xuất Nhập | Trạng Thái |\n" +
+            "|---|---|---|---|---|---|\n" +
+            "Ở cột Trạng thái, hãy dùng thẻ: '[🚨 Khẩn cấp]', '[⚠️ Lưu ý]', hoặc '[✅ Đủ dùng]'.\n" +
+            "2. Đưa ra 2-3 gạch đầu dòng đánh giá xu hướng tiêu thụ nguyên liệu tươi sống (thịt bò Wagyu, tôm hùm, cá hồi).\n" +
+            "3. Đề xuất quy trình bảo quản tối ưu và kế hoạch đặt hàng với nhà cung cấp.\n" +
+            "4. Đi thẳng vào số liệu phân tích, không viết lời chào mở đầu dài dòng.";
 
         string systemPrompt = ContextGroundingHelper.BuildGroundedSystemPrompt(stockSnapshot, instruction);
 
@@ -589,8 +636,11 @@ public class LmStudioService : IAiService
                 string? geminiResult = await TryCallGeminiBackupAsync(systemPrompt, userPrompt);
                 if (!string.IsNullOrEmpty(geminiResult))
                 {
+                    LastUsedProvider = $"Google Gemini Backup ({_geminiModel})";
                     return geminiResult;
                 }
+
+                LastUsedProvider = "Grounding CSDL Cục Bộ";
 
                 // Priority 3: Offline deterministic Grounding fallback
                 var offlineRec = GenerateOfflineFallbackRecommendation(userPrompt);
@@ -624,6 +674,7 @@ public class LmStudioService : IAiService
                 var message = choices[0].GetProperty("message");
                 if (message.TryGetProperty("content", out var textContent))
                 {
+                    LastUsedProvider = $"LM Studio ({_targetModel})";
                     return textContent.GetString() ?? "Không nhận được phản hồi từ mô hình AI.";
                 }
             }
@@ -690,7 +741,8 @@ public class LmStudioService : IAiService
                             string reply = textElem.GetString() ?? string.Empty;
                             if (!string.IsNullOrWhiteSpace(reply))
                             {
-                                return $"🤖 **[Trợ lý GenAI - Google Gemini Backup ({_geminiModel})]:**\n\n{reply.Trim()}";
+                                LastUsedProvider = $"Google Gemini Backup ({_geminiModel})";
+                                return reply.Trim();
                             }
                         }
                     }

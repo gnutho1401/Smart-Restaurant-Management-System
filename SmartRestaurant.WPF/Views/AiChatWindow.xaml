@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:SmartRestaurant.WPF.ViewModels"
+        xmlns:common="clr-namespace:SmartRestaurant.WPF.Common"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance vm:AiChatViewModel}"
         Title="Trợ Lý Ảo GenAI Nhà Hàng (Mistral-7B / Google Gemini) - SmartRestaurant" 
@@ -98,59 +99,74 @@
             </Border>
 
             <!-- 2. Chat Conversation History -->
-            <Border Grid.Row="1" Background="#FFFFFF" CornerRadius="8" Padding="14" Margin="0,0,0,10">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <Border Grid.Row="1" Background="#FFFFFF" CornerRadius="10" Padding="14" Margin="0,0,0,10">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.04" Color="#000000"/>
+                </Border.Effect>
+                <ScrollViewer x:Name="ChatScrollViewer" VerticalScrollBarVisibility="Auto">
                     <ItemsControl ItemsSource="{Binding Messages}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Margin="0,6" CornerRadius="8" Padding="12" MaxWidth="720"
-                                        HorizontalAlignment="{Binding IsUser, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='Invert'}"
-                                        Background="{Binding IsUser, Converter={StaticResource TableStatusToBrushConverter}}">
+                                <Border Margin="0,8" CornerRadius="12" Padding="16,14" MaxWidth="780"
+                                        HorizontalAlignment="{Binding IsUser, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='Invert'}">
                                     <Border.Style>
                                         <Style TargetType="Border">
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsUser}" Value="True">
                                                     <Setter Property="HorizontalAlignment" Value="Right"/>
-                                                    <Setter Property="Background" Value="#2980B9"/>
+                                                    <Setter Property="Background" Value="#4F46E5"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding IsUser}" Value="False">
                                                     <Setter Property="HorizontalAlignment" Value="Left"/>
-                                                    <Setter Property="Background" Value="#F8F9FA"/>
-                                                    <Setter Property="BorderBrush" Value="#E0E6ED"/>
+                                                    <Setter Property="Background" Value="#FFFFFF"/>
+                                                    <Setter Property="BorderBrush" Value="#E2E8F0"/>
                                                     <Setter Property="BorderThickness" Value="1"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </Border.Style>
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.05" Color="#000000"/>
+                                    </Border.Effect>
 
                                     <StackPanel>
-                                        <DockPanel Margin="0,0,0,6">
-                                            <TextBlock Text="{Binding Sender, StringFormat='👤 {0}'}" FontWeight="Bold" FontSize="12">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Foreground" Value="#2C3E50"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsUser}" Value="True">
-                                                                <Setter Property="Foreground" Value="#FFFFFF"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
+                                        <DockPanel Margin="0,0,0,8">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock FontWeight="Bold" FontSize="12" VerticalAlignment="Center">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="🤖 Trợ Lý SmartRestaurant"/>
+                                                            <Setter Property="Foreground" Value="#1E293B"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsUser}" Value="True">
+                                                                    <Setter Property="Text" Value="👤 Bạn (Thu Ngân / Quản Lý)"/>
+                                                                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
 
-                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                                <!-- Provider Pill Tag -->
+                                                <Border Background="#EEF2FF" BorderBrush="#C7D2FE" BorderThickness="1" CornerRadius="10" Padding="8,2" Margin="8,0,0,0"
+                                                        Visibility="{Binding HasProviderBadge, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                    <TextBlock Text="{Binding ProviderBadge}" FontSize="10" FontWeight="SemiBold" Foreground="#4F46E5"/>
+                                                </Border>
+                                            </StackPanel>
+
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                                 <Button Content="📋" ToolTip="Sao chép nội dung"
                                                         Command="{Binding DataContext.CopyMessageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                         CommandParameter="{Binding Content}"
                                                         Background="Transparent" BorderThickness="0" Cursor="Hand" FontSize="12" Margin="0,0,8,0"
                                                         Visibility="{Binding IsUser, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='Invert'}"/>
-                                                <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="10" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="11" VerticalAlignment="Center">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
-                                                            <Setter Property="Foreground" Value="#7F8C8D"/>
+                                                            <Setter Property="Foreground" Value="#94A3B8"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsUser}" Value="True">
-                                                                    <Setter Property="Foreground" Value="#E0E0E0"/>
+                                                                    <Setter Property="Foreground" Value="#E0E7FF"/>
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
@@ -159,10 +175,12 @@
                                             </StackPanel>
                                         </DockPanel>
 
-                                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap" FontSize="14" LineHeight="20">
+                                        <!-- Rich Formatted Markdown Content -->
+                                        <TextBlock common:MarkdownHelper.MarkdownText="{Binding Content}"
+                                                   TextWrapping="Wrap" FontSize="13.5" LineHeight="22">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
-                                                    <Setter Property="Foreground" Value="#2C3E50"/>
+                                                    <Setter Property="Foreground" Value="#1E293B"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsUser}" Value="True">
                                                             <Setter Property="Foreground" Value="#FFFFFF"/>

@@ -37,21 +37,36 @@ public class AiAnalyticsEngine
                 .ThenInclude(r => r.Ingredient)
             .ToListAsync();
 
-        var sales = await _context.OrderItems
-            .Where(oi => !oi.IsCancelled)
-            .GroupBy(oi => oi.MenuItemId)
-            .Select(g => new { MenuItemId = g.Key, TotalSold = g.Sum(x => x.Quantity), Revenue = g.Sum(x => x.UnitPrice * x.Quantity) })
-            .ToListAsync();
+        Dictionary<int, int> salesDict;
+        Dictionary<int, decimal> revenueDict;
+        try
+        {
+            var sales = await _context.OrderItems
+                .Where(oi => !oi.IsCancelled)
+                .GroupBy(oi => oi.MenuItemId)
+                .Select(g => new { MenuItemId = g.Key, TotalSold = g.Sum(x => x.Quantity), Revenue = g.Sum(x => x.UnitPrice * x.Quantity) })
+                .ToListAsync();
+            salesDict = sales.ToDictionary(s => s.MenuItemId, s => s.TotalSold);
+            revenueDict = sales.ToDictionary(s => s.MenuItemId, s => s.Revenue);
+        }
+        catch (Exception ex) when (ex.Message.Contains("Invalid column name") || ex.Message.Contains("IsCancelled"))
+        {
+            _ = Task.Run(async () => { try { await DbInitializer.EnsureSchemaUpgradesAsync(_context); } catch { } });
+            var sales = await _context.OrderItems
+                .GroupBy(oi => oi.MenuItemId)
+                .Select(g => new { MenuItemId = g.Key, TotalSold = g.Sum(x => x.Quantity), Revenue = g.Sum(x => x.UnitPrice * x.Quantity) })
+                .ToListAsync();
+            salesDict = sales.ToDictionary(s => s.MenuItemId, s => s.TotalSold);
+            revenueDict = sales.ToDictionary(s => s.MenuItemId, s => s.Revenue);
+        }
 
-        var salesDict = sales.ToDictionary(s => s.MenuItemId);
-
-        decimal avgSold = sales.Any() ? (decimal)sales.Average(s => s.TotalSold) : 1m;
+        decimal avgSold = salesDict.Any() ? (decimal)salesDict.Values.Average() : 1m;
 
         // Calculate Cost & Contribution Margin for each dish from BOM ingredients
         var itemDrafts = dishes.Select(dish =>
         {
-            int sold = salesDict.TryGetValue(dish.MenuItemId, out var s) ? s.TotalSold : 0;
-            decimal rev = salesDict.TryGetValue(dish.MenuItemId, out var s2) ? s2.Revenue : 0m;
+            int sold = salesDict.TryGetValue(dish.MenuItemId, out var s) ? s : 0;
+            decimal rev = revenueDict.TryGetValue(dish.MenuItemId, out var s2) ? s2 : 0m;
 
             decimal unitCost = 0m;
             if (dish.Recipes.Any())
@@ -217,33 +232,60 @@ public class AiAnalyticsEngine
     public async Task<WeeklyReorderResult> ComputeWeeklyReorderForecastAsync()
     {
         var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
-        List<OrderItem> recentOrderItems;
+        var usageDict = new Dictionary<int, decimal>();
+
         try
         {
-            recentOrderItems = await _context.OrderItems
+            var recentOrderItems = await _context.OrderItems
                 .Where(oi => !oi.IsCancelled && oi.Order != null && oi.Order.CreatedAt >= sevenDaysAgo && oi.Order.Status == "Completed")
                 .Include(oi => oi.MenuItem)
                     .ThenInclude(m => m!.Recipes)
                 .ToListAsync();
-        }
-        catch (Exception ex) when (ex.Message.Contains("Invalid column name") || ex.Message.Contains("IsCancelled"))
-        {
-            await DbInitializer.EnsureSchemaUpgradesAsync(_context);
-            recentOrderItems = await _context.OrderItems
-                .Where(oi => oi.Order != null && oi.Order.CreatedAt >= sevenDaysAgo && oi.Order.Status == "Completed")
-                .Include(oi => oi.MenuItem)
-                    .ThenInclude(m => m!.Recipes)
-                .ToListAsync();
-        }
 
-        var usageDict = new Dictionary<int, decimal>();
-        foreach (var oi in recentOrderItems)
-        {
-            if (oi.MenuItem?.Recipes == null) continue;
-            foreach (var recipe in oi.MenuItem.Recipes)
+            foreach (var oi in recentOrderItems)
             {
-                decimal used = recipe.QuantityRequired * oi.Quantity;
-                usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + used;
+                if (oi.MenuItem?.Recipes == null) continue;
+                foreach (var recipe in oi.MenuItem.Recipes)
+                {
+                    decimal used = recipe.QuantityRequired * oi.Quantity;
+                    usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + used;
+                }
+            }
+        }
+        catch (Exception ex) when (ex.Message.Contains("Invalid column name") || ex.Message.Contains("IsCancelled") || ex.Message.Contains("CancelReason"))
+        {
+            _ = Task.Run(async () =>
+            {
+                try { await DbInitializer.EnsureSchemaUpgradesAsync(_context); } catch { }
+            });
+
+            try
+            {
+                // Safe projection fallback: Avoid selecting newly introduced OrderItems columns
+                var rawItems = await _context.Orders
+                    .Where(o => o.CreatedAt >= sevenDaysAgo && o.Status == "Completed")
+                    .SelectMany(o => o.OrderItems.Select(oi => new { oi.MenuItemId, oi.Quantity }))
+                    .ToListAsync();
+
+                var menuItemsWithRecipes = await _context.MenuItems
+                    .Include(m => m.Recipes)
+                    .ToDictionaryAsync(m => m.MenuItemId);
+
+                foreach (var oi in rawItems)
+                {
+                    if (menuItemsWithRecipes.TryGetValue(oi.MenuItemId, out var mi) && mi.Recipes != null)
+                    {
+                        foreach (var recipe in mi.Recipes)
+                        {
+                            decimal used = recipe.QuantityRequired * oi.Quantity;
+                            usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + used;
+                        }
+                    }
+                }
+            }
+            catch (Exception fallbackEx)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ComputeWeeklyReorderForecastAsync] Fallback notice: {fallbackEx.Message}");
             }
         }
 
@@ -316,11 +358,23 @@ public class AiAnalyticsEngine
     /// </summary>
     public async Task<List<BasketAssociationRule>> ComputeBasketAssociationsAsync()
     {
-        var completedOrders = await _context.Orders
-            .Where(o => o.Status == "Completed" || o.Status == "Occupied")
-            .Include(o => o.OrderItems.Where(oi => !oi.IsCancelled))
-                .ThenInclude(oi => oi.MenuItem)
-            .ToListAsync();
+        List<Order> completedOrders;
+        try
+        {
+            completedOrders = await _context.Orders
+                .Where(o => o.Status == "Completed" || o.Status == "Occupied")
+                .Include(o => o.OrderItems.Where(oi => !oi.IsCancelled))
+                    .ThenInclude(oi => oi.MenuItem)
+                .ToListAsync();
+        }
+        catch (Exception ex) when (ex.Message.Contains("Invalid column name") || ex.Message.Contains("IsCancelled"))
+        {
+            completedOrders = await _context.Orders
+                .Where(o => o.Status == "Completed" || o.Status == "Occupied")
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.MenuItem)
+                .ToListAsync();
+        }
 
         int totalOrders = completedOrders.Count;
         if (totalOrders == 0) totalOrders = 1;

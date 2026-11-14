@@ -153,8 +153,10 @@ public class AiChatViewModel : ViewModelBase
         Messages.Add(new ChatMessageViewModel
         {
             Sender = "Assistant",
-            Content = "Xin chào! Tôi là Trợ lý AI Cục bộ của SmartRestaurant (Mistral-7B / Gemini Cloud Backup). " +
-                      "Tôi được cung cấp dữ liệu thực tế từ thực đơn và kho nội bộ qua LINQ Context Grounding để hỗ trợ bạn tư vấn món và phân tích kinh doanh mà không sợ ảo giác số liệu.",
+            Content = "Xin chào! Tôi là Trợ lý AI Thông Minh của SmartRestaurant.\n\n" +
+                      "Tôi được đồng bộ dữ liệu thời gian thực từ CSDL nhà hàng qua **LINQ Context Grounding** để hỗ trợ bạn tư vấn món và phân tích kinh doanh chuẩn xác.\n\n" +
+                      "💡 *Bạn có thể chọn nhanh các kịch bản phân tích phía trên hoặc đặt câu hỏi tư vấn trực tiếp!*",
+            ProviderBadge = "SmartRestaurant AI",
             Timestamp = DateTime.Now
         });
 
@@ -273,7 +275,8 @@ public class AiChatViewModel : ViewModelBase
             Messages.Add(new ChatMessageViewModel
             {
                 Sender = "Assistant",
-                Content = answer,
+                Content = CleanProviderPrefix(answer),
+                ProviderBadge = _aiService.GetLastUsedProvider(),
                 Timestamp = DateTime.Now
             });
             StatusInfo = "Đã nhận câu trả lời từ AI.";
@@ -283,7 +286,8 @@ public class AiChatViewModel : ViewModelBase
             Messages.Add(new ChatMessageViewModel
             {
                 Sender = "Assistant",
-                Content = $"⚠️ Lỗi kết nối AI: {ex.Message}\n💡 Gợi ý: Nếu dùng Local AI, hãy đảm bảo LM Studio đang chạy trên cổng 1234 hoặc 1235.",
+                Content = $"⚠️ **Lỗi kết nối AI:** {ex.Message}\n\n💡 *Gợi ý: Nếu dùng Local AI, hãy bấm nút 'Kiểm Tra Kết Nối AI' ở trên để kiểm tra cổng 1235/1234.*",
+                ProviderBadge = "Lỗi",
                 Timestamp = DateTime.Now
             });
             StatusInfo = "Lỗi kết nối.";
@@ -310,6 +314,7 @@ public class AiChatViewModel : ViewModelBase
             {
                 Sender = "Assistant",
                 Content = cached.Content + "\n\n*(⚡ Trả lời tức thì từ Semantic Cache)*",
+                ProviderBadge = "Semantic Cache",
                 Timestamp = DateTime.Now
             });
             StatusInfo = "Đã tải phân tích BCG từ bộ nhớ đệm.";
@@ -322,19 +327,27 @@ public class AiChatViewModel : ViewModelBase
         try
         {
             var result = await _analyticsEngine.ComputeBcgMatrixAsync();
-            var stars = result.Items.Where(i => i.Classification.StartsWith("Star")).Select(i => $"• {i.DishName}: {i.PortionsSold} phần (Lãi gộp: {i.ContributionMargin:N0} đ, {i.MarginPercentage:N0}%)").ToList();
-            var plowhorses = result.Items.Where(i => i.Classification.StartsWith("Plowhorse")).Select(i => $"• {i.DishName}: {i.PortionsSold} phần (Lãi gộp: {i.ContributionMargin:N0} đ, {i.MarginPercentage:N0}%)").ToList();
-            var puzzles = result.Items.Where(i => i.Classification.StartsWith("Puzzle")).Select(i => $"• {i.DishName}: {i.PortionsSold} phần (Lãi gộp: {i.ContributionMargin:N0} đ, {i.MarginPercentage:N0}%)").ToList();
-            var dogs = result.Items.Where(i => i.Classification.StartsWith("Dog")).Select(i => $"• {i.DishName}: {i.PortionsSold} phần (Lãi gộp: {i.ContributionMargin:N0} đ, {i.MarginPercentage:N0}%)").ToList();
+            var stars = result.Items.Where(i => i.Classification.StartsWith("Star")).Select(i => $"• **{i.DishName}**: `{i.PortionsSold} phần` — Lãi gộp: `{i.ContributionMargin:N0} đ` `[⭐ {i.MarginPercentage:N0}%]`").ToList();
+            var plowhorses = result.Items.Where(i => i.Classification.StartsWith("Plowhorse")).Select(i => $"• **{i.DishName}**: `{i.PortionsSold} phần` — Lãi gộp: `{i.ContributionMargin:N0} đ` `[🐄 {i.MarginPercentage:N0}%]`").ToList();
+            var puzzles = result.Items.Where(i => i.Classification.StartsWith("Puzzle")).Select(i => $"• **{i.DishName}**: `{i.PortionsSold} phần` — Lãi gộp: `{i.ContributionMargin:N0} đ` `[❓ {i.MarginPercentage:N0}%]`").ToList();
+            var dogs = result.Items.Where(i => i.Classification.StartsWith("Dog")).Select(i => $"• **{i.DishName}**: `{i.PortionsSold} phần` — Lãi gộp: `{i.ContributionMargin:N0} đ` `[🐕 {i.MarginPercentage:N0}%]`").ToList();
 
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine("📊 **KẾT QUẢ MA TRẬN THỰC ĐƠN BCG (MENU ENGINEERING DỰA TRÊN LÃI GỘP BOM):**\n");
-            sb.AppendLine($"⭐ **Stars (Ngôi Sao - Bán chạy & Lãi gộp cao):**\n{(stars.Any() ? string.Join("\n", stars) : "• Không có món")}\n");
-            sb.AppendLine($"🐄 **Plowhorses (Bò Sữa - Bán chạy nhưng Chi phí BOM cao):**\n{(plowhorses.Any() ? string.Join("\n", plowhorses) : "• Không có món")}\n");
-            sb.AppendLine($"❓ **Puzzles (Dấu Hỏi - Tỷ suất sinh lời cao nhưng Bán chậm):**\n{(puzzles.Any() ? string.Join("\n", puzzles) : "• Không có món")}\n");
-            sb.AppendLine($"🐕 **Dogs (Chó Mực - Bán chậm & Lãi gộp thấp):**\n{(dogs.Any() ? string.Join("\n", dogs) : "• Không có món")}\n");
-            sb.AppendLine("🤖 **TƯ VẤN CHIẾN LƯỢC TỪ GENAI:**");
-            sb.AppendLine(result.AiExecutiveNarrative);
+            sb.AppendLine("### 📊 Ma Trận Thực Đơn BCG (Menu Engineering Dựa Trên Lãi Gộp BOM)\n");
+            sb.AppendLine("⭐ **Stars (Ngôi Sao - Bán chạy & Lãi gộp cao):**");
+            sb.AppendLine(stars.Any() ? string.Join("\n", stars) : "• Không có món nào");
+            sb.AppendLine();
+            sb.AppendLine("🐄 **Plowhorses (Bò Sữa - Bán chạy nhưng Chi phí BOM cao):**");
+            sb.AppendLine(plowhorses.Any() ? string.Join("\n", plowhorses) : "• Không có món nào");
+            sb.AppendLine();
+            sb.AppendLine("❓ **Puzzles (Dấu Hỏi - Tỷ suất sinh lời cao nhưng Bán chậm):**");
+            sb.AppendLine(puzzles.Any() ? string.Join("\n", puzzles) : "• Không có món nào");
+            sb.AppendLine();
+            sb.AppendLine("🐕 **Dogs (Chó Mực - Bán chậm & Lãi gộp thấp):**");
+            sb.AppendLine(dogs.Any() ? string.Join("\n", dogs) : "• Không có món nào");
+            sb.AppendLine("\n---");
+            sb.AppendLine("### 🤖 Tư Vấn Chiến Lược Tối Ưu Lợi Nhuận Từ AI\n");
+            sb.AppendLine(CleanProviderPrefix(result.AiExecutiveNarrative));
 
             string content = sb.ToString();
             _semanticCache[cacheKey] = (content, DateTime.UtcNow);
@@ -343,13 +356,14 @@ public class AiChatViewModel : ViewModelBase
             {
                 Sender = "Assistant",
                 Content = content,
+                ProviderBadge = _aiService.GetLastUsedProvider(),
                 Timestamp = DateTime.Now
             });
             StatusInfo = "Hoàn tất phân tích BCG.";
         }
         catch (Exception ex)
         {
-            Messages.Add(new ChatMessageViewModel { Sender = "Assistant", Content = $"⚠️ Lỗi: {ex.Message}", Timestamp = DateTime.Now });
+            Messages.Add(new ChatMessageViewModel { Sender = "Assistant", Content = $"⚠️ Lỗi: {ex.Message}", ProviderBadge = "Lỗi", Timestamp = DateTime.Now });
         }
         finally
         {
@@ -373,6 +387,7 @@ public class AiChatViewModel : ViewModelBase
             {
                 Sender = "Assistant",
                 Content = cached.Content + "\n\n*(⚡ Trả lời tức thì từ Semantic Cache)*",
+                ProviderBadge = "Semantic Cache",
                 Timestamp = DateTime.Now
             });
             StatusInfo = "Đã tải phân tích giờ cao điểm từ bộ nhớ đệm.";
@@ -385,17 +400,20 @@ public class AiChatViewModel : ViewModelBase
         try
         {
             var result = await _analyticsEngine.ComputePeakHoursAsync();
-            var busySlots = result.Slots.Where(s => s.OrderVolume > 0).Select(s => $"• Khung giờ {s.TimeSlot}: {s.OrderVolume} đơn ({s.BusynessLevel})").ToList();
+            var busySlots = result.Slots.Where(s => s.OrderVolume > 0).Select(s => $"• **Khung giờ {s.TimeSlot}**: `{s.OrderVolume} đơn` — `[{s.BusynessLevel}]`").ToList();
 
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine("📈 **PHÂN BỐ LƯU LƯỢNG KHÁCH THEO KHUNG GIỜ:**\n");
-            sb.AppendLine($"🔥 **Khung giờ cao điểm:** {result.PrimaryPeakPeriod}");
+            sb.AppendLine("### 📈 Phân Bố Lưu Lượng Khách Theo Khung Giờ\n");
+            sb.AppendLine($"🔥 **Khung giờ cao điểm nhất:** `{result.PrimaryPeakPeriod}`\n");
             if (busySlots.Any())
             {
-                sb.AppendLine("⏱️ **Lưu lượng theo giờ:**\n" + string.Join("\n", busySlots) + "\n");
+                sb.AppendLine("⏱️ **Lưu lượng theo giờ:**");
+                sb.AppendLine(string.Join("\n", busySlots));
+                sb.AppendLine();
             }
-            sb.AppendLine("🤖 **KHUYẾN NGHỊ ĐIỀU PHỐI VẬN HÀNH & NHÂN SỰ GENAI:**");
-            sb.AppendLine(result.StaffingRecommendations);
+            sb.AppendLine("---");
+            sb.AppendLine("### 🤖 Khuyến Nghị Điều Phối Vận Hành & Nhân Sự\n");
+            sb.AppendLine(CleanProviderPrefix(result.StaffingRecommendations));
 
             string content = sb.ToString();
             _semanticCache[cacheKey] = (content, DateTime.UtcNow);
@@ -404,13 +422,14 @@ public class AiChatViewModel : ViewModelBase
             {
                 Sender = "Assistant",
                 Content = content,
+                ProviderBadge = _aiService.GetLastUsedProvider(),
                 Timestamp = DateTime.Now
             });
             StatusInfo = "Hoàn tất phân tích giờ cao điểm.";
         }
         catch (Exception ex)
         {
-            Messages.Add(new ChatMessageViewModel { Sender = "Assistant", Content = $"⚠️ Lỗi: {ex.Message}", Timestamp = DateTime.Now });
+            Messages.Add(new ChatMessageViewModel { Sender = "Assistant", Content = $"⚠️ Lỗi: {ex.Message}", ProviderBadge = "Lỗi", Timestamp = DateTime.Now });
         }
         finally
         {
@@ -433,27 +452,32 @@ public class AiChatViewModel : ViewModelBase
         try
         {
             var result = await _analyticsEngine.ComputeWeeklyReorderForecastAsync();
-            var urgentItems = result.ReorderList.Where(i => i.Urgency.Contains("Khẩn Cấp")).Select(i => $"• {i.IngredientName}: Tồn kho {i.CurrentStock} (Tối thiểu: {i.MinStock}) -> Cần nhập: {i.RecommendedReorder}").ToList();
-            var noticeItems = result.ReorderList.Where(i => i.Urgency.Contains("Lưu Ý")).Select(i => $"• {i.IngredientName}: Tồn kho {i.CurrentStock} -> Cần nhập: {i.RecommendedReorder}").ToList();
+            var urgentItems = result.ReorderList.Where(i => i.Urgency.Contains("Khẩn Cấp")).Select(i => $"• **{i.IngredientName}**: Tồn kho `{i.CurrentStock}` (Tối thiểu: `{i.MinStock}`) -> Cần nhập: `[🚨 {i.RecommendedReorder}]`").ToList();
+            var noticeItems = result.ReorderList.Where(i => i.Urgency.Contains("Lưu Ý")).Select(i => $"• **{i.IngredientName}**: Tồn kho `{i.CurrentStock}` -> Cần nhập: `[⚠️ {i.RecommendedReorder}]`").ToList();
 
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine("📦 **TỔNG HỢP NGUYÊN VẬT LIỆU CẦN BỔ SUNG (BOM & ROP SUPPLY CHAIN):**\n");
+            sb.AppendLine("### 📦 Kế Hoạch Dự Báo & Bổ Sung Kho (ROP Supply Chain)\n");
             if (urgentItems.Any())
             {
-                sb.AppendLine("🚨 **Cảnh báo khẩn cấp:**\n" + string.Join("\n", urgentItems) + "\n");
+                sb.AppendLine("🚨 **Cảnh báo khẩn cấp (Dưới ngưỡng an toàn MinStock):**");
+                sb.AppendLine(string.Join("\n", urgentItems));
+                sb.AppendLine();
             }
             if (noticeItems.Any())
             {
-                sb.AppendLine("⚠️ **Cần theo dõi thêm:**\n" + string.Join("\n", noticeItems) + "\n");
+                sb.AppendLine("⚠️ **Cần theo dõi thêm:**");
+                sb.AppendLine(string.Join("\n", noticeItems));
+                sb.AppendLine();
             }
-            sb.AppendLine("🤖 **KẾ HOẠCH HẬU CẦN & DỰ BÁO TỪ GENAI:**");
-            sb.AppendLine(result.AiLogisticsAdvisory);
+            sb.AppendLine("---");
+            sb.AppendLine("### 🤖 Báo Cáo Phân Tích & Kế Hoạch Hậu Cần AI\n");
+            sb.AppendLine(CleanProviderPrefix(result.AiLogisticsAdvisory));
 
             if (result.PurchaseOrderDraft != null && result.PurchaseOrderDraft.Any())
             {
                 _lastPoDraft = result.PurchaseOrderDraft;
                 IsPoDraftAvailable = true;
-                sb.AppendLine($"\n💡 **HÀNH ĐỘNG NHANH**: Nhấn nút **'📦 Nhập Kho Theo Đề Xuất PO ({result.PurchaseOrderDraft.Count} món)'** bên dưới để tự động cập nhật kho ngay lập tức!");
+                sb.AppendLine($"\n💡 **HÀNH ĐỘNG NHANH**: Nhấn nút **'⚡ Tự Động Nhập Kho Theo Đề Xuất PO ({result.PurchaseOrderDraft.Count} món)'** bên dưới để cập nhật kho ngay lập tức!");
             }
             else
             {
@@ -465,6 +489,7 @@ public class AiChatViewModel : ViewModelBase
             {
                 Sender = "Assistant",
                 Content = sb.ToString(),
+                ProviderBadge = _aiService.GetLastUsedProvider(),
                 Timestamp = DateTime.Now
             });
             StatusInfo = "Hoàn tất dự báo nhập kho.";
@@ -552,11 +577,12 @@ public class AiChatViewModel : ViewModelBase
                 ? string.Join("\n", result.TopDishes.Select(d => $"• {d}"))
                 : "Chưa có dữ liệu món bán trong kỳ.";
 
-            string content = $"💰 **BÁO CÁO DOANH THU KỲ {result.Period}:**\n" +
-                             $"• Tổng doanh thu: {result.TotalRevenue:N0} VND\n" +
-                             $"• Tổng đơn hoàn tất: {result.TotalOrders} đơn\n\n" +
+            string content = $"### 💰 Báo Cáo Doanh Thu Kỳ {result.Period}\n" +
+                             $"• Tổng doanh thu: `{result.TotalRevenue:N0} VND`\n" +
+                             $"• Tổng đơn hoàn tất: `{result.TotalOrders} đơn`\n\n" +
                              $"🏆 **Top 5 Món Doanh Thu Cao Nhất:**\n{topDishesStr}\n\n" +
-                             $"📊 **Đánh Giá & Khuyến Nghị Vận Hành AI:**\n{result.AiAnalysis}";
+                             $"---\n" +
+                             $"### 📊 Đánh Giá & Khuyến Nghị Vận Hành Từ AI\n{CleanProviderPrefix(result.AiAnalysis)}";
 
             _semanticCache[cacheKey] = (content, DateTime.UtcNow);
 
@@ -564,17 +590,33 @@ public class AiChatViewModel : ViewModelBase
             {
                 Sender = "Assistant",
                 Content = content,
+                ProviderBadge = _aiService.GetLastUsedProvider(),
                 Timestamp = DateTime.Now
             });
             StatusInfo = "Hoàn tất phân tích doanh thu.";
         }
         catch (Exception ex)
         {
-            Messages.Add(new ChatMessageViewModel { Sender = "Assistant", Content = $"⚠️ Lỗi: {ex.Message}", Timestamp = DateTime.Now });
+            Messages.Add(new ChatMessageViewModel { Sender = "Assistant", Content = $"⚠️ Lỗi: {ex.Message}", ProviderBadge = "Lỗi", Timestamp = DateTime.Now });
         }
         finally
         {
             IsBusy = false;
         }
+    }
+
+    private static string CleanProviderPrefix(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+        var cleaned = text.Trim();
+        if (cleaned.StartsWith("🤖 **[Trợ lý GenAI") || cleaned.StartsWith("🤖 [Trợ lý GenAI") || cleaned.StartsWith("**[Trợ lý GenAI"))
+        {
+            int idx = cleaned.IndexOf("\n\n");
+            if (idx >= 0 && idx < 150)
+            {
+                cleaned = cleaned.Substring(idx + 2).Trim();
+            }
+        }
+        return cleaned;
     }
 }
