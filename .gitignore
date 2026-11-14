@@ -33,6 +33,12 @@ coverage.cobertura.xml
 .DS_Store
 Thumbs.db
 desktop.ini
+~$*
+*.tmp
+*.bak
+*.swp
+*.cache
+*.pid
 
 ## NuGet Packages
 *.nupkg

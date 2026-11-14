@@ -13,21 +13,27 @@ Write-Host "==========================================================" -Foregro
 Write-Host "   KICH HOAT MO HINH MISTRAL-7B CHO PHIEN LAM VIEC MOI    " -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
-# 1. Kiem tra xem cong 1234 hoac 1235 da co server nao lang nghe chua
+# 1. Kiem tra xem cong 1235 hoac 1234 da co server nao lang nghe chua
 $portActive = $false
-try {
-    $client = New-Object System.Net.Sockets.TcpClient
-    $iar = $client.BeginConnect("127.0.0.1", 1234, $null, $null)
-    $success = $iar.AsyncWaitHandle.WaitOne(1000)
-    if ($success -and $client.Connected) {
-        $portActive = $true
-        $client.EndConnect($iar)
-    }
-    $client.Close()
-} catch {}
+$activeDetectedPort = 1235
+foreach ($p in 1235, 1234) {
+    try {
+        $client = New-Object System.Net.Sockets.TcpClient
+        $iar = $client.BeginConnect("127.0.0.1", $p, $null, $null)
+        $success = $iar.AsyncWaitHandle.WaitOne(800)
+        if ($success -and $client.Connected) {
+            $portActive = $true
+            $activeDetectedPort = $p
+            $client.EndConnect($iar)
+            $client.Close()
+            break
+        }
+        $client.Close()
+    } catch {}
+}
 
 if ($portActive) {
-    Write-Host "[1/3] May chu Local AI da dang hoat dong tren cong 1234!" -ForegroundColor Green
+    Write-Host "[1/3] May chu Local AI da dang hoat dong tren cong $activeDetectedPort!" -ForegroundColor Green
 } else {
     Write-Host "[1/3] Kiem tra cong cu LM Studio CLI..." -ForegroundColor Yellow
     $lmsPath = "$env:USERPROFILE\.lmstudio\bin\lms.exe"

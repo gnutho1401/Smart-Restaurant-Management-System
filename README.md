@@ -117,19 +117,34 @@ Trong đó $T_{\text{system\_warning}}$ chứa cảnh báo nghiêm ngặt buộc
 
 ---
 
-## 🧪 Bộ 32 Unit Tests xUnit (100% Pass)
+## 🧪 Bộ 147 Unit Tests xUnit (100% Pass)
 
-Toàn bộ 32 kiểm thử đơn vị được thực thi độc lập bằng cơ chế **In-Memory Database**:
+Toàn bộ 147 kiểm thử đơn vị được thực thi tự động, độc lập bằng cơ chế **In-Memory Database**:
 
 | Nhóm Kiểm Thử | Số Lượng | Trọng Tâm Xác Minh | Kết Quả |
 |---|:---:|---|:---:|
 | **TableServiceTests** | 6 | Xác thực chuyển đổi trạng thái DFA; chặn Occupied $\rightarrow$ Available; kiểm tra đặt trước | **PASSED (6/6)** |
+| **TableTransferMergeTests** | 4 | Chuyển bàn, gộp bàn đơn hàng, bảo toàn món và trạng thái bàn | **PASSED (4/4)** |
 | **MenuServiceTests** | 5 | Thêm món hợp lệ; chặn giá âm; chặn tên trống; lọc món đang bán; xác nhận xóa mềm | **PASSED (5/5)** |
-| **OrderServiceTests** | 7 | Tạo order mới; tính tạm tính tự động; ghi nhận cảnh báo dị ứng; hủy món an toàn | **PASSED (7/7)** |
+| **OrderServiceTests** | 7 | Tạo order mới; tính tạm tính tự động; ghi nhận cảnh báo dị ứng; trạng thái đơn | **PASSED (7/7)** |
+| **OrderVoidTests** | 4 | Hủy món có lý do bắt buộc; hoàn kho nguyên tử BOM nếu chưa chế biến | **PASSED (4/4)** |
 | **InventoryServiceTests** | 6 | Khấu trừ kho BOM chính xác; rollback nguyên tử khi thiếu kho; nhập kho; cảnh báo tồn thấp | **PASSED (6/6)** |
-| **BillingServiceTests** | 4 | Áp dụng chính xác thuế VAT 8%; chiết khấu trước thuế; chuyển bàn sang Cleaning sau khi trả tiền | **PASSED (4/4)** |
-| **AiServiceTests** | 4 | Tiêm snapshot dữ liệu vào prompt; kiểm tra cảnh báo triệt tiêu ảo giác; phân loại ma trận BCG; xử lý graceful khi LM Studio offline | **PASSED (4/4)** |
-| **TỔNG CỘNG** | **32** | **Bảo đảm 100% các bất biến nghiệp vụ và chất lượng phần mềm** | **100% PASS** |
+| **BillingServiceTests** | 4 | Áp dụng chính xác thuế VAT 8%; chiết khấu trước thuế; chuyển bàn sang Cleaning | **PASSED (4/4)** |
+| **CustomerServiceTests** | 5 | Quản lý khách hàng thân thiết, tích điểm VIP tự động, nâng hạng Bronze/Silver/Gold/Diamond | **PASSED (5/5)** |
+| **ShiftServiceTests** | 4 | Quản lý ca làm việc thu ngân, kiểm kê tiền mặt đầu/cuối ca, tính chênh lệch tiền mặt | **PASSED (4/4)** |
+| **KitchenServiceTests** | 5 | Hàng đợi KDS, chuông báo bếp, lọc trạng thái chế biến thời gian thực | **PASSED (5/5)** |
+| **AuthServiceTests** | 8 | Đăng nhập an toàn, băm mật khẩu PBKDF2/SHA256, kiểm tra vô hiệu hóa tài khoản | **PASSED (8/8)** |
+| **StaffServiceTests** | 4 | Quản lý danh sách nhân sự, phân quyền vai trò, tạo mới và đổi mật khẩu | **PASSED (4/4)** |
+| **RoleHierarchyTests** | 5 | Cây phân quyền RBAC (Manager > Cashier > Waiter > Kitchen) | **PASSED (5/5)** |
+| **VatCalculationTests** | 3 | Kiểm thử công thức tài chính VAT 8% theo luật định | **PASSED (3/3)** |
+| **DiningTableDfaTests** | 3 | Bất biến toán học của máy trạng thái hữu hạn DFA 4 trạng thái | **PASSED (3/3)** |
+| **DbInitializerTests** | 2 | Seed dữ liệu 3NF chuẩn hóa, tự động nâng cấp cấu trúc CSDL (Self-Healing Schema) | **PASSED (2/2)** |
+| **Phase2TouchAndErgonomicsTests** | 6 | Tối ưu hóa cảm ứng POS Touch, kích thước nút bấm $\ge 48\times 48$px, cảnh báo âm thanh KDS | **PASSED (6/6)** |
+| **Phase3AuditAndConcurrencyTests** | 8 | Khóa lạc quan (Optimistic Concurrency), chống ghi đè dữ liệu, lưu vết Audit Trail | **PASSED (8/8)** |
+| **Phase4AiAndStressTests** | 4 | Stress test 100 đơn hàng đồng thời bảo toàn kho BOM, đề xuất bán chéo (Apriori Upsell) | **PASSED (4/4)** |
+| **AiAdvancedIntelligenceTests** | 6 | Ma trận thực đơn BCG tính lãi gộp BOM, thuật toán giỏ hàng Apriori, dự báo ROP & Tạo PO 1 chạm | **PASSED (6/6)** |
+| **AiServiceTests** | 46 | LINQ Context Grounding, tự dò cổng 1235/1234, khống chế token, chẩn đoán kết nối thời gian thực | **PASSED (46/46)** |
+| **TỔNG CỘNG** | **147** | **Bảo đảm 100% các bất biến nghiệp vụ, hiệu năng và an toàn dữ liệu** | **100% PASS** |
 
 ---
 
@@ -150,7 +165,7 @@ Mỗi lần đẩy mã nguồn lên nhánh `main` hoặc tạo Pull Request, quy
 ### Yêu cầu hệ thống:
 - **Hệ điều hành:** Windows 10/11 (64-bit).
 - **Phần mềm:** [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
-- **Mô hình AI Cục bộ (Tùy chọn):** Cài đặt [LM Studio](https://lmstudio.ai/), tải mô hình `mistral-7b-instruct-v0.2.Q4_K_M.gguf` và bật **Start Server** tại `http://localhost:1234`. *(Nếu không bật LM Studio, hệ thống tự động kích hoạt chế độ ngoại tuyến an toàn).*
+- **Mô hình AI Cục bộ (Tùy chọn):** Cài đặt [LM Studio](https://lmstudio.ai/), tải mô hình `mistral-7b-instruct-v0.3` (hoặc v0.2) và bật **Start Server** tại cổng `1235` hoặc `1234`. *(Nếu không bật LM Studio, hệ thống tự động kích hoạt chế độ Cloud Gemini Backup hoặc Ngoại tuyến Grounding CSDL an toàn).*
 
 ### Thao tác lệnh nhanh:
 ```bash
@@ -162,7 +177,7 @@ cd Smart-Restaurant-Management-System
 dotnet restore
 dotnet build --configuration Release
 
-# 3. Chạy toàn bộ 32 Unit Tests xUnit
+# 3. Chạy toàn bộ 147 Unit Tests xUnit (100% Pass)
 dotnet test
 
 # 4. Khởi chạy ứng dụng giao diện WPF cảm ứng
