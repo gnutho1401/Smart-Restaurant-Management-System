@@ -105,6 +105,9 @@
                             <DataTemplate>
                                 <Border Width="215" Height="195" Margin="8" Background="#FAFAFA" CornerRadius="10" Padding="12"
                                         BorderBrush="#E0E0E0" BorderThickness="1">
+                                    <Border.CacheMode>
+                                        <BitmapCache EnableClearType="True" RenderAtScale="1"/>
+                                    </Border.CacheMode>
                                     <Border.Effect>
                                         <DropShadowEffect BlurRadius="6" ShadowDepth="1" Direction="270" Color="#000000" Opacity="0.08"/>
                                     </Border.Effect>

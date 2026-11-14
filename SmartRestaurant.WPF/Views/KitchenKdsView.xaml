@@ -74,8 +74,11 @@
                         <!-- Urgency Border: Green <10m, Yellow 10-20m, Red >20m -->
                         <Border Width="280" MinHeight="250" Margin="8" Background="#1E293B" CornerRadius="10" Padding="14"
                                 BorderBrush="{Binding UrgencyBrush}" BorderThickness="3">
+                            <Border.CacheMode>
+                                <BitmapCache EnableClearType="True" RenderAtScale="1"/>
+                            </Border.CacheMode>
                             <Border.Effect>
-                                <DropShadowEffect BlurRadius="12" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.3"/>
+                                <DropShadowEffect BlurRadius="8" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.25"/>
                             </Border.Effect>
                             <Grid>
                                 <Grid.RowDefinitions>

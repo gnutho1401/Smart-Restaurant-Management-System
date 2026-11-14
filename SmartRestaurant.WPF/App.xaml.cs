@@ -89,6 +89,7 @@ public partial class App : Application
             logoutHandler = () =>
             {
                 mainVm.RequestLogout -= logoutHandler;
+                mainVm.Cleanup();
                 ShowLoginGateway();
                 mainWindow.Close();
             };

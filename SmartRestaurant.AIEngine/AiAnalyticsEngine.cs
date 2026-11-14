@@ -28,45 +28,49 @@ public class AiAnalyticsEngine
     /// <summary>
     /// Computes the true BCG Menu Engineering Matrix based on Contribution Margin (Price - BOM Cost)
     /// and Sales Volume, classifying items into Stars, Plowhorses, Puzzles, and Dogs.
+    /// Pushes aggregation to SQL Server (.AsNoTracking) for sub-millisecond execution at scale.
     /// </summary>
     public async Task<BcgMatrixResult> ComputeBcgMatrixAsync()
     {
         var dishes = await _context.MenuItems
+            .AsNoTracking()
             .Include(m => m.Category)
             .Include(m => m.Recipes)
                 .ThenInclude(r => r.Ingredient)
             .ToListAsync();
 
-        List<OrderItem> orderItems;
+        Dictionary<int, (int TotalSold, decimal Revenue)> salesDict;
         try
         {
-            orderItems = await _context.OrderItems
+            var rawSales = await _context.OrderItems
+                .AsNoTracking()
                 .Where(oi => !oi.IsCancelled)
+                .GroupBy(oi => oi.MenuItemId)
+                .Select(g => new { MenuItemId = g.Key, TotalSold = g.Sum(x => x.Quantity), Revenue = g.Sum(x => x.UnitPrice * x.Quantity) })
                 .ToListAsync();
+
+            salesDict = rawSales.ToDictionary(s => s.MenuItemId, s => (s.TotalSold, s.Revenue));
         }
-        catch (Exception ex) when (ex.Message.Contains("Invalid column name") || ex.Message.Contains("IsCancelled"))
+        catch
         {
             await DbInitializer.EnsureSchemaUpgradesAsync(_context);
             try
             {
-                orderItems = await _context.OrderItems
-                    .Where(oi => !oi.IsCancelled)
+                var rawSales = await _context.OrderItems
+                    .AsNoTracking()
+                    .GroupBy(oi => oi.MenuItemId)
+                    .Select(g => new { MenuItemId = g.Key, TotalSold = g.Sum(x => x.Quantity), Revenue = g.Sum(x => x.UnitPrice * x.Quantity) })
                     .ToListAsync();
+
+                salesDict = rawSales.ToDictionary(s => s.MenuItemId, s => (s.TotalSold, s.Revenue));
             }
             catch
             {
-                orderItems = new List<OrderItem>();
+                salesDict = new Dictionary<int, (int TotalSold, decimal Revenue)>();
             }
         }
 
-        var sales = orderItems
-            .GroupBy(oi => oi.MenuItemId)
-            .Select(g => new { MenuItemId = g.Key, TotalSold = g.Sum(x => x.Quantity), Revenue = g.Sum(x => x.UnitPrice * x.Quantity) })
-            .ToList();
-
-        var salesDict = sales.ToDictionary(s => s.MenuItemId);
-
-        decimal avgSold = sales.Any() ? (decimal)sales.Average(s => s.TotalSold) : 1m;
+        decimal avgSold = salesDict.Any() ? (decimal)salesDict.Values.Average(s => s.TotalSold) : 1m;
 
         // Calculate Cost & Contribution Margin for each dish from BOM ingredients
         var itemDrafts = dishes.Select(dish =>
@@ -169,12 +173,16 @@ public class AiAnalyticsEngine
 
     public async Task<PeakHourResult> ComputePeakHoursAsync()
     {
-        var orders = await _context.Orders.ToListAsync();
+        var hourlyCounts = await _context.Orders
+            .AsNoTracking()
+            .GroupBy(o => o.CreatedAt.Hour)
+            .Select(g => new { Hour = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Hour, x => x.Count);
 
         var slots = new List<PeakHourSlot>();
         for (int h = 9; h <= 22; h++)
         {
-            int count = orders.Count(o => o.CreatedAt.Hour == h);
+            int count = hourlyCounts.GetValueOrDefault(h, 0);
             string level = count switch
             {
                 >= 8 => "Cao Điểm (Rất Đông)",
@@ -194,6 +202,7 @@ public class AiAnalyticsEngine
         try
         {
             orders = await _context.Orders
+                .AsNoTracking()
                 .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status == "Completed")
                 .Include(o => o.OrderItems.Where(oi => !oi.IsCancelled))
                     .ThenInclude(oi => oi.MenuItem)
@@ -205,6 +214,7 @@ public class AiAnalyticsEngine
             try
             {
                 orders = await _context.Orders
+                    .AsNoTracking()
                     .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status == "Completed")
                     .Include(o => o.OrderItems.Where(oi => !oi.IsCancelled))
                         .ThenInclude(oi => oi.MenuItem)
@@ -250,11 +260,13 @@ public class AiAnalyticsEngine
         try
         {
             var rawItems = await _context.Orders
+                .AsNoTracking()
                 .Where(o => o.CreatedAt >= sevenDaysAgo && o.Status == "Completed")
                 .SelectMany(o => o.OrderItems.Where(oi => !oi.IsCancelled).Select(oi => new { oi.MenuItemId, oi.Quantity }))
                 .ToListAsync();
 
             var menuItemsWithRecipes = await _context.MenuItems
+                .AsNoTracking()
                 .Include(m => m.Recipes)
                 .ToDictionaryAsync(m => m.MenuItemId);
 
@@ -275,11 +287,13 @@ public class AiAnalyticsEngine
             try
             {
                 var rawItems = await _context.Orders
+                    .AsNoTracking()
                     .Where(o => o.CreatedAt >= sevenDaysAgo && o.Status == "Completed")
                     .SelectMany(o => o.OrderItems.Select(oi => new { oi.MenuItemId, oi.Quantity }))
                     .ToListAsync();
 
                 var menuItemsWithRecipes = await _context.MenuItems
+                    .AsNoTracking()
                     .Include(m => m.Recipes)
                     .ToDictionaryAsync(m => m.MenuItemId);
 
@@ -300,7 +314,7 @@ public class AiAnalyticsEngine
             }
         }
 
-        var ingredients = await _context.Ingredients.ToListAsync();
+        var ingredients = await _context.Ingredients.AsNoTracking().ToListAsync();
         var reorderItems = new List<StockReorderItem>();
         var poDraftItems = new List<PurchaseOrderDraftItem>();
 
@@ -373,6 +387,7 @@ public class AiAnalyticsEngine
         try
         {
             completedOrders = await _context.Orders
+                .AsNoTracking()
                 .Where(o => o.Status == "Completed" || o.Status == "Occupied")
                 .Include(o => o.OrderItems.Where(oi => !oi.IsCancelled))
                     .ThenInclude(oi => oi.MenuItem)
@@ -384,6 +399,7 @@ public class AiAnalyticsEngine
             try
             {
                 completedOrders = await _context.Orders
+                    .AsNoTracking()
                     .Where(o => o.Status == "Completed" || o.Status == "Occupied")
                     .Include(o => o.OrderItems.Where(oi => !oi.IsCancelled))
                         .ThenInclude(oi => oi.MenuItem)

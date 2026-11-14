@@ -276,6 +276,7 @@ public class MainViewModel : ViewModelBase
             LockErrorMessage = "Mật khẩu hoặc mã PIN không chính xác. Vui lòng thử lại!";
             LockScreenPin = string.Empty;
         }
+        KitchenKdsVm.PausePolling();
     }
 
     public void ApplyInitialRoleView()
@@ -314,8 +315,24 @@ public class MainViewModel : ViewModelBase
         }
     }
 
+    public void Cleanup()
+    {
+        FloorPlanVm.RequestOpenPos -= OnOpenPosRequested;
+        FloorPlanVm.RequestOpenBilling -= OnOpenBillingForTableRequested;
+        KitchenKdsVm.PausePolling();
+    }
+
     private void SwitchView(object view, string tabName)
     {
+        if (ReferenceEquals(CurrentView, KitchenKdsVm) && !ReferenceEquals(view, KitchenKdsVm))
+        {
+            KitchenKdsVm.PausePolling();
+        }
+        else if (ReferenceEquals(view, KitchenKdsVm))
+        {
+            KitchenKdsVm.ResumePolling();
+        }
+
         CurrentView = view;
         ActiveTab = tabName;
     }

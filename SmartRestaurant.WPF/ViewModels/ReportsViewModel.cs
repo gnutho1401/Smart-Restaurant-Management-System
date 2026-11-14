@@ -108,11 +108,20 @@ public class ReportsViewModel : ViewModelBase
         IsLoading = true;
         try
         {
-            // 1. Calculate Revenue & Orders
-            var invoices = await _context.Invoices.ToListAsync();
-            TotalRevenue = invoices.Sum(i => i.TotalDue);
-            CompletedOrdersCount = invoices.Count;
-            AverageOrderValue = CompletedOrdersCount > 0 ? TotalRevenue / CompletedOrdersCount : 0;
+            // 1. Calculate Revenue & Orders via SQL Server Aggregation (.AsNoTracking)
+            var invoiceStats = await _context.Invoices
+                .AsNoTracking()
+                .GroupBy(_ => 1)
+                .Select(g => new
+                {
+                    Total = g.Sum(i => i.TotalDue),
+                    Count = g.Count()
+                })
+                .FirstOrDefaultAsync();
+
+            TotalRevenue = invoiceStats?.Total ?? 0m;
+            CompletedOrdersCount = invoiceStats?.Count ?? 0;
+            AverageOrderValue = CompletedOrdersCount > 0 ? TotalRevenue / CompletedOrdersCount : 0m;
 
             // 2. Active Tables & Low Stock Alerts
             var tables = await _tableService.GetAllTablesAsync();
@@ -121,9 +130,13 @@ public class ReportsViewModel : ViewModelBase
             var lowStock = await _inventoryService.GetLowStockAlertsAsync();
             LowStockCount = lowStock.Count();
 
-            // 3. Compute BCG Matrix
+            // 3. Compute BCG Matrix with In-Place collection update to avoid visual tree re-allocation
             var bcgResult = await _analyticsEngine.ComputeBcgMatrixAsync();
-            BcgItems = new ObservableCollection<BcgItem>(bcgResult.Items);
+            BcgItems.Clear();
+            foreach (var item in bcgResult.Items)
+            {
+                BcgItems.Add(item);
+            }
 
             // 4. Peak hours analysis
             var peakResult = await _analyticsEngine.ComputePeakHoursAsync();

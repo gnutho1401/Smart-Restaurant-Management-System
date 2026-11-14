@@ -119,8 +119,11 @@
                     <DataTemplate>
                         <Border Width="270" Height="235" Margin="10" Background="#FFFFFF" CornerRadius="14" Padding="16"
                                 BorderBrush="{Binding Status, Converter={StaticResource TableStatusToBrushConverter}}" BorderThickness="2">
+                            <Border.CacheMode>
+                                <BitmapCache EnableClearType="True" RenderAtScale="1"/>
+                            </Border.CacheMode>
                             <Border.Effect>
-                                <DropShadowEffect BlurRadius="12" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.08"/>
+                                <DropShadowEffect BlurRadius="8" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.06"/>
                             </Border.Effect>
 
                             <Grid>

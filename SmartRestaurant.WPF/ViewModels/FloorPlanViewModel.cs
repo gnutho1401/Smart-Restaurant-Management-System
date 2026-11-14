@@ -136,13 +136,19 @@ public class FloorPlanViewModel : ViewModelBase
 
     private void ApplyFilter()
     {
-        if (string.IsNullOrWhiteSpace(SelectedArea) || SelectedArea == "Tất cả")
+        var targetList = (string.IsNullOrWhiteSpace(SelectedArea) || SelectedArea == "Tất cả")
+            ? _allTables
+            : _allTables.Where(t => t.Area != null && t.Area.AreaName.Contains(SelectedArea, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        if (Tables.Count == targetList.Count && Tables.SequenceEqual(targetList))
         {
-            Tables = new ObservableCollection<DiningTable>(_allTables);
+            return;
         }
-        else
+
+        Tables.Clear();
+        foreach (var item in targetList)
         {
-            Tables = new ObservableCollection<DiningTable>(_allTables.Where(t => t.Area != null && t.Area.AreaName.Contains(SelectedArea, StringComparison.OrdinalIgnoreCase)));
+            Tables.Add(item);
         }
     }
 

@@ -31,6 +31,11 @@ public class LmStudioService : IAiService
     private static string _activeEndpoint = DefaultEndpoints[0];
     private static string _targetModel = "mistral-7b-instruct-v0.3";
 
+    private static readonly JsonSerializerOptions SharedJsonOptions = new()
+    {
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
+
     private string? _geminiApiKey;
     private string _geminiModel = "gemini-flash-lite-latest";
     private int _geminiTimeoutSeconds = 20;
@@ -312,6 +317,7 @@ public class LmStudioService : IAiService
     {
         // 1. Dynamic LINQ Context Grounding: Fetch available dishes with categories, prices, descriptions, and BOM recipes
         var liveMenu = await _context.MenuItems
+            .AsNoTracking()
             .Where(m => m.IsAvailable)
             .Include(m => m.Category)
             .Include(m => m.Recipes)
@@ -365,6 +371,7 @@ public class LmStudioService : IAiService
         try
         {
             var orders = await _context.Orders
+                .AsNoTracking()
                 .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status == "Completed")
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.MenuItem)
@@ -407,6 +414,7 @@ public class LmStudioService : IAiService
     {
         // BCG Menu Engineering Matrix Grounding with Volume, Margin, and Revenue metrics
         var dishes = await _context.MenuItems
+            .AsNoTracking()
             .Select(m => new
             {
                 m.MenuItemId,
@@ -454,6 +462,7 @@ public class LmStudioService : IAiService
     public async Task<string> AnalyzePeakHoursAsync()
     {
         var orderTimes = await _context.Orders
+            .AsNoTracking()
             .Select(o => new { o.OrderId, Hour = o.CreatedAt.Hour })
             .ToListAsync();
 
@@ -572,11 +581,7 @@ public class LmStudioService : IAiService
             }
         };
 
-        var options = new JsonSerializerOptions
-        {
-            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-        };
-        string jsonPayload = JsonSerializer.Serialize(payload, options);
+        string jsonPayload = JsonSerializer.Serialize(payload, SharedJsonOptions);
 
         // Fast probe active port to avoid wasting timeout on closed ports
         var detected = await ProbeActiveEndpointAsync();
@@ -700,11 +705,7 @@ public class LmStudioService : IAiService
                 }
             };
 
-            var options = new JsonSerializerOptions
-            {
-                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-            };
-            string json = JsonSerializer.Serialize(geminiPayload, options);
+            string json = JsonSerializer.Serialize(geminiPayload, SharedJsonOptions);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_geminiTimeoutSeconds));

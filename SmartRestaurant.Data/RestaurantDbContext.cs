@@ -116,6 +116,8 @@ public class RestaurantDbContext : DbContext
         modelBuilder.Entity<Order>(entity =>
         {
             entity.HasKey(o => o.OrderId);
+            entity.HasIndex(o => new { o.CreatedAt, o.Status });
+            entity.HasIndex(o => o.TableId);
             entity.Property(o => o.Status).HasMaxLength(20).IsRequired();
             entity.Property(o => o.SubTotal).HasPrecision(18, 2);
             entity.Property(o => o.DiscountAmount).HasPrecision(18, 2);
@@ -131,6 +133,9 @@ public class RestaurantDbContext : DbContext
         modelBuilder.Entity<OrderItem>(entity =>
         {
             entity.HasKey(oi => oi.OrderItemId);
+            entity.HasIndex(oi => new { oi.CookingStatus, oi.IsCancelled });
+            entity.HasIndex(oi => oi.MenuItemId);
+            entity.HasIndex(oi => oi.OrderId);
             entity.Property(oi => oi.Quantity).IsRequired();
             entity.Property(oi => oi.UnitPrice).HasPrecision(18, 2).IsRequired();
             entity.Property(oi => oi.CookingStatus).HasConversion<string>().HasMaxLength(20).IsRequired();
@@ -151,6 +156,7 @@ public class RestaurantDbContext : DbContext
         modelBuilder.Entity<Invoice>(entity =>
         {
             entity.HasKey(inv => inv.InvoiceId);
+            entity.HasIndex(inv => inv.IssuedAt);
             entity.Property(inv => inv.InvoiceCode).HasMaxLength(50).IsRequired();
             entity.Property(inv => inv.VatRate).HasPrecision(5, 4);
             entity.Property(inv => inv.VatAmount).HasPrecision(18, 2);

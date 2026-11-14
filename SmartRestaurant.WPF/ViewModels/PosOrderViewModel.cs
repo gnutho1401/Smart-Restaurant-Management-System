@@ -267,7 +267,12 @@ public class PosOrderViewModel : ViewModelBase
             filtered = filtered.Where(m => m.Name.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase));
         }
 
-        DisplayMenuItems = new ObservableCollection<PosMenuItemViewModel>(filtered);
+        var list = filtered.ToList();
+        DisplayMenuItems.Clear();
+        foreach (var item in list)
+        {
+            DisplayMenuItems.Add(item);
+        }
     }
 
     public void AddToCart(object? param)

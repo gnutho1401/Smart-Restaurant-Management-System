@@ -108,19 +108,44 @@ public class KitchenKdsViewModel : ViewModelBase, IDisposable
         }
         _knownPendingTicketIds = currentPendingIds;
 
-        var viewModels = rawTickets.Select(t => new KitchenTicketViewModel
-        {
-            OrderItemId = t.OrderItemId,
-            OrderId = t.OrderId,
-            TableName = t.Order?.Table?.TableName ?? $"Bàn #{t.Order?.TableId}",
-            DishName = t.MenuItem?.Name ?? "Món ăn",
-            Quantity = t.Quantity,
-            AllergyNote = t.Note,
-            CreatedAt = t.Order?.CreatedAt ?? DateTime.UtcNow,
-            Status = t.CookingStatus
-        }).ToList();
+        // Differential in-place synchronization: Eliminates UI flicker and avoids rebuilding visual cards
+        var incomingDict = rawTickets.ToDictionary(t => t.OrderItemId);
 
-        Tickets = new ObservableCollection<KitchenTicketViewModel>(viewModels);
+        // 1. Remove tickets that have been served or voided
+        for (int i = Tickets.Count - 1; i >= 0; i--)
+        {
+            if (!incomingDict.ContainsKey(Tickets[i].OrderItemId))
+            {
+                Tickets.RemoveAt(i);
+            }
+        }
+
+        // 2. Update existing tickets in-place or append newly arrived tickets
+        foreach (var raw in rawTickets)
+        {
+            var existing = Tickets.FirstOrDefault(t => t.OrderItemId == raw.OrderItemId);
+            if (existing != null)
+            {
+                if (existing.Status != raw.CookingStatus)
+                {
+                    existing.Status = raw.CookingStatus;
+                }
+            }
+            else
+            {
+                Tickets.Add(new KitchenTicketViewModel
+                {
+                    OrderItemId = raw.OrderItemId,
+                    OrderId = raw.OrderId,
+                    TableName = raw.Order?.Table?.TableName ?? $"Bàn #{raw.Order?.TableId}",
+                    DishName = raw.MenuItem?.Name ?? "Món ăn",
+                    Quantity = raw.Quantity,
+                    AllergyNote = raw.Note,
+                    CreatedAt = raw.Order?.CreatedAt ?? DateTime.UtcNow,
+                    Status = raw.CookingStatus
+                });
+            }
+        }
 
         PendingCount = Tickets.Count(t => t.Status == CookingStatus.Pending);
         CookingCount = Tickets.Count(t => t.Status == CookingStatus.Cooking);
@@ -204,6 +229,15 @@ public class KitchenKdsViewModel : ViewModelBase, IDisposable
         ReadyCount = Tickets.Count(t => t.Status == CookingStatus.Ready);
     }
 
+    private volatile bool _isPollingActive = true;
+
+    public void PausePolling() => _isPollingActive = false;
+
+    public void ResumePolling()
+    {
+        _isPollingActive = true;
+    }
+
     private void StartPollingEngine()
     {
         _timerCts = new CancellationTokenSource();
@@ -215,6 +249,8 @@ public class KitchenKdsViewModel : ViewModelBase, IDisposable
             {
                 while (await _periodicTimer.WaitForNextTickAsync(_timerCts.Token))
                 {
+                    if (!_isPollingActive) continue;
+
                     if (Application.Current != null)
                     {
                         await Application.Current.Dispatcher.InvokeAsync(async () =>

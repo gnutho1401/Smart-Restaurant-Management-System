@@ -281,7 +281,20 @@ public static class DbInitializer
                     MachineName NVARCHAR(100) NULL,
                     Details NVARCHAR(1000) NULL
                 );
-            END"
+            END",
+
+            // 6. High-Performance Composite Indexes for Production Scale
+            @"IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Orders_CreatedAt_Status' AND object_id = OBJECT_ID('Orders'))
+                CREATE NONCLUSTERED INDEX IX_Orders_CreatedAt_Status ON Orders (CreatedAt, Status) INCLUDE (FinalTotal, TableId);",
+
+            @"IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_OrderItems_KdsLookup' AND object_id = OBJECT_ID('OrderItems'))
+                CREATE NONCLUSTERED INDEX IX_OrderItems_KdsLookup ON OrderItems (CookingStatus) INCLUDE (OrderId, MenuItemId, Quantity);",
+
+            @"IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_OrderItems_MenuItemId' AND object_id = OBJECT_ID('OrderItems'))
+                CREATE NONCLUSTERED INDEX IX_OrderItems_MenuItemId ON OrderItems (MenuItemId);",
+
+            @"IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Invoices_IssuedAt' AND object_id = OBJECT_ID('Invoices'))
+                CREATE NONCLUSTERED INDEX IX_Invoices_IssuedAt ON Invoices (IssuedAt) INCLUDE (TotalDue);"
         };
 
         foreach (var sql in ddlStatements)
