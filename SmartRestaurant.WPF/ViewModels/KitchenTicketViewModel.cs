@@ -44,9 +44,9 @@ public class KitchenTicketViewModel : ViewModelBase
 
     public string ActionButtonText => Status switch
     {
-        CookingStatus.Pending => "🍳 Bắt Đầu Nấu",
-        CookingStatus.Cooking => "🔔 Nấu Xong (Sẵn Sàng)",
-        CookingStatus.Ready => "🍽️ Đã Phục Vụ",
+        CookingStatus.Pending => "Bắt Đầu Nấu",
+        CookingStatus.Cooking => "Nấu Xong (Sẵn Sàng)",
+        CookingStatus.Ready => "Đã Phục Vụ",
         _ => "Hoàn tất"
     };
 

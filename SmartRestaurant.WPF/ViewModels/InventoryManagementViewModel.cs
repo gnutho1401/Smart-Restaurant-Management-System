@@ -202,7 +202,7 @@ public class InventoryManagementViewModel : ViewModelBase
         }
 
         IsBusy = true;
-        StatusMessage = "🤖 Đang phân tích tồn kho và ngưỡng an toàn chuỗi cung ứng...";
+        StatusMessage = "Đang phân tích tồn kho và ngưỡng an toàn chuỗi cung ứng...";
         IsSuccessMessage = true;
 
         try
@@ -210,7 +210,7 @@ public class InventoryManagementViewModel : ViewModelBase
             var forecast = await _analyticsEngine.ComputeWeeklyReorderForecastAsync();
             if (forecast.PurchaseOrderDraft == null || !forecast.PurchaseOrderDraft.Any())
             {
-                StatusMessage = "✅ Tồn kho toàn bộ nguyên vật liệu hiện đang ở mức an toàn. Chưa cần nhập thêm.";
+                StatusMessage = "Tồn kho toàn bộ nguyên vật liệu hiện đang ở mức an toàn. Chưa cần nhập thêm.";
                 IsSuccessMessage = true;
                 return;
             }
@@ -218,12 +218,12 @@ public class InventoryManagementViewModel : ViewModelBase
             int count = await _inventoryService.ApplyPurchaseOrderDraftAsync(forecast.PurchaseOrderDraft);
             await LoadIngredientsAsync();
 
-            StatusMessage = $"🤖 AI Đã Tự Động Tạo Phiếu PO & Nhập Kho Thành Công {count} Nguyên Vật Liệu Cảnh Báo!";
+            StatusMessage = $"AI đã tự động tạo phiếu PO và nhập kho thành công {count} nguyên vật liệu cảnh báo!";
             IsSuccessMessage = true;
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ Lỗi tự động nhập kho AI: {ex.Message}";
+            StatusMessage = $"Lỗi tự động nhập kho AI: {ex.Message}";
             IsSuccessMessage = false;
         }
         finally

@@ -22,7 +22,6 @@
         <Border Grid.Row="0" Margin="0,0,0,16">
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="📦" FontSize="26" VerticalAlignment="Center" Margin="0,0,12,0"/>
                     <StackPanel>
                         <TextBlock Text="QUẢN LÝ KHO NGUYÊN VẬT LIỆU (BOM INVENTORY)" FontSize="20" FontWeight="Bold" Foreground="#1E293B"/>
                         <TextBlock Text="Giám sát số lượng tồn kho nguyên liệu thực tế và thực hiện nhập kho bổ sung" FontSize="12" Foreground="#64748B"/>
@@ -30,10 +29,10 @@
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <Button Content="🤖 Nhập Kho Theo Đề Xuất AI" Command="{Binding AutoRestockFromAiCommand}"
+                    <Button Content="Nhập Kho Theo Đề Xuất AI" Command="{Binding AutoRestockFromAiCommand}"
                             Background="#7C3AED" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="38" Padding="16,0"
                             Margin="0,0,10,0" Style="{StaticResource AnimatedTouchButtonStyle}" Cursor="Hand"/>
-                    <Button Content="🔄 Làm Mới Tồn Kho" Command="{Binding LoadIngredientsCommand}"
+                    <Button Content="Làm Mới Tồn Kho" Command="{Binding LoadIngredientsCommand}"
                             Background="#2563EB" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="38" Padding="18,0"
                             Style="{StaticResource AnimatedTouchButtonStyle}" Cursor="Hand"/>
                 </StackPanel>
@@ -88,7 +87,7 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="📋 BẢNG TỒN KHO NGUYÊN VẬT LIỆU" FontSize="15" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,16"/>
+                    <TextBlock Grid.Row="0" Text="BẢNG TỒN KHO NGUYÊN VẬT LIỆU" FontSize="15" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,16"/>
 
                     <DataGrid Grid.Row="1" ItemsSource="{Binding Ingredients}" SelectedItem="{Binding SelectedIngredient}"
                               AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
@@ -120,7 +119,7 @@
                     <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
                 </Border.Effect>
                 <StackPanel>
-                    <TextBlock Text="📥 NHẬP KHO NGUYÊN LIỆU" FontSize="15" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,16"/>
+                    <TextBlock Text="NHẬP KHO NGUYÊN LIỆU" FontSize="15" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,16"/>
 
                     <TextBlock Text="Nguyên Liệu Đang Chọn:" FontSize="12" FontWeight="SemiBold" Foreground="#64748B" Margin="0,0,0,4"/>
                     <Border Background="#F1F5F9" CornerRadius="8" Padding="12" Margin="0,0,0,16">

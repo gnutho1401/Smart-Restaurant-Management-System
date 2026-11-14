@@ -33,7 +33,6 @@ public class AiServiceTests
             LatencyMs = 5,
             Message = "Mock connection OK"
         });
-        public string GetLastUsedProvider() => "Mock Provider";
     }
 
     private class ThrowingHttpMessageHandler : HttpMessageHandler
@@ -544,9 +543,9 @@ public class AiServiceTests
         string response = await service.GetDishRecommendationAsync("Hôm nay có món gì đặc biệt?");
 
         // Assert
-        Assert.Contains("Google Gemini Backup", service.GetLastUsedProvider());
-        Assert.Contains("gemini-flash-lite-latest", service.GetLastUsedProvider());
-        Assert.Contains("Bò Wagyu A5", response);
+        Assert.Contains("Google Gemini Backup", response);
+        Assert.Contains("gemini-flash-lite-latest", response);
+        Assert.Contains("Bò Wagyu A5 sốt tiêu đen", response);
         Assert.Contains(handler.RequestedUrls, u => u.Contains("googleapis.com") && u.Contains("key=TEST_GEMINI_KEY"));
     }
 

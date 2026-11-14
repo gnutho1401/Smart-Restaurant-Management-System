@@ -323,7 +323,7 @@ public class BillingViewModel : ViewModelBase
                 DiscountAmount = updatedOrder.DiscountAmount;
             }
 
-            StatusMessage = $"🎉 Đã nhận diện hội viên {customer.FullName} ({customer.Tier})! Điểm tích lũy: {customer.LoyaltyPoints:N0} pts.";
+            StatusMessage = $"Đã nhận diện hội viên {customer.FullName} ({customer.Tier})! Điểm tích lũy: {customer.LoyaltyPoints:N0} pts.";
         }
         else
         {
@@ -385,21 +385,21 @@ public class BillingViewModel : ViewModelBase
             DiscountAmount = updatedOrder.DiscountAmount;
         }
 
-        StatusMessage = $"🎉 Đã quy đổi thành công {PointsToRedeem:N0} điểm (giảm {PointsToRedeem * 1000m:N0} đ)!";
+        StatusMessage = $"Đã quy đổi thành công {PointsToRedeem:N0} điểm (giảm {PointsToRedeem * 1000m:N0} đ)!";
     }
 
     private void ExecuteSwitchToPreCheck()
     {
         IsPreCheckMode = true;
         BillTitle = "PHIẾU TẠM TÍNH (PRE-CHECK BILL - CHƯA THANH TOÁN)";
-        StatusMessage = "📄 Đang xem bản xem trước Phiếu Tạm Tính. Thu ngân có thể bấm 'In Phiếu Tạm Tính' để gửi khách kiểm tra.";
+        StatusMessage = "Đang xem bản xem trước Phiếu Tạm Tính. Thu ngân có thể bấm 'In Phiếu Tạm Tính' để gửi khách kiểm tra.";
     }
 
     private void ExecuteSwitchToInvoice()
     {
         IsPreCheckMode = false;
         BillTitle = "PHIẾU THANH TOÁN (VAT 8%)";
-        StatusMessage = "💳 Đang ở chế độ Quyết toán Hóa đơn chính thức.";
+        StatusMessage = "Đang ở chế độ Quyết toán Hóa đơn chính thức.";
     }
 
     private void ExecuteNumpadDigit(string? digit)

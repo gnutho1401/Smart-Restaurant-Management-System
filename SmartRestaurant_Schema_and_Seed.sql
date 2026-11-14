@@ -15,6 +15,9 @@ GO
 USE SmartRestaurantDb;
 GO
 
+IF OBJECT_ID(N'dbo.AuditLogs', N'U') IS NOT NULL DROP TABLE dbo.AuditLogs;
+IF OBJECT_ID(N'dbo.WorkShifts', N'U') IS NOT NULL DROP TABLE dbo.WorkShifts;
+IF OBJECT_ID(N'dbo.Customers', N'U') IS NOT NULL DROP TABLE dbo.Customers;
 IF OBJECT_ID(N'dbo.Payments', N'U') IS NOT NULL DROP TABLE dbo.Payments;
 IF OBJECT_ID(N'dbo.Invoices', N'U') IS NOT NULL DROP TABLE dbo.Invoices;
 IF OBJECT_ID(N'dbo.OrderItems', N'U') IS NOT NULL DROP TABLE dbo.OrderItems;
@@ -122,7 +125,10 @@ CREATE TABLE dbo.OrderItems (
     UnitPrice DECIMAL(18,2) NOT NULL,
     CookingStatus NVARCHAR(20) NOT NULL CONSTRAINT DF_OrderItems_CookingStatus DEFAULT (N'Pending')
         CONSTRAINT CK_OrderItems_CookingStatus CHECK (CookingStatus IN (N'Pending', N'Cooking', N'Ready', N'Served')),
-    Note NVARCHAR(250) NULL
+    Note NVARCHAR(250) NULL,
+    IsCancelled BIT NOT NULL CONSTRAINT DF_OrderItems_IsCancelled DEFAULT (0),
+    CancelReason NVARCHAR(250) NULL,
+    CancelledAt DATETIME2 NULL
 );
 CREATE NONCLUSTERED INDEX IX_OrderItems_OrderId ON dbo.OrderItems(OrderId);
 CREATE NONCLUSTERED INDEX IX_OrderItems_CookingStatus ON dbo.OrderItems(CookingStatus);
@@ -145,9 +151,59 @@ CREATE TABLE dbo.Payments (
     InvoiceId INT NOT NULL CONSTRAINT FK_Payments_Invoices FOREIGN KEY REFERENCES dbo.Invoices(InvoiceId) ON DELETE CASCADE,
     Method NVARCHAR(30) NOT NULL CONSTRAINT CK_Payments_Method CHECK (Method IN (N'Cash', N'CreditCard', N'BankTransferQR')),
     AmountPaid DECIMAL(18,2) NOT NULL,
-    PaidAt DATETIME2 NOT NULL CONSTRAINT DF_Payments_PaidAt DEFAULT (SYSUTCDATETIME())
+    PaidAt DATETIME2 NOT NULL CONSTRAINT DF_Payments_PaidAt DEFAULT (SYSUTCDATETIME()),
+    IdempotencyKey NVARCHAR(100) NULL
 );
 CREATE NONCLUSTERED INDEX IX_Payments_InvoiceId ON dbo.Payments(InvoiceId);
+GO
+
+CREATE TABLE dbo.Customers (
+    CustomerId INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Customers PRIMARY KEY CLUSTERED,
+    PhoneNumber NVARCHAR(20) NOT NULL CONSTRAINT UQ_Customers_PhoneNumber UNIQUE,
+    FullName NVARCHAR(100) NOT NULL,
+    Email NVARCHAR(100) NULL,
+    Tier NVARCHAR(20) NOT NULL CONSTRAINT DF_Customers_Tier DEFAULT (N'Bronze'),
+    LoyaltyPoints INT NOT NULL CONSTRAINT DF_Customers_LoyaltyPoints DEFAULT (0),
+    TotalSpent DECIMAL(18,2) NOT NULL CONSTRAINT DF_Customers_TotalSpent DEFAULT (0),
+    CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Customers_CreatedAt DEFAULT (SYSUTCDATETIME()),
+    LastVisitAt DATETIME2 NULL
+);
+CREATE NONCLUSTERED INDEX IX_Customers_PhoneNumber ON dbo.Customers(PhoneNumber);
+GO
+
+CREATE TABLE dbo.WorkShifts (
+    ShiftId INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_WorkShifts PRIMARY KEY CLUSTERED,
+    UserId INT NOT NULL CONSTRAINT FK_WorkShifts_Users FOREIGN KEY REFERENCES dbo.Users(UserId),
+    StartTime DATETIME2 NOT NULL CONSTRAINT DF_WorkShifts_StartTime DEFAULT (SYSUTCDATETIME()),
+    EndTime DATETIME2 NULL,
+    OpeningFloat DECIMAL(18,2) NOT NULL CONSTRAINT DF_WorkShifts_OpeningFloat DEFAULT (0),
+    CashSales DECIMAL(18,2) NOT NULL CONSTRAINT DF_WorkShifts_CashSales DEFAULT (0),
+    CardSales DECIMAL(18,2) NOT NULL CONSTRAINT DF_WorkShifts_CardSales DEFAULT (0),
+    QrSales DECIMAL(18,2) NOT NULL CONSTRAINT DF_WorkShifts_QrSales DEFAULT (0),
+    TotalSales DECIMAL(18,2) NOT NULL CONSTRAINT DF_WorkShifts_TotalSales DEFAULT (0),
+    ActualCashEnd DECIMAL(18,2) NOT NULL CONSTRAINT DF_WorkShifts_ActualCashEnd DEFAULT (0),
+    CashVariance DECIMAL(18,2) NOT NULL CONSTRAINT DF_WorkShifts_CashVariance DEFAULT (0),
+    Status NVARCHAR(20) NOT NULL CONSTRAINT DF_WorkShifts_Status DEFAULT (N'Open'),
+    Notes NVARCHAR(500) NULL
+);
+CREATE NONCLUSTERED INDEX IX_WorkShifts_UserId ON dbo.WorkShifts(UserId);
+GO
+
+CREATE TABLE dbo.AuditLogs (
+    AuditLogId INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_AuditLogs PRIMARY KEY CLUSTERED,
+    Timestamp DATETIME2 NOT NULL CONSTRAINT DF_AuditLogs_Timestamp DEFAULT (SYSUTCDATETIME()),
+    Username NVARCHAR(50) NOT NULL,
+    UserRole NVARCHAR(30) NOT NULL,
+    Action NVARCHAR(100) NOT NULL,
+    EntityName NVARCHAR(100) NOT NULL,
+    EntityId NVARCHAR(50) NULL,
+    OldValue NVARCHAR(MAX) NULL,
+    NewValue NVARCHAR(MAX) NULL,
+    Reason NVARCHAR(MAX) NULL,
+    MachineName NVARCHAR(100) NULL,
+    Details NVARCHAR(1000) NULL
+);
+CREATE NONCLUSTERED INDEX IX_AuditLogs_Timestamp ON dbo.AuditLogs(Timestamp);
 GO
 
 PRINT N'Seeding initial data into SmartRestaurantDb...';
@@ -257,6 +313,14 @@ INSERT INTO dbo.OrderItems (OrderItemId, OrderId, MenuItemId, Quantity, UnitPric
 (1, 1, 1, 1, 450000.00, N'Cooking', N'Chín vừa (Medium-rare)'),
 (2, 1, 2, 1, 185000.00, N'Ready', N'Ít tiêu');
 SET IDENTITY_INSERT dbo.OrderItems OFF;
+GO
+
+SET IDENTITY_INSERT dbo.Customers ON;
+INSERT INTO dbo.Customers (CustomerId, PhoneNumber, FullName, Email, Tier, LoyaltyPoints, TotalSpent) VALUES
+(1, N'0901234567', N'Đặng Hoàng Giang (VIP)', N'giang.dh@gmail.com', N'Gold', 650, 15800000.00),
+(2, N'0987654321', N'Nguyễn Thị Mai Lan', N'lan.ntm@gmail.com', N'Silver', 220, 4500000.00),
+(3, N'0912345678', N'Trần Quốc Hưng', N'hung.tq@gmail.com', N'Diamond', 1250, 38500000.00);
+SET IDENTITY_INSERT dbo.Customers OFF;
 GO
 
 PRINT N'===================================================================';

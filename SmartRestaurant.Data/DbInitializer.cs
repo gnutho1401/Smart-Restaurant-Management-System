@@ -205,83 +205,86 @@ public static class DbInitializer
 
     /// <summary>
     /// Executes idempotent SQL DDL upgrades to ensure newer tables and columns exist in pre-existing SQL Server databases.
-    /// Runs each statement independently so a single failure never cascades or blocks other schema upgrades.
+    /// Executes each statement individually so a failure in one cannot block others.
     /// </summary>
     public static async Task EnsureSchemaUpgradesAsync(RestaurantDbContext context)
     {
         if (!context.Database.IsSqlServer()) return;
 
-        var statements = new (string Name, string Sql)[]
+        var ddlStatements = new[]
         {
-            ("OrderItems.IsCancelled",
-                "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('OrderItems') AND name = 'IsCancelled') ALTER TABLE OrderItems ADD IsCancelled BIT NOT NULL DEFAULT 0;"),
+            // 1. OrderItems missing columns (Void/Cancel order support)
+            @"IF COL_LENGTH('OrderItems', 'IsCancelled') IS NULL
+                ALTER TABLE OrderItems ADD IsCancelled BIT NOT NULL DEFAULT 0;",
 
-            ("OrderItems.CancelReason",
-                "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('OrderItems') AND name = 'CancelReason') ALTER TABLE OrderItems ADD CancelReason NVARCHAR(250) NULL;"),
+            @"IF COL_LENGTH('OrderItems', 'CancelReason') IS NULL
+                ALTER TABLE OrderItems ADD CancelReason NVARCHAR(250) NULL;",
 
-            ("OrderItems.CancelledAt",
-                "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('OrderItems') AND name = 'CancelledAt') ALTER TABLE OrderItems ADD CancelledAt DATETIME2 NULL;"),
+            @"IF COL_LENGTH('OrderItems', 'CancelledAt') IS NULL
+                ALTER TABLE OrderItems ADD CancelledAt DATETIME2 NULL;",
 
-            ("Payments.IdempotencyKey",
-                "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('Payments') AND name = 'IdempotencyKey') ALTER TABLE Payments ADD IdempotencyKey NVARCHAR(100) NULL;"),
+            // 2. Payments missing columns (Idempotency token support)
+            @"IF COL_LENGTH('Payments', 'IdempotencyKey') IS NULL
+                ALTER TABLE Payments ADD IdempotencyKey NVARCHAR(100) NULL;",
 
-            ("Customers table",
-                @"IF OBJECT_ID('Customers', 'U') IS NULL
-                BEGIN
-                    CREATE TABLE Customers (
-                        CustomerId INT IDENTITY(1,1) PRIMARY KEY,
-                        PhoneNumber NVARCHAR(20) NOT NULL UNIQUE,
-                        FullName NVARCHAR(100) NOT NULL,
-                        Email NVARCHAR(100) NULL,
-                        Tier NVARCHAR(20) NOT NULL DEFAULT 'Bronze',
-                        LoyaltyPoints INT NOT NULL DEFAULT 0,
-                        TotalSpent DECIMAL(18,2) NOT NULL DEFAULT 0,
-                        CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
-                        LastVisitAt DATETIME2 NULL
-                    );
-                END"),
+            // 3. Customers table (CRM & Loyalty Points)
+            @"IF OBJECT_ID('Customers', 'U') IS NULL
+            BEGIN
+                CREATE TABLE Customers (
+                    CustomerId INT IDENTITY(1,1) PRIMARY KEY,
+                    PhoneNumber NVARCHAR(20) NOT NULL UNIQUE,
+                    FullName NVARCHAR(100) NOT NULL,
+                    Email NVARCHAR(100) NULL,
+                    Tier NVARCHAR(20) NOT NULL DEFAULT 'Bronze',
+                    LoyaltyPoints INT NOT NULL DEFAULT 0,
+                    TotalSpent DECIMAL(18,2) NOT NULL DEFAULT 0,
+                    CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+                    LastVisitAt DATETIME2 NULL
+                );
+            END",
 
-            ("WorkShifts table",
-                @"IF OBJECT_ID('WorkShifts', 'U') IS NULL
-                BEGIN
-                    CREATE TABLE WorkShifts (
-                        ShiftId INT IDENTITY(1,1) PRIMARY KEY,
-                        UserId INT NOT NULL,
-                        StartTime DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
-                        EndTime DATETIME2 NULL,
-                        OpeningFloat DECIMAL(18,2) NOT NULL DEFAULT 0,
-                        CashSales DECIMAL(18,2) NOT NULL DEFAULT 0,
-                        CardSales DECIMAL(18,2) NOT NULL DEFAULT 0,
-                        QrSales DECIMAL(18,2) NOT NULL DEFAULT 0,
-                        TotalSales DECIMAL(18,2) NOT NULL DEFAULT 0,
-                        ActualCashEnd DECIMAL(18,2) NOT NULL DEFAULT 0,
-                        CashVariance DECIMAL(18,2) NOT NULL DEFAULT 0,
-                        Status NVARCHAR(20) NOT NULL DEFAULT 'Open',
-                        Notes NVARCHAR(500) NULL
-                    );
-                END"),
+            // 4. WorkShifts table (Cashier Shift Management & Z-Report)
+            @"IF OBJECT_ID('WorkShifts', 'U') IS NULL
+            BEGIN
+                CREATE TABLE WorkShifts (
+                    ShiftId INT IDENTITY(1,1) PRIMARY KEY,
+                    UserId INT NOT NULL,
+                    StartTime DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+                    EndTime DATETIME2 NULL,
+                    OpeningFloat DECIMAL(18,2) NOT NULL DEFAULT 0,
+                    CashSales DECIMAL(18,2) NOT NULL DEFAULT 0,
+                    CardSales DECIMAL(18,2) NOT NULL DEFAULT 0,
+                    QrSales DECIMAL(18,2) NOT NULL DEFAULT 0,
+                    TotalSales DECIMAL(18,2) NOT NULL DEFAULT 0,
+                    ActualCashEnd DECIMAL(18,2) NOT NULL DEFAULT 0,
+                    CashVariance DECIMAL(18,2) NOT NULL DEFAULT 0,
+                    Status NVARCHAR(20) NOT NULL DEFAULT 'Open',
+                    Notes NVARCHAR(500) NULL,
+                    CONSTRAINT FK_WorkShifts_Users FOREIGN KEY (UserId) REFERENCES Users(UserId)
+                );
+            END",
 
-            ("AuditLogs table",
-                @"IF OBJECT_ID('AuditLogs', 'U') IS NULL
-                BEGIN
-                    CREATE TABLE AuditLogs (
-                        AuditLogId INT IDENTITY(1,1) PRIMARY KEY,
-                        Timestamp DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
-                        Username NVARCHAR(50) NOT NULL,
-                        UserRole NVARCHAR(30) NOT NULL,
-                        Action NVARCHAR(100) NOT NULL,
-                        EntityName NVARCHAR(100) NOT NULL,
-                        EntityId NVARCHAR(50) NULL,
-                        OldValue NVARCHAR(MAX) NULL,
-                        NewValue NVARCHAR(MAX) NULL,
-                        Reason NVARCHAR(MAX) NULL,
-                        MachineName NVARCHAR(100) NULL,
-                        Details NVARCHAR(1000) NULL
-                    );
-                END")
+            // 5. AuditLogs table (Immutable append-only audit trail)
+            @"IF OBJECT_ID('AuditLogs', 'U') IS NULL
+            BEGIN
+                CREATE TABLE AuditLogs (
+                    AuditLogId INT IDENTITY(1,1) PRIMARY KEY,
+                    Timestamp DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+                    Username NVARCHAR(50) NOT NULL,
+                    UserRole NVARCHAR(30) NOT NULL,
+                    Action NVARCHAR(100) NOT NULL,
+                    EntityName NVARCHAR(100) NOT NULL,
+                    EntityId NVARCHAR(50) NULL,
+                    OldValue NVARCHAR(MAX) NULL,
+                    NewValue NVARCHAR(MAX) NULL,
+                    Reason NVARCHAR(MAX) NULL,
+                    MachineName NVARCHAR(100) NULL,
+                    Details NVARCHAR(1000) NULL
+                );
+            END"
         };
 
-        foreach (var (name, sql) in statements)
+        foreach (var sql in ddlStatements)
         {
             try
             {
@@ -289,7 +292,7 @@ public static class DbInitializer
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[DbInitializer] Migration step '{name}' notice: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[SchemaUpgrade] Notice executing DDL statement: {ex.Message}");
             }
         }
     }

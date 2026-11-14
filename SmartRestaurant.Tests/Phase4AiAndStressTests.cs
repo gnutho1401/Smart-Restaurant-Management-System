@@ -70,7 +70,7 @@ public class Phase4AiAndStressTests
         Assert.True(posItem.IsLowStock);
         Assert.False(posItem.IsSoldOut);
         Assert.True(posItem.CanOrder);
-        Assert.Equal("🔥 Chỉ còn 5 phần", posItem.StockBadgeText);
+        Assert.Equal("Chỉ còn 5 phần", posItem.StockBadgeText);
 
         // 2. Dish with 0g stock -> Sold Out
         beef.CurrentStock = 0m;

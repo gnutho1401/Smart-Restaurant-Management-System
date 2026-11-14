@@ -4,7 +4,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:SmartRestaurant.WPF.ViewModels"
-        xmlns:common="clr-namespace:SmartRestaurant.WPF.Common"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance vm:AiChatViewModel}"
         Title="Trợ Lý Ảo GenAI Nhà Hàng (Mistral-7B / Google Gemini) - SmartRestaurant" 
@@ -33,10 +32,10 @@
                 <StackPanel>
                     <DockPanel Margin="0,0,0,12">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="🤖 TRỢ LÝ GENAI (MISTRAL-7B / GEMINI BACKUP)" FontSize="18" FontWeight="Bold" Foreground="#8E44AD"/>
+                            <TextBlock Text="TRỢ LÝ GENAI (MISTRAL-7B / GEMINI BACKUP)" FontSize="18" FontWeight="Bold" Foreground="#8E44AD"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <Button Content="🔍 Kiểm Tra Kết Nối AI" Command="{Binding TestConnectionCommand}"
+                            <Button Content="Kiểm Tra Kết Nối AI" Command="{Binding TestConnectionCommand}"
                                     Background="#E0E7FF" Foreground="#3730A3" FontWeight="SemiBold" FontSize="11" Padding="10,5" Margin="0,0,8,0"
                                     Cursor="Hand" BorderThickness="1" BorderBrush="#C7D2FE" ToolTip="Kiểm tra độ trễ và khả năng kết nối tới LM Studio (1235) hoặc Gemini">
                                 <Button.Resources>
@@ -45,7 +44,7 @@
                                     </Style>
                                 </Button.Resources>
                             </Button>
-                            <Button Content="⚙️ Cấu Hình Gemini / Model" Command="{Binding OpenAiSettingsCommand}"
+                            <Button Content="Cấu Hình Gemini / Model" Command="{Binding OpenAiSettingsCommand}"
                                     Background="#F1F5F9" Foreground="#334155" FontWeight="SemiBold" FontSize="11" Padding="10,5" Margin="0,0,8,0"
                                     Cursor="Hand" BorderThickness="1" BorderBrush="#CBD5E1">
                                 <Button.Resources>
@@ -62,7 +61,7 @@
 
                     <TextBlock Text="Kịch bản phân tích kinh doanh nhanh:" FontSize="12" FontWeight="SemiBold" Foreground="#7F8C8D" Margin="0,0,0,8"/>
                     <WrapPanel Orientation="Horizontal">
-                        <Button Content="📊 Ma Trận Thực Đơn BCG" Command="{Binding RunBcgCommand}" 
+                        <Button Content="Ma Trận Thực Đơn BCG" Command="{Binding RunBcgCommand}" 
                                 Background="#3498DB" Foreground="#FFFFFF" FontWeight="SemiBold" Height="36" Padding="14,0" Margin="0,0,8,6" Cursor="Hand" BorderThickness="0">
                             <Button.Resources>
                                 <Style TargetType="Border">
@@ -70,7 +69,7 @@
                                 </Style>
                             </Button.Resources>
                         </Button>
-                        <Button Content="📈 Phân Tích Giờ Cao Điểm" Command="{Binding RunPeakHoursCommand}" 
+                        <Button Content="Phân Tích Giờ Cao Điểm" Command="{Binding RunPeakHoursCommand}" 
                                 Background="#E67E22" Foreground="#FFFFFF" FontWeight="SemiBold" Height="36" Padding="14,0" Margin="0,0,8,6" Cursor="Hand" BorderThickness="0">
                             <Button.Resources>
                                 <Style TargetType="Border">
@@ -78,7 +77,7 @@
                                 </Style>
                             </Button.Resources>
                         </Button>
-                        <Button Content="📦 Dự Báo Nhập Kho 7 Ngày" Command="{Binding RunReorderCommand}" 
+                        <Button Content="Dự Báo Nhập Kho 7 Ngày" Command="{Binding RunReorderCommand}" 
                                 Background="#27AE60" Foreground="#FFFFFF" FontWeight="SemiBold" Height="36" Padding="14,0" Margin="0,0,8,6" Cursor="Hand" BorderThickness="0">
                             <Button.Resources>
                                 <Style TargetType="Border">
@@ -86,7 +85,7 @@
                                 </Style>
                             </Button.Resources>
                         </Button>
-                        <Button Content="💰 Phân Tích Xu Hướng Doanh Thu" Command="{Binding RunRevenueTrendCommand}" 
+                        <Button Content="Phân Tích Xu Hướng Doanh Thu" Command="{Binding RunRevenueTrendCommand}" 
                                 Background="#9B59B6" Foreground="#FFFFFF" FontWeight="SemiBold" Height="36" Padding="14,0" Margin="0,0,8,6" Cursor="Hand" BorderThickness="0">
                             <Button.Resources>
                                 <Style TargetType="Border">
@@ -99,74 +98,66 @@
             </Border>
 
             <!-- 2. Chat Conversation History -->
-            <Border Grid.Row="1" Background="#FFFFFF" CornerRadius="10" Padding="14" Margin="0,0,0,10">
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.04" Color="#000000"/>
-                </Border.Effect>
-                <ScrollViewer x:Name="ChatScrollViewer" VerticalScrollBarVisibility="Auto">
+            <Border Grid.Row="1" Background="#FFFFFF" CornerRadius="8" Padding="14" Margin="0,0,0,10">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <ItemsControl ItemsSource="{Binding Messages}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Margin="0,8" CornerRadius="12" Padding="16,14" MaxWidth="780"
-                                        HorizontalAlignment="{Binding IsUser, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='Invert'}">
+                                <Border Margin="0,6" CornerRadius="8" Padding="12" MaxWidth="720"
+                                        HorizontalAlignment="{Binding IsUser, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='Invert'}"
+                                        Background="{Binding IsUser, Converter={StaticResource TableStatusToBrushConverter}}">
                                     <Border.Style>
                                         <Style TargetType="Border">
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsUser}" Value="True">
                                                     <Setter Property="HorizontalAlignment" Value="Right"/>
-                                                    <Setter Property="Background" Value="#4F46E5"/>
+                                                    <Setter Property="Background" Value="#2980B9"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding IsUser}" Value="False">
                                                     <Setter Property="HorizontalAlignment" Value="Left"/>
-                                                    <Setter Property="Background" Value="#FFFFFF"/>
-                                                    <Setter Property="BorderBrush" Value="#E2E8F0"/>
+                                                    <Setter Property="Background" Value="#F8F9FA"/>
+                                                    <Setter Property="BorderBrush" Value="#E0E6ED"/>
                                                     <Setter Property="BorderThickness" Value="1"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </Border.Style>
-                                    <Border.Effect>
-                                        <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.05" Color="#000000"/>
-                                    </Border.Effect>
 
                                     <StackPanel>
-                                        <DockPanel Margin="0,0,0,8">
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                <TextBlock FontWeight="Bold" FontSize="12" VerticalAlignment="Center">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Setter Property="Text" Value="🤖 Trợ Lý SmartRestaurant"/>
-                                                            <Setter Property="Foreground" Value="#1E293B"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsUser}" Value="True">
-                                                                    <Setter Property="Text" Value="👤 Bạn (Thu Ngân / Quản Lý)"/>
-                                                                    <Setter Property="Foreground" Value="#FFFFFF"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
+                                        <DockPanel Margin="0,0,0,6">
+                                            <TextBlock Text="{Binding Sender}" FontWeight="Bold" FontSize="12">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="#2C3E50"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsUser}" Value="True">
+                                                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
 
-                                                <!-- Provider Pill Tag -->
-                                                <Border Background="#EEF2FF" BorderBrush="#C7D2FE" BorderThickness="1" CornerRadius="10" Padding="8,2" Margin="8,0,0,0"
-                                                        Visibility="{Binding HasProviderBadge, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                                    <TextBlock Text="{Binding ProviderBadge}" FontSize="10" FontWeight="SemiBold" Foreground="#4F46E5"/>
-                                                </Border>
-                                            </StackPanel>
-
-                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                                <Button Content="📋" ToolTip="Sao chép nội dung"
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                                <Button Content="Sao chép" ToolTip="Sao chép nội dung"
                                                         Command="{Binding DataContext.CopyMessageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                         CommandParameter="{Binding Content}"
-                                                        Background="Transparent" BorderThickness="0" Cursor="Hand" FontSize="12" Margin="0,0,8,0"
-                                                        Visibility="{Binding IsUser, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='Invert'}"/>
-                                                <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="11" VerticalAlignment="Center">
+                                                        Background="#EDF2F7" Foreground="#4A5568" BorderThickness="1" BorderBrush="#CBD5E0" 
+                                                        Cursor="Hand" FontSize="10" FontWeight="SemiBold" Padding="6,2" Margin="0,0,8,0"
+                                                        Visibility="{Binding IsUser, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='Invert'}">
+                                                    <Button.Resources>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="CornerRadius" Value="4"/>
+                                                        </Style>
+                                                    </Button.Resources>
+                                                </Button>
+                                                <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="10" VerticalAlignment="Center">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
-                                                            <Setter Property="Foreground" Value="#94A3B8"/>
+                                                            <Setter Property="Foreground" Value="#7F8C8D"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsUser}" Value="True">
-                                                                    <Setter Property="Foreground" Value="#E0E7FF"/>
+                                                                    <Setter Property="Foreground" Value="#E0E0E0"/>
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
@@ -175,12 +166,10 @@
                                             </StackPanel>
                                         </DockPanel>
 
-                                        <!-- Rich Formatted Markdown Content -->
-                                        <TextBlock common:MarkdownHelper.MarkdownText="{Binding Content}"
-                                                   TextWrapping="Wrap" FontSize="13.5" LineHeight="22">
+                                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap" FontSize="14" LineHeight="20">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
-                                                    <Setter Property="Foreground" Value="#1E293B"/>
+                                                    <Setter Property="Foreground" Value="#2C3E50"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsUser}" Value="True">
                                                             <Setter Property="Foreground" Value="#FFFFFF"/>
@@ -202,10 +191,9 @@
                     Visibility="{Binding IsPoDraftAvailable, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <DockPanel LastChildFill="False">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="📦" FontSize="20" Margin="0,0,8,0" VerticalAlignment="Center"/>
                         <TextBlock Text="Có đề xuất nhập kho nguyên vật liệu từ AI. Bấm để tự động cập nhật kho ngay:" FontWeight="SemiBold" Foreground="#6D28D9" VerticalAlignment="Center" FontSize="13"/>
                     </StackPanel>
-                    <Button DockPanel.Dock="Right" Content="⚡ Tự Động Nhập Kho Theo Đề Xuất PO" Command="{Binding ApplyAiPoDraftCommand}"
+                    <Button DockPanel.Dock="Right" Content="Tự Động Nhập Kho Theo Đề Xuất PO" Command="{Binding ApplyAiPoDraftCommand}"
                             Background="#7C3AED" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="36" Padding="16,0" Cursor="Hand" BorderThickness="0">
                         <Button.Resources>
                             <Style TargetType="Border">
@@ -219,7 +207,7 @@
             <!-- 3. Query Input Bar -->
             <Border Grid.Row="3" Background="#FFFFFF" CornerRadius="10" Padding="8" Margin="0,0,0,8" BorderBrush="#E0E6ED" BorderThickness="1">
                 <DockPanel>
-                    <Button DockPanel.Dock="Right" Content="Gửi 💬" Command="{Binding SendQueryCommand}"
+                    <Button DockPanel.Dock="Right" Content="Gửi" Command="{Binding SendQueryCommand}"
                             Background="#8E44AD" Foreground="#FFFFFF" FontWeight="Bold" FontSize="15" Width="100" Height="44" Margin="8,0,0,0" Cursor="Hand" BorderThickness="0">
                         <Button.Resources>
                             <Style TargetType="Border">
@@ -249,7 +237,7 @@
                 </Border.Effect>
                 <StackPanel>
                     <DockPanel Margin="0,0,0,16">
-                        <TextBlock Text="⚙️ CẤU HÌNH CLOUD GENAI (GOOGLE GEMINI)" FontSize="16" FontWeight="Bold" Foreground="#1E293B"/>
+                        <TextBlock Text="CẤU HÌNH CLOUD GENAI (GOOGLE GEMINI)" FontSize="16" FontWeight="Bold" Foreground="#1E293B"/>
                         <Button DockPanel.Dock="Right" Content="✕" Command="{Binding CloseAiSettingsCommand}"
                                 Background="Transparent" BorderThickness="0" FontSize="16" FontWeight="Bold" Cursor="Hand" Foreground="#64748B"/>
                     </DockPanel>
@@ -277,7 +265,7 @@
                                 </Style>
                             </Button.Resources>
                         </Button>
-                        <Button Content="💾 Lưu Cấu Hình" Command="{Binding SaveAiSettingsCommand}"
+                        <Button Content="Lưu Cấu Hình" Command="{Binding SaveAiSettingsCommand}"
                                 Background="#2563EB" Foreground="#FFFFFF" FontWeight="Bold" Height="38" Padding="20,0" Cursor="Hand" BorderThickness="0">
                             <Button.Resources>
                                 <Style TargetType="Border">

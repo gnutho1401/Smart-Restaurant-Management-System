@@ -34,10 +34,10 @@ public class StaffItemViewModel : ViewModelBase
 
     public string RoleBadgeText => Role switch
     {
-        UserRole.Admin => "👑 ADMIN",
-        UserRole.StoreManager => "👔 QUẢN LÝ",
-        UserRole.Cashier => "💵 THU NGÂN",
-        UserRole.HeadChef => "👨‍🍳 BẾP TRƯỞNG",
+        UserRole.Admin => "ADMIN",
+        UserRole.StoreManager => "QUẢN LÝ",
+        UserRole.Cashier => "THU NGÂN",
+        UserRole.HeadChef => "BẾP TRƯỞNG",
         _ => "NHÂN VIÊN"
     };
 

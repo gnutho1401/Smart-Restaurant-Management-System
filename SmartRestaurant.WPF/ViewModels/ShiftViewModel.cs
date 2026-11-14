@@ -116,11 +116,11 @@ public class ShiftViewModel : ViewModelBase
         {
             ActualCashEndInput = shift.OpeningFloat + shift.CashSales;
             RecalculateVariance();
-            StatusMessage = $"🟢 Ca làm việc đang mở từ {shift.StartTime.ToLocalTime():HH:mm}.";
+            StatusMessage = $"Ca làm việc đang mở từ {shift.StartTime.ToLocalTime():HH:mm}.";
         }
         else
         {
-            StatusMessage = "ℹ️ Hiện chưa có ca làm việc nào đang mở. Vui lòng nhập tiền đầu ca để bắt đầu.";
+            StatusMessage = "Hiện chưa có ca làm việc nào đang mở. Vui lòng nhập tiền đầu ca để bắt đầu.";
         }
     }
 
@@ -155,15 +155,15 @@ public class ShiftViewModel : ViewModelBase
 
         if (CashVariance == 0)
         {
-            VarianceDescription = "🟢 Khớp tiền 100% (Không chênh lệch)";
+            VarianceDescription = "Khớp tiền 100% (Không chênh lệch)";
         }
         else if (CashVariance > 0)
         {
-            VarianceDescription = $"🟡 Thừa tiền: +{CashVariance:N0} đ";
+            VarianceDescription = $"Thừa tiền: +{CashVariance:N0} đ";
         }
         else
         {
-            VarianceDescription = $"🔴 Thâm hụt tiền: {CashVariance:N0} đ";
+            VarianceDescription = $"Thâm hụt tiền: {CashVariance:N0} đ";
         }
     }
 
@@ -180,11 +180,11 @@ public class ShiftViewModel : ViewModelBase
 
             CurrentShift = closedShift;
             HasActiveShift = false;
-            StatusMessage = $"🏁 Đã chốt ca thành công! Báo cáo Z-Report đã được ghi nhận. {VarianceDescription}";
+            StatusMessage = $"Đã chốt ca thành công! Báo cáo Z-Report đã được ghi nhận. {VarianceDescription}";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ Không thể chốt ca: {ex.Message}";
+            StatusMessage = $"Không thể chốt ca: {ex.Message}";
         }
     }
 }

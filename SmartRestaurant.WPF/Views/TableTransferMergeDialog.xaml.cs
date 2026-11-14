@@ -53,8 +53,8 @@ public partial class TableTransferMergeDialog : Window
         if (isTransfer)
         {
             LblTargetTable.Text = "Bàn trống muốn chuyển đến:";
-            BtnConfirm.Content = "✓ Xác Nhận Chuyển Bàn";
-            TxtNote.Text = "💡 Khi chuyển bàn, toàn bộ món ăn và hóa đơn hiện tại sẽ được chuyển tự động sang bàn đích. Bàn cũ sẽ trở về trạng thái Trống.";
+            BtnConfirm.Content = "Xác Nhận Chuyển Bàn";
+            TxtNote.Text = "Lưu ý: Khi chuyển bàn, toàn bộ món ăn và hóa đơn hiện tại sẽ được chuyển tự động sang bàn đích. Bàn cũ sẽ trở về trạng thái Trống.";
 
             var options = _allTables
                 .Where(t => t.TableId != _sourceTable.TableId && t.Status == TableStatus.Available)
@@ -70,8 +70,8 @@ public partial class TableTransferMergeDialog : Window
         else
         {
             LblTargetTable.Text = "Bàn đích muốn gộp vào:";
-            BtnConfirm.Content = "✓ Xác Nhận Gộp Bàn";
-            TxtNote.Text = "💡 Khi gộp bàn, các món ăn từ bàn hiện tại sẽ được gộp chung vào đơn của bàn đích. Bàn hiện tại sẽ trở về trạng thái Trống.";
+            BtnConfirm.Content = "Xác Nhận Gộp Bàn";
+            TxtNote.Text = "Lưu ý: Khi gộp bàn, các món ăn từ bàn hiện tại sẽ được gộp chung vào đơn của bàn đích. Bàn hiện tại sẽ trở về trạng thái Trống.";
 
             var options = _allTables
                 .Where(t => t.TableId != _sourceTable.TableId && (t.Status == TableStatus.Occupied || t.Status == TableStatus.Available))

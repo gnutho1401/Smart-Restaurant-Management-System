@@ -19,7 +19,7 @@
 
             <!-- 1. Header -->
             <StackPanel Grid.Row="0" Margin="0,0,0,18">
-                <TextBlock Text="🔄 ĐIỀU PHỐI VỊ TRÍ BÀN ĂN" FontSize="18" FontWeight="Bold" Foreground="#1E293B"/>
+                <TextBlock Text="ĐIỀU PHỐI VỊ TRÍ BÀN ĂN" FontSize="18" FontWeight="Bold" Foreground="#1E293B"/>
                 <TextBlock Text="Hỗ trợ chuyển đổi khách sang bàn mới hoặc gộp đơn với bàn khác" FontSize="12" Foreground="#64748B" Margin="0,4,0,0"/>
             </StackPanel>
 
@@ -28,9 +28,9 @@
                 <StackPanel>
                     <TextBlock Text="Chọn nghiệp vụ cần thực hiện:" FontWeight="SemiBold" FontSize="13" Foreground="#334155" Margin="0,0,0,10"/>
                     <StackPanel Orientation="Horizontal">
-                        <RadioButton x:Name="RbTransfer" Content="🔀 Chuyển Bàn (Sang bàn trống)" IsChecked="True" 
+                        <RadioButton x:Name="RbTransfer" Content="Chuyển Bàn (Sang bàn trống)" IsChecked="True" 
                                      FontWeight="SemiBold" FontSize="13" Foreground="#0F172A" Margin="0,0,20,0" Checked="Mode_Changed"/>
-                        <RadioButton x:Name="RbMerge" Content="🔗 Gộp Bàn (Gộp món vào bàn khác)" 
+                        <RadioButton x:Name="RbMerge" Content="Gộp Bàn (Gộp món vào bàn khác)" 
                                      FontWeight="SemiBold" FontSize="13" Foreground="#0F172A" Checked="Mode_Changed"/>
                     </StackPanel>
                 </StackPanel>
@@ -58,7 +58,7 @@
 
             <!-- 4. Notes / Information Alert -->
             <Border Grid.Row="3" Background="#FEF3C7" CornerRadius="8" Padding="12,10" Margin="0,14,0,0" BorderBrush="#F59E0B" BorderThickness="1" VerticalAlignment="Top">
-                <TextBlock x:Name="TxtNote" Text="💡 Khi chuyển bàn, toàn bộ món ăn và hóa đơn hiện tại sẽ được chuyển tự động sang bàn đích. Bàn cũ sẽ trở về trạng thái Trống." 
+                <TextBlock x:Name="TxtNote" Text="Lưu ý: Khi chuyển bàn, toàn bộ món ăn và hóa đơn hiện tại sẽ được chuyển tự động sang bàn đích. Bàn cũ sẽ trở về trạng thái Trống." 
                            FontSize="12" Foreground="#92400E" TextWrapping="Wrap"/>
             </Border>
 
@@ -79,7 +79,7 @@
                     </Button.Resources>
                 </Button>
 
-                <Button x:Name="BtnConfirm" Grid.Column="2" Content="✓ Xác Nhận Chuyển Bàn" Height="42" 
+                <Button x:Name="BtnConfirm" Grid.Column="2" Content="Xác Nhận Chuyển Bàn" Height="42" 
                         Background="#2563EB" Foreground="#FFFFFF" FontWeight="Bold" FontSize="14" Cursor="Hand" BorderThickness="0" Click="Confirm_Click">
                     <Button.Resources>
                         <Style TargetType="Border">

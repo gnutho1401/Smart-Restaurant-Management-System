@@ -30,5 +30,4 @@ public interface IAiService
     Task<string> PredictWeeklyReorderAsync();
     void UpdateGeminiConfig(string apiKey, string? model = null);
     Task<AiConnectionReport> TestConnectionAsync();
-    string GetLastUsedProvider();
 }

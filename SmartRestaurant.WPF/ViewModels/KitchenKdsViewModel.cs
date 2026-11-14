@@ -65,7 +65,7 @@ public class KitchenKdsViewModel : ViewModelBase, IDisposable
         }
     }
 
-    public string ChimeButtonText => IsChimeEnabled ? "🔔 Chuông: BẬT" : "🔕 Chuông: TẮT";
+    public string ChimeButtonText => IsChimeEnabled ? "Chuông: BẬT" : "Chuông: TẮT";
 
     public IAsyncRelayCommand LoadTicketsCommand { get; }
     public IAsyncRelayCommand<KitchenTicketViewModel> AdvanceStatusCommand { get; }

@@ -44,8 +44,6 @@ public class AiAdvancedIntelligenceTests
             LatencyMs = 10,
             Message = "Test connection OK"
         });
-
-        public string GetLastUsedProvider() => "Mock Provider";
     }
 
     [Fact]

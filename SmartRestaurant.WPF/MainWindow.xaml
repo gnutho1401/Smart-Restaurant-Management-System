@@ -166,7 +166,6 @@
         <Border Grid.Row="0" Background="#1A252F" Padding="20,0">
             <DockPanel LastChildFill="False">
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
-                    <TextBlock Text="🍽️" FontSize="28" VerticalAlignment="Center" Margin="0,0,12,0"/>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="SMART RESTAURANT MANAGEMENT" FontSize="19" FontWeight="Bold" Foreground="#FFFFFF"/>
                         <TextBlock Text="Hệ Thống Quản Lý Nhà Hàng Thông Minh (.NET 8 &amp; Local GenAI / Gemini)" FontSize="11" Foreground="#BDC3C7"/>
@@ -175,7 +174,7 @@
 
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
                     <!-- AI Assistant Shortcut -->
-                    <Button Content="🤖 Trợ Lý GenAI (Mistral-7B / Gemini)" Command="{Binding OpenAiAssistantCommand}"
+                    <Button Content="Trợ Lý GenAI (Mistral-7B / Gemini)" Command="{Binding OpenAiAssistantCommand}"
                             Background="#8E44AD" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="40" Padding="18,0" Margin="0,0,16,0" Cursor="Hand" BorderThickness="0">
                         <Button.Resources>
                             <Style TargetType="Border">
@@ -196,7 +195,7 @@
                     </Border>
 
                     <!-- Quick Lock Screen Button -->
-                    <Button Content="🔒 Khóa" Command="{Binding LockScreenCommand}"
+                    <Button Content="Khóa Màn Hình" Command="{Binding LockScreenCommand}"
                             Background="#475569" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" Height="36" Padding="12,0" Margin="0,0,10,0" Cursor="Hand" BorderThickness="0"
                             ToolTip="Khóa màn hình bảo vệ ca trực">
                         <Button.Resources>
@@ -207,7 +206,7 @@
                     </Button>
 
                     <!-- Logout Button -->
-                    <Button Content="🚪 Đăng Xuất" Command="{Binding LogoutCommand}"
+                    <Button Content="Đăng Xuất" Command="{Binding LogoutCommand}"
                             Background="#C0392B" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" Height="36" Padding="14,0" Cursor="Hand" BorderThickness="0">
                         <Button.Resources>
                             <Style TargetType="Border">
@@ -224,40 +223,40 @@
             <DockPanel LastChildFill="False">
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
                     <!-- Admin & Management Tabs -->
-                    <Button Content="📊 Báo Cáo &amp; AI Analytics" Command="{Binding NavReportsCommand}"
+                    <Button Content="Báo Cáo &amp; AI Analytics" Command="{Binding NavReportsCommand}"
                             Visibility="{Binding IsReportsAllowed, Converter={StaticResource BoolToVis}}"
                             Style="{StaticResource NavButtonStyle}"/>
-                    <Button Content="👥 Quản Lý Nhân Viên" Command="{Binding NavStaffCommand}"
+                    <Button Content="Quản Lý Nhân Viên" Command="{Binding NavStaffCommand}"
                             Visibility="{Binding IsStaffAllowed, Converter={StaticResource BoolToVis}}"
                             Style="{StaticResource NavButtonStyle}"/>
-                    <Button Content="📦 Quản Lý Kho (BOM)" Command="{Binding NavInventoryCommand}"
+                    <Button Content="Quản Lý Kho (BOM)" Command="{Binding NavInventoryCommand}"
                             Visibility="{Binding IsInventoryAllowed, Converter={StaticResource BoolToVis}}"
                             Style="{StaticResource NavButtonStyle}"/>
-                    <Button Content="📖 Thực Đơn &amp; Dịch Vụ" Command="{Binding NavMenuCommand}"
+                    <Button Content="Thực Đơn &amp; Dịch Vụ" Command="{Binding NavMenuCommand}"
                             Visibility="{Binding IsMenuAllowed, Converter={StaticResource BoolToVis}}"
                             Style="{StaticResource NavButtonStyle}"/>
-                    <Button Content="🛡️ Nhật Ký Kiểm Toán" Command="{Binding NavAuditLogCommand}"
+                    <Button Content="Nhật Ký Kiểm Toán" Command="{Binding NavAuditLogCommand}"
                             Visibility="{Binding IsAuditLogAllowed, Converter={StaticResource BoolToVis}}"
                             Style="{StaticResource NavButtonStyle}"/>
 
                     <!-- Operation Floor & Kitchen Tabs -->
-                    <Button Content="🪑 Sơ Đồ Bàn (Floor Plan)" Command="{Binding NavFloorPlanCommand}"
+                    <Button Content="Sơ Đồ Bàn (Floor Plan)" Command="{Binding NavFloorPlanCommand}"
                             Visibility="{Binding IsFloorPlanAllowed, Converter={StaticResource BoolToVis}}"
                             Style="{StaticResource NavButtonStyle}"/>
-                    <Button Content="📱 Gọi Món POS (Touch POS)" Command="{Binding NavPosCommand}"
+                    <Button Content="Gọi Món POS (Touch POS)" Command="{Binding NavPosCommand}"
                             Visibility="{Binding IsPosAllowed, Converter={StaticResource BoolToVis}}"
                             Style="{StaticResource NavButtonStyle}"/>
-                    <Button Content="👨‍🍳 Màn Hình Bếp (Kitchen KDS)" Command="{Binding NavKdsCommand}"
+                    <Button Content="Màn Hình Bếp (Kitchen KDS)" Command="{Binding NavKdsCommand}"
                             Visibility="{Binding IsKdsAllowed, Converter={StaticResource BoolToVis}}"
                             Style="{StaticResource NavButtonStyle}"/>
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="⏱️ Ca Làm Việc (Z-Report)" Command="{Binding OpenShiftManagementCommand}"
+                    <Button Content="Ca Làm Việc (Z-Report)" Command="{Binding OpenShiftManagementCommand}"
                             Visibility="{Binding IsShiftAllowed, Converter={StaticResource BoolToVis}}"
                             Background="#0D9488" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="40" Padding="14,0" Margin="0,0,10,0" Cursor="Hand" BorderThickness="0"
                             Style="{StaticResource AnimatedTouchButtonStyle}"/>
-                    <Button Content="💳 Quyết Toán Hóa Đơn (VAT 8%)" Command="{Binding OpenBillingCommand}"
+                    <Button Content="Quyết Toán Hóa Đơn (VAT 8%)" Command="{Binding OpenBillingCommand}"
                             Visibility="{Binding IsBillingAllowed, Converter={StaticResource BoolToVis}}"
                             Background="#E67E22" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="40" Padding="18,0" Cursor="Hand" BorderThickness="0"
                             Style="{StaticResource AnimatedTouchButtonStyle}"/>
@@ -278,9 +277,8 @@
             <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Border Width="400" Background="#1E293B" CornerRadius="18" Padding="28" BorderBrush="#334155" BorderThickness="2">
                     <StackPanel HorizontalAlignment="Center">
-                        <!-- Icon & Title -->
-                        <TextBlock Text="🔒" FontSize="44" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                        <TextBlock Text="MÀN HÌNH ĐÃ KHÓA" FontSize="19" FontWeight="Bold" Foreground="#F8FAFC" HorizontalAlignment="Center"/>
+                        <!-- Title -->
+                        <TextBlock Text="MÀN HÌNH ĐÃ KHÓA" FontSize="19" FontWeight="Bold" Foreground="#F8FAFC" HorizontalAlignment="Center" Margin="0,10,0,0"/>
                         <TextBlock Text="Bảo vệ ca làm việc và dữ liệu tài chính" FontSize="12" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,3,0,16"/>
 
                         <!-- User Info Badge -->
@@ -320,7 +318,7 @@
                         </UniformGrid>
 
                         <!-- Action Buttons: Unlock & Logout -->
-                        <Button Content="🔓 MỞ KHÓA MÀN HÌNH" Command="{Binding UnlockScreenCommand}"
+                        <Button Content="MỞ KHÓA MÀN HÌNH" Command="{Binding UnlockScreenCommand}"
                                 Background="#2563EB" Foreground="#FFFFFF" FontWeight="Bold" FontSize="14" Height="46" Width="260" Margin="0,0,0,8" Cursor="Hand" BorderThickness="0">
                             <Button.Resources>
                                 <Style TargetType="Border">
@@ -329,7 +327,7 @@
                             </Button.Resources>
                         </Button>
 
-                        <Button Content="🚪 Đăng Xuất (Chuyển Ca Khác)" Command="{Binding LogoutCommand}"
+                        <Button Content="Đăng Xuất (Chuyển Ca Khác)" Command="{Binding LogoutCommand}"
                                 Background="Transparent" Foreground="#94A3B8" FontWeight="SemiBold" FontSize="12" Height="32" Cursor="Hand" BorderThickness="0"/>
                     </StackPanel>
                 </Border>

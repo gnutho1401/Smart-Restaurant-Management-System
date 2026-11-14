@@ -106,17 +106,17 @@ public class Phase2TouchAndErgonomicsTests
 
         // Initial default is enabled
         Assert.True(vm.IsChimeEnabled);
-        Assert.Equal("🔔 Chuông: BẬT", vm.ChimeButtonText);
+        Assert.Equal("Chuông: BẬT", vm.ChimeButtonText);
 
         // Toggle to disabled
         vm.ToggleChimeCommand.Execute(null);
         Assert.False(vm.IsChimeEnabled);
-        Assert.Equal("🔕 Chuông: TẮT", vm.ChimeButtonText);
+        Assert.Equal("Chuông: TẮT", vm.ChimeButtonText);
 
         // Toggle back to enabled
         vm.ToggleChimeCommand.Execute(null);
         Assert.True(vm.IsChimeEnabled);
-        Assert.Equal("🔔 Chuông: BẬT", vm.ChimeButtonText);
+        Assert.Equal("Chuông: BẬT", vm.ChimeButtonText);
     }
 
     [Fact]

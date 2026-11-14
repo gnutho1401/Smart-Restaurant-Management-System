@@ -37,7 +37,7 @@ public class DiningTable
             if (order == null || Status != TableStatus.Occupied) return string.Empty;
             int count = order.OrderItems.Sum(oi => oi.Quantity);
             decimal total = order.OrderItems.Sum(oi => oi.UnitPrice * oi.Quantity);
-            return count > 0 ? $"🛒 {count} món • {total:N0} đ" : string.Empty;
+            return count > 0 ? $"{count} món • {total:N0} đ" : string.Empty;
         }
     }
 

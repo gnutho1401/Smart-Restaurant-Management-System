@@ -46,7 +46,7 @@
                     <!-- Top Logo -->
                     <StackPanel Grid.Row="0">
                         <Border Background="#2C3E50" Width="64" Height="64" CornerRadius="32" HorizontalAlignment="Left" Margin="0,0,0,16">
-                            <TextBlock Text="🍽️" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Text="SR" FontSize="26" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <TextBlock Text="SMART RESTAURANT" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
                         <TextBlock Text="Hệ Thống Quản Lý Thông Minh" FontSize="13" Foreground="#BDC3C7" Margin="0,4,0,0"/>
@@ -58,17 +58,17 @@
                         <TextBlock Text="KIẾN TRÚC BẢO MẬT &amp; VẬN HÀNH" FontSize="11" FontWeight="Bold" Foreground="#95A5A6" Margin="0,0,0,12"/>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                            <TextBlock Text="🔒" FontSize="14" Margin="0,0,10,0"/>
+                            <TextBlock Text="•" FontSize="14" FontWeight="Bold" Foreground="#E67E22" Margin="0,0,10,0"/>
                             <TextBlock Text="Mã hóa PBKDF2-SHA256 (100k rounds)" FontSize="12" Foreground="#ECF0F1"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                            <TextBlock Text="🛡️" FontSize="14" Margin="0,0,10,0"/>
+                            <TextBlock Text="•" FontSize="14" FontWeight="Bold" Foreground="#E67E22" Margin="0,0,10,0"/>
                             <TextBlock Text="Phân quyền vai trò RBAC chặt chẽ" FontSize="12" Foreground="#ECF0F1"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                            <TextBlock Text="🤖" FontSize="14" Margin="0,0,10,0"/>
+                            <TextBlock Text="•" FontSize="14" FontWeight="Bold" Foreground="#E67E22" Margin="0,0,10,0"/>
                             <TextBlock Text="Trí tuệ nhân tạo Local GenAI Mistral-7B" FontSize="12" Foreground="#ECF0F1"/>
                         </StackPanel>
 
@@ -109,31 +109,16 @@
                     <!-- Username Field -->
                     <TextBlock Text="Tên Đăng Nhập" FontSize="12" FontWeight="Bold" Foreground="#34495E" Margin="0,0,0,6"/>
                     <Border Background="#F8F9FA" BorderBrush="#DCE4EC" BorderThickness="1" CornerRadius="8" Padding="10,4" Margin="0,0,0,14">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="28"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="👤" FontSize="14" VerticalAlignment="Center" Foreground="#7F8C8D"/>
-                            <TextBox Grid.Column="1" Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
-                                     FontSize="14" BorderThickness="0" Background="Transparent" VerticalAlignment="Center" Padding="4,4"/>
-                        </Grid>
+                        <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
+                                 FontSize="14" BorderThickness="0" Background="Transparent" VerticalAlignment="Center" Padding="4,4"/>
                     </Border>
 
                     <!-- Password Field -->
                     <TextBlock Text="Mật Khẩu" FontSize="12" FontWeight="Bold" Foreground="#34495E" Margin="0,0,0,6"/>
                     <Border Background="#F8F9FA" BorderBrush="#DCE4EC" BorderThickness="1" CornerRadius="8" Padding="10,4" Margin="0,0,0,20">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="28"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="🔑" FontSize="14" VerticalAlignment="Center" Foreground="#7F8C8D"/>
-                            <PasswordBox Grid.Column="1"
-                                         common:PasswordBoxHelper.BindPassword="True"
-                                         common:PasswordBoxHelper.BoundPassword="{Binding Password, Mode=TwoWay}"
-                                         FontSize="14" BorderThickness="0" Background="Transparent" VerticalAlignment="Center" Padding="4,4"/>
-                        </Grid>
+                        <PasswordBox common:PasswordBoxHelper.BindPassword="True"
+                                     common:PasswordBoxHelper.BoundPassword="{Binding Password, Mode=TwoWay}"
+                                     FontSize="14" BorderThickness="0" Background="Transparent" VerticalAlignment="Center" Padding="4,4"/>
                     </Border>
 
                     <!-- Login Button -->
@@ -161,7 +146,7 @@
                             <Button.Resources>
                                 <Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style>
                             </Button.Resources>
-                            <TextBlock Text="👑 Admin" FontSize="11" FontWeight="Bold" Foreground="#2980B9"/>
+                            <TextBlock Text="Admin" FontSize="11" FontWeight="Bold" Foreground="#2980B9"/>
                         </Button>
 
                         <!-- Manager -->
@@ -170,7 +155,7 @@
                             <Button.Resources>
                                 <Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style>
                             </Button.Resources>
-                            <TextBlock Text="👔 Quản Lý" FontSize="11" FontWeight="Bold" Foreground="#8E44AD"/>
+                            <TextBlock Text="Quản Lý" FontSize="11" FontWeight="Bold" Foreground="#8E44AD"/>
                         </Button>
 
                         <!-- Cashier -->
@@ -179,7 +164,7 @@
                             <Button.Resources>
                                 <Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style>
                             </Button.Resources>
-                            <TextBlock Text="💵 Thu Ngân" FontSize="11" FontWeight="Bold" Foreground="#D68910"/>
+                            <TextBlock Text="Thu Ngân" FontSize="11" FontWeight="Bold" Foreground="#D68910"/>
                         </Button>
 
                         <!-- Chef -->
@@ -188,7 +173,7 @@
                             <Button.Resources>
                                 <Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style>
                             </Button.Resources>
-                            <TextBlock Text="👨‍🍳 Đầu Bếp" FontSize="11" FontWeight="Bold" Foreground="#16A085"/>
+                            <TextBlock Text="Đầu Bếp" FontSize="11" FontWeight="Bold" Foreground="#16A085"/>
                         </Button>
                     </UniformGrid>
                 </StackPanel>

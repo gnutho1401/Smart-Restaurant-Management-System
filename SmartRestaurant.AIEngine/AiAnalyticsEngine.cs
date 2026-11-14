@@ -37,36 +37,42 @@ public class AiAnalyticsEngine
                 .ThenInclude(r => r.Ingredient)
             .ToListAsync();
 
-        Dictionary<int, int> salesDict;
-        Dictionary<int, decimal> revenueDict;
+        List<OrderItem> orderItems;
         try
         {
-            var sales = await _context.OrderItems
+            orderItems = await _context.OrderItems
                 .Where(oi => !oi.IsCancelled)
-                .GroupBy(oi => oi.MenuItemId)
-                .Select(g => new { MenuItemId = g.Key, TotalSold = g.Sum(x => x.Quantity), Revenue = g.Sum(x => x.UnitPrice * x.Quantity) })
                 .ToListAsync();
-            salesDict = sales.ToDictionary(s => s.MenuItemId, s => s.TotalSold);
-            revenueDict = sales.ToDictionary(s => s.MenuItemId, s => s.Revenue);
         }
         catch (Exception ex) when (ex.Message.Contains("Invalid column name") || ex.Message.Contains("IsCancelled"))
         {
-            _ = Task.Run(async () => { try { await DbInitializer.EnsureSchemaUpgradesAsync(_context); } catch { } });
-            var sales = await _context.OrderItems
-                .GroupBy(oi => oi.MenuItemId)
-                .Select(g => new { MenuItemId = g.Key, TotalSold = g.Sum(x => x.Quantity), Revenue = g.Sum(x => x.UnitPrice * x.Quantity) })
-                .ToListAsync();
-            salesDict = sales.ToDictionary(s => s.MenuItemId, s => s.TotalSold);
-            revenueDict = sales.ToDictionary(s => s.MenuItemId, s => s.Revenue);
+            await DbInitializer.EnsureSchemaUpgradesAsync(_context);
+            try
+            {
+                orderItems = await _context.OrderItems
+                    .Where(oi => !oi.IsCancelled)
+                    .ToListAsync();
+            }
+            catch
+            {
+                orderItems = new List<OrderItem>();
+            }
         }
 
-        decimal avgSold = salesDict.Any() ? (decimal)salesDict.Values.Average() : 1m;
+        var sales = orderItems
+            .GroupBy(oi => oi.MenuItemId)
+            .Select(g => new { MenuItemId = g.Key, TotalSold = g.Sum(x => x.Quantity), Revenue = g.Sum(x => x.UnitPrice * x.Quantity) })
+            .ToList();
+
+        var salesDict = sales.ToDictionary(s => s.MenuItemId);
+
+        decimal avgSold = sales.Any() ? (decimal)sales.Average(s => s.TotalSold) : 1m;
 
         // Calculate Cost & Contribution Margin for each dish from BOM ingredients
         var itemDrafts = dishes.Select(dish =>
         {
-            int sold = salesDict.TryGetValue(dish.MenuItemId, out var s) ? s : 0;
-            decimal rev = revenueDict.TryGetValue(dish.MenuItemId, out var s2) ? s2 : 0m;
+            int sold = salesDict.TryGetValue(dish.MenuItemId, out var s) ? s.TotalSold : 0;
+            decimal rev = salesDict.TryGetValue(dish.MenuItemId, out var s2) ? s2.Revenue : 0m;
 
             decimal unitCost = 0m;
             if (dish.Recipes.Any())
@@ -196,11 +202,18 @@ public class AiAnalyticsEngine
         catch (Exception ex) when (ex.Message.Contains("Invalid column name") || ex.Message.Contains("IsCancelled"))
         {
             await DbInitializer.EnsureSchemaUpgradesAsync(_context);
-            orders = await _context.Orders
-                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status == "Completed")
-                .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.MenuItem)
-                .ToListAsync();
+            try
+            {
+                orders = await _context.Orders
+                    .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status == "Completed")
+                    .Include(o => o.OrderItems.Where(oi => !oi.IsCancelled))
+                        .ThenInclude(oi => oi.MenuItem)
+                    .ToListAsync();
+            }
+            catch
+            {
+                orders = new List<Order>();
+            }
         }
 
         decimal totalRevenue = orders.Sum(o => o.FinalTotal);
@@ -232,60 +245,40 @@ public class AiAnalyticsEngine
     public async Task<WeeklyReorderResult> ComputeWeeklyReorderForecastAsync()
     {
         var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
-        var usageDict = new Dictionary<int, decimal>();
-
+        List<OrderItem> recentOrderItems;
         try
         {
-            var recentOrderItems = await _context.OrderItems
+            recentOrderItems = await _context.OrderItems
                 .Where(oi => !oi.IsCancelled && oi.Order != null && oi.Order.CreatedAt >= sevenDaysAgo && oi.Order.Status == "Completed")
                 .Include(oi => oi.MenuItem)
                     .ThenInclude(m => m!.Recipes)
                 .ToListAsync();
-
-            foreach (var oi in recentOrderItems)
-            {
-                if (oi.MenuItem?.Recipes == null) continue;
-                foreach (var recipe in oi.MenuItem.Recipes)
-                {
-                    decimal used = recipe.QuantityRequired * oi.Quantity;
-                    usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + used;
-                }
-            }
         }
-        catch (Exception ex) when (ex.Message.Contains("Invalid column name") || ex.Message.Contains("IsCancelled") || ex.Message.Contains("CancelReason"))
+        catch (Exception ex) when (ex.Message.Contains("Invalid column name") || ex.Message.Contains("IsCancelled"))
         {
-            _ = Task.Run(async () =>
-            {
-                try { await DbInitializer.EnsureSchemaUpgradesAsync(_context); } catch { }
-            });
-
+            await DbInitializer.EnsureSchemaUpgradesAsync(_context);
             try
             {
-                // Safe projection fallback: Avoid selecting newly introduced OrderItems columns
-                var rawItems = await _context.Orders
-                    .Where(o => o.CreatedAt >= sevenDaysAgo && o.Status == "Completed")
-                    .SelectMany(o => o.OrderItems.Select(oi => new { oi.MenuItemId, oi.Quantity }))
+                recentOrderItems = await _context.OrderItems
+                    .Where(oi => !oi.IsCancelled && oi.Order != null && oi.Order.CreatedAt >= sevenDaysAgo && oi.Order.Status == "Completed")
+                    .Include(oi => oi.MenuItem)
+                        .ThenInclude(m => m!.Recipes)
                     .ToListAsync();
-
-                var menuItemsWithRecipes = await _context.MenuItems
-                    .Include(m => m.Recipes)
-                    .ToDictionaryAsync(m => m.MenuItemId);
-
-                foreach (var oi in rawItems)
-                {
-                    if (menuItemsWithRecipes.TryGetValue(oi.MenuItemId, out var mi) && mi.Recipes != null)
-                    {
-                        foreach (var recipe in mi.Recipes)
-                        {
-                            decimal used = recipe.QuantityRequired * oi.Quantity;
-                            usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + used;
-                        }
-                    }
-                }
             }
-            catch (Exception fallbackEx)
+            catch
             {
-                System.Diagnostics.Debug.WriteLine($"[ComputeWeeklyReorderForecastAsync] Fallback notice: {fallbackEx.Message}");
+                recentOrderItems = new List<OrderItem>();
+            }
+        }
+
+        var usageDict = new Dictionary<int, decimal>();
+        foreach (var oi in recentOrderItems)
+        {
+            if (oi.MenuItem?.Recipes == null) continue;
+            foreach (var recipe in oi.MenuItem.Recipes)
+            {
+                decimal used = recipe.QuantityRequired * oi.Quantity;
+                usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + used;
             }
         }
 
@@ -369,11 +362,19 @@ public class AiAnalyticsEngine
         }
         catch (Exception ex) when (ex.Message.Contains("Invalid column name") || ex.Message.Contains("IsCancelled"))
         {
-            completedOrders = await _context.Orders
-                .Where(o => o.Status == "Completed" || o.Status == "Occupied")
-                .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.MenuItem)
-                .ToListAsync();
+            await DbInitializer.EnsureSchemaUpgradesAsync(_context);
+            try
+            {
+                completedOrders = await _context.Orders
+                    .Where(o => o.Status == "Completed" || o.Status == "Occupied")
+                    .Include(o => o.OrderItems.Where(oi => !oi.IsCancelled))
+                        .ThenInclude(oi => oi.MenuItem)
+                    .ToListAsync();
+            }
+            catch
+            {
+                completedOrders = new List<Order>();
+            }
         }
 
         int totalOrders = completedOrders.Count;
@@ -430,7 +431,7 @@ public class AiAnalyticsEngine
             if (itemLookup.TryGetValue(dishA, out var itemA) && itemLookup.TryGetValue(dishB, out var itemB))
             {
                 int confPct = (int)Math.Round(confidence * 100);
-                string pitch = $"💡 {confPct}% thực khách gọi {itemA.Name} đã kết hợp cùng {itemB.Name} (+{itemB.Price:N0} đ)!";
+                string pitch = $"{confPct}% thực khách gọi {itemA.Name} đã kết hợp cùng {itemB.Name} (+{itemB.Price:N0} đ)!";
 
                 rules.Add(new BasketAssociationRule(
                     itemA.MenuItemId,
@@ -489,7 +490,7 @@ public class AiAnalyticsEngine
 
             if (candidate != null)
             {
-                pitch = $"💡 Gợi ý kết hợp: Thêm {candidate.Name} (+{candidate.Price:N0} đ) để nâng tầm vị giác!";
+                pitch = $"Gợi ý kết hợp: Thêm {candidate.Name} (+{candidate.Price:N0} đ) để nâng tầm vị giác!";
             }
         }
         else
@@ -500,7 +501,7 @@ public class AiAnalyticsEngine
 
             if (candidate != null)
             {
-                pitch = $"💡 Gợi ý món kèm: Dùng kèm {candidate.Name} (+{candidate.Price:N0} đ)?";
+                pitch = $"Gợi ý món kèm: Dùng kèm {candidate.Name} (+{candidate.Price:N0} đ)?";
             }
         }
 

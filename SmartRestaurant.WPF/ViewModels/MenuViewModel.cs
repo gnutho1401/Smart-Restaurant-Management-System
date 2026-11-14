@@ -302,18 +302,18 @@ public class MenuViewModel : ViewModelBase
         }
 
         IsGeneratingAiDescription = true;
-        StatusMessage = "🤖 Đang gửi yêu cầu đến LM Studio cục bộ...";
+        StatusMessage = "Đang gửi yêu cầu đến mô hình AI...";
 
         try
         {
             var ingredientNames = RecipeIngredients.Select(r => r.IngredientName).ToList();
             var desc = await _aiService.GenerateDishDescriptionAsync(DishName, ingredientNames);
             DishDescription = desc;
-            StatusMessage = "✅ Đã sinh mô tả AI ẩm thực thành công!";
+            StatusMessage = "Đã sinh mô tả AI ẩm thực thành công!";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ Lỗi kết nối AI: {ex.Message}";
+            StatusMessage = $"Lỗi kết nối AI: {ex.Message}";
         }
         finally
         {

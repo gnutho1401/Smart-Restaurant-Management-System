@@ -32,7 +32,6 @@
                     <DropShadowEffect BlurRadius="10" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.05"/>
                 </Border.Effect>
                 <DockPanel>
-                    <TextBlock Text="🪑" FontSize="32" VerticalAlignment="Center" Margin="0,0,14,0"/>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="Bàn Trống (Sẵn Sàng)" FontSize="13" Foreground="#7F8C8D" FontWeight="SemiBold"/>
                         <TextBlock Text="{Binding AvailableCount}" FontSize="32" FontWeight="Bold" Foreground="#27AE60" Margin="0,2,0,0"/>
@@ -46,7 +45,6 @@
                     <DropShadowEffect BlurRadius="10" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.05"/>
                 </Border.Effect>
                 <DockPanel>
-                    <TextBlock Text="🍽️" FontSize="32" VerticalAlignment="Center" Margin="0,0,14,0"/>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="Đang Dùng Bữa" FontSize="13" Foreground="#7F8C8D" FontWeight="SemiBold"/>
                         <TextBlock Text="{Binding OccupiedCount}" FontSize="32" FontWeight="Bold" Foreground="#E74C3C" Margin="0,2,0,0"/>
@@ -60,7 +58,6 @@
                     <DropShadowEffect BlurRadius="10" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.05"/>
                 </Border.Effect>
                 <DockPanel>
-                    <TextBlock Text="📅" FontSize="32" VerticalAlignment="Center" Margin="0,0,14,0"/>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="Đã Đặt Trước" FontSize="13" Foreground="#7F8C8D" FontWeight="SemiBold"/>
                         <TextBlock Text="{Binding ReservedCount}" FontSize="32" FontWeight="Bold" Foreground="#2980B9" Margin="0,2,0,0"/>
@@ -74,7 +71,6 @@
                     <DropShadowEffect BlurRadius="10" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.05"/>
                 </Border.Effect>
                 <DockPanel>
-                    <TextBlock Text="🧹" FontSize="32" VerticalAlignment="Center" Margin="0,0,14,0"/>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="Đang Chờ Dọn Dẹp" FontSize="13" Foreground="#7F8C8D" FontWeight="SemiBold"/>
                         <TextBlock Text="{Binding CleaningCount}" FontSize="32" FontWeight="Bold" Foreground="#F39C12" Margin="0,2,0,0"/>
@@ -90,7 +86,7 @@
             </Border.Effect>
             <DockPanel LastChildFill="False">
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
-                    <TextBlock Text="📍 Khu vực phòng ăn:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="#2C3E50" FontSize="14"/>
+                    <TextBlock Text="Khu vực phòng ăn:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="#2C3E50" FontSize="14"/>
                     <ComboBox SelectedValue="{Binding SelectedArea, Mode=TwoWay}" SelectedValuePath="Content" 
                               Width="200" Height="38" VerticalContentAlignment="Center" FontSize="13">
                         <ComboBoxItem Content="Tất cả" IsSelected="True"/>
@@ -100,7 +96,7 @@
                     </ComboBox>
                 </StackPanel>
 
-                <Button DockPanel.Dock="Right" Content="🔄 Làm Mới Sơ Đồ" Command="{Binding LoadTablesCommand}" 
+                <Button DockPanel.Dock="Right" Content="Làm Mới Sơ Đồ" Command="{Binding LoadTablesCommand}" 
                         Background="#1A252F" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="38" Padding="18,0" Cursor="Hand" BorderThickness="0">
                     <Button.Resources>
                         <Style TargetType="Border">
@@ -152,21 +148,21 @@
 
                                 <!-- Row 1: Capacity & Area Info -->
                                 <StackPanel Grid.Row="1" Margin="0,8,0,0">
-                                    <TextBlock Text="{Binding Capacity, StringFormat='👥 Sức chứa: {0} Khách'}" FontSize="13" Foreground="#475569" FontWeight="SemiBold"/>
-                                    <TextBlock Text="{Binding Area.AreaName, StringFormat='📍 {0}'}" FontSize="12" Foreground="#64748B" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding Capacity, StringFormat='Sức chứa: {0} Khách'}" FontSize="13" Foreground="#475569" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding Area.AreaName}" FontSize="12" Foreground="#64748B" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
                                 </StackPanel>
 
                                 <!-- Row 2: Status Context Note -->
                                 <Border Grid.Row="2" VerticalAlignment="Center" Margin="0,4">
                                     <!-- Context text when Available -->
-                                    <TextBlock Text="✓ Bàn trống, sẵn sàng nhận khách" FontSize="11" Foreground="#27AE60" FontStyle="Italic"
+                                    <TextBlock Text="Bàn trống, sẵn sàng nhận khách" FontSize="11" Foreground="#27AE60" FontStyle="Italic"
                                                Visibility="{Binding Status, Converter={StaticResource TableStatusToVisibilityConverter}, ConverterParameter=Available}"/>
                                 </Border>
 
                                 <!-- Row 3: State-Aware Action Buttons (Full Width, Zero Clipping) -->
                                 <Grid Grid.Row="3" Margin="0,6,0,0">
-                                    <!-- STATE 1: AVAILABLE (TRỐNG) -> 1 Nút To Rõ "🍽️ Mở Bàn & Gọi Món" -->
-                                    <Button Content="🍽️ Mở Bàn &amp; Gọi Món" 
+                                    <!-- STATE 1: AVAILABLE (TRỐNG) -> 1 Nút To Rõ "Mở Bàn & Gọi Món" -->
+                                    <Button Content="Mở Bàn &amp; Gọi Món" 
                                             Command="{Binding DataContext.OpenTableCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
                                             Visibility="{Binding Status, Converter={StaticResource TableStatusToVisibilityConverter}, ConverterParameter=Available}"
@@ -192,7 +188,7 @@
                                         </Grid.ColumnDefinitions>
 
                                         <!-- Primary Actions -->
-                                        <Button Grid.Row="0" Grid.Column="0" Content="📱 Gọi Món" 
+                                        <Button Grid.Row="0" Grid.Column="0" Content="Gọi Món" 
                                                 Command="{Binding DataContext.OpenTableCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
                                                 Background="#2980B9" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="38" Cursor="Hand" BorderThickness="0">
@@ -202,7 +198,7 @@
                                                 </Style>
                                             </Button.Resources>
                                         </Button>
-                                        <Button Grid.Row="0" Grid.Column="2" Content="💳 Thanh Toán" 
+                                        <Button Grid.Row="0" Grid.Column="2" Content="Thanh Toán" 
                                                 Command="{Binding DataContext.PayTableCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
                                                 Background="#E67E22" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="38" Cursor="Hand" BorderThickness="0">
@@ -214,7 +210,7 @@
                                         </Button>
 
                                         <!-- Secondary Transfer & Merge Actions -->
-                                        <Button Grid.Row="2" Grid.Column="0" Content="🔀 Đổi Bàn" 
+                                        <Button Grid.Row="2" Grid.Column="0" Content="Đổi Bàn" 
                                                 Command="{Binding DataContext.TransferTableCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
                                                 Background="#475569" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="11" Height="26" Cursor="Hand" BorderThickness="0"
@@ -225,7 +221,7 @@
                                                 </Style>
                                             </Button.Resources>
                                         </Button>
-                                        <Button Grid.Row="2" Grid.Column="2" Content="🔗 Gộp Bàn" 
+                                        <Button Grid.Row="2" Grid.Column="2" Content="Gộp Bàn" 
                                                 Command="{Binding DataContext.MergeTableCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
                                                 Background="#64748B" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="11" Height="26" Cursor="Hand" BorderThickness="0"
@@ -238,8 +234,8 @@
                                         </Button>
                                     </Grid>
 
-                                    <!-- STATE 3: CLEANING (CHỜ DỌN) -> 1 Nút To Rõ "✨ Hoàn Tất Dọn Bàn" -->
-                                    <Button Content="✨ Hoàn Tất Dọn Bàn" 
+                                    <!-- STATE 3: CLEANING (CHỜ DỌN) -> 1 Nút To Rõ "Hoàn Tất Dọn Bàn" -->
+                                    <Button Content="Hoàn Tất Dọn Bàn" 
                                             Command="{Binding DataContext.CleanTableDoneCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
                                             Visibility="{Binding Status, Converter={StaticResource TableStatusToVisibilityConverter}, ConverterParameter=Cleaning}"
@@ -258,7 +254,7 @@
                                             <ColumnDefinition Width="8"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <Button Grid.Column="0" Content="👤 Nhận Bàn" 
+                                        <Button Grid.Column="0" Content="Nhận Bàn" 
                                                 Command="{Binding DataContext.OpenTableCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
                                                 Background="#2980B9" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="42" Cursor="Hand" BorderThickness="0">
@@ -295,9 +291,8 @@
                 <DropShadowEffect BlurRadius="18" ShadowDepth="4" Direction="270" Color="#000000" Opacity="0.35"/>
             </Border.Effect>
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="💡" FontSize="16" VerticalAlignment="Center" Margin="0,0,10,0"/>
                 <TextBlock Text="{Binding ToastMessage}" FontSize="13" FontWeight="SemiBold" Foreground="#F8FAFC" VerticalAlignment="Center" Margin="0,0,20,0"/>
-                <Button Content="↩️ Hoàn Tác (5s)" Command="{Binding UndoToastCommand}"
+                <Button Content="Hoàn Tác (5s)" Command="{Binding UndoToastCommand}"
                         Background="#2563EB" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" Height="34" Padding="14,0" Cursor="Hand" BorderThickness="0">
                     <Button.Resources>
                         <Style TargetType="Border">

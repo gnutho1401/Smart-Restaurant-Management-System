@@ -24,14 +24,13 @@
         <Border Grid.Row="0" Margin="0,0,0,20">
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="📊" FontSize="26" VerticalAlignment="Center" Margin="0,0,12,0"/>
                     <StackPanel>
                         <TextBlock Text="TRUNG TÂM BÁO CÁO &amp; PHÂN TÍCH KINH DOANH" FontSize="20" FontWeight="Bold" Foreground="#1E293B"/>
                         <TextBlock Text="Báo cáo doanh thu thời gian thực, ma trận thực đơn BCG và dự báo kho AI" FontSize="12" Foreground="#64748B"/>
                     </StackPanel>
                 </StackPanel>
 
-                <Button DockPanel.Dock="Right" Content="🔄 Làm Mới Dữ Liệu" Command="{Binding RefreshCommand}"
+                <Button DockPanel.Dock="Right" Content="Làm Mới Dữ Liệu" Command="{Binding RefreshCommand}"
                         Background="#2563EB" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="38" Padding="18,0"
                         Style="{StaticResource AnimatedTouchButtonStyle}" Cursor="Hand"/>
             </DockPanel>
@@ -108,7 +107,7 @@
 
                 <DockPanel Grid.Row="0" Margin="0,0,0,16">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="📈 MA TRẬN THỰC ĐƠN BCG (MENU ENGINEERING MATRIX)" FontSize="15" FontWeight="Bold" Foreground="#1E293B"/>
+                        <TextBlock Text="MA TRẬN THỰC ĐƠN BCG (MENU ENGINEERING MATRIX)" FontSize="15" FontWeight="Bold" Foreground="#1E293B"/>
                         <Border Background="#EFF6FF" CornerRadius="6" Padding="8,3" Margin="12,0,0,0">
                             <TextBlock Text="Phân loại theo Doanh số &amp; Biên lợi nhuận" FontSize="11" FontWeight="SemiBold" Foreground="#2563EB"/>
                         </Border>
@@ -198,7 +197,7 @@
                     <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
                 </Border.Effect>
                 <StackPanel>
-                    <TextBlock Text="📦 DỰ BÁO NHẬP KHO 7 NGÀY (AI INVENTORY FORECAST)" FontSize="14" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,8"/>
+                    <TextBlock Text="DỰ BÁO NHẬP KHO 7 NGÀY (AI INVENTORY FORECAST)" FontSize="14" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,8"/>
                     <TextBlock Text="{Binding InventoryForecastSummary}" TextWrapping="Wrap" FontSize="13" Foreground="#475569" LineHeight="20"/>
                 </StackPanel>
             </Border>

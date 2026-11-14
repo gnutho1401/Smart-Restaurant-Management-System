@@ -27,7 +27,7 @@ public class PosMenuItemViewModel : ViewModelBase
     public bool IsLowStock => RemainingPortions > 0 && RemainingPortions <= 5;
     public bool CanOrder => RemainingPortions > 0;
 
-    public string StockBadgeText => IsSoldOut ? "TẠM HẾT HÀNG" : (IsLowStock ? $"🔥 Chỉ còn {RemainingPortions} phần" : string.Empty);
+    public string StockBadgeText => IsSoldOut ? "TẠM HẾT HÀNG" : (IsLowStock ? $"Chỉ còn {RemainingPortions} phần" : string.Empty);
     public string StockBadgeColor => IsSoldOut ? "#EF4444" : "#F59E0B";
     public bool HasStockBadge => !string.IsNullOrEmpty(StockBadgeText);
     public string AddButtonText => IsSoldOut ? "TẠM HẾT HÀNG" : "+ Chọn Món";
@@ -371,7 +371,7 @@ public class PosOrderViewModel : ViewModelBase
             if (candidate != null)
             {
                 SuggestedUpsellItem = candidate;
-                UpsellMessage = $"💡 Gợi ý kết hợp hoàn hảo: Thêm {candidate.Name} (+{candidate.Price:N0} đ)?";
+                UpsellMessage = $"Gợi ý kết hợp hoàn hảo: Thêm {candidate.Name} (+{candidate.Price:N0} đ)?";
                 IsUpsellVisible = true;
                 return;
             }

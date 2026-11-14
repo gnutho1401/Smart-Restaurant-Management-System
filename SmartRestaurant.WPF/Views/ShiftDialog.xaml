@@ -19,7 +19,7 @@
 
             <!-- 1. Header -->
             <StackPanel Grid.Row="0" Margin="0,0,0,16">
-                <TextBlock Text="⏱️ QUẢN LÝ CA THU NGÂN &amp; BÁO CÁO Z-REPORT" FontSize="18" FontWeight="Bold" Foreground="#1E293B"/>
+                <TextBlock Text="QUẢN LÝ CA THU NGÂN &amp; BÁO CÁO Z-REPORT" FontSize="18" FontWeight="Bold" Foreground="#1E293B"/>
                 <TextBlock Text="Kiểm soát bàn giao két tiền mặt, doanh thu thanh toán đa kênh và đối soát doanh số" FontSize="12" Foreground="#64748B" Margin="0,4,0,0"/>
             </StackPanel>
 
@@ -30,7 +30,7 @@
                     <Border Background="#FFFFFF" CornerRadius="10" Padding="18" Margin="0,0,0,16" BorderBrush="#E2E8F0" BorderThickness="1"
                             Visibility="{Binding HasActiveShift, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=Inverse}">
                         <StackPanel>
-                            <TextBlock Text="🟢 BẮT ĐẦU CA LÀM VIỆC MỚI" FontSize="15" FontWeight="Bold" Foreground="#059669" Margin="0,0,0,12"/>
+                            <TextBlock Text="BẮT ĐẦU CA LÀM VIỆC MỚI" FontSize="15" FontWeight="Bold" Foreground="#059669" Margin="0,0,0,12"/>
                             
                             <DockPanel Margin="0,0,0,10">
                                 <TextBlock Text="Thu ngân phụ trách:" FontWeight="SemiBold" FontSize="13" Foreground="#475569" Width="180" VerticalAlignment="Center"/>
@@ -43,7 +43,7 @@
                                          Height="38" FontSize="16" FontWeight="Bold" VerticalContentAlignment="Center" Padding="10,0" Foreground="#2563EB"/>
                             </DockPanel>
 
-                            <Button Content="🟢 Xác Nhận Mở Ca Làm Việc" Command="{Binding StartShiftCommand}"
+                            <Button Content="Xác Nhận Mở Ca Làm Việc" Command="{Binding StartShiftCommand}"
                                     Background="#059669" Foreground="#FFFFFF" FontWeight="Bold" FontSize="14" Height="44" Cursor="Hand" BorderThickness="0">
                                 <Button.Resources>
                                     <Style TargetType="Border">
@@ -61,7 +61,7 @@
                         <StackPanel>
                             <!-- Shift Metadata -->
                             <DockPanel Margin="0,0,0,12">
-                                <TextBlock Text="🏁 CA LÀM VIỆC HIỆN TẠI (ĐANG MỞ)" FontSize="15" FontWeight="Bold" Foreground="#1E293B"/>
+                                <TextBlock Text="CA LÀM VIỆC HIỆN TẠI (ĐANG MỞ)" FontSize="15" FontWeight="Bold" Foreground="#1E293B"/>
                                 <Border Background="#ECFDF5" CornerRadius="6" Padding="8,4" HorizontalAlignment="Right">
                                     <TextBlock Text="Đang Hoạt Động" FontWeight="Bold" FontSize="11" Foreground="#059669"/>
                                 </Border>
@@ -86,15 +86,15 @@
                             <!-- Revenue Summary Breakdown -->
                             <TextBlock Text="DOANH THU THEO PHƯƠNG THỨC:" FontSize="13" FontWeight="Bold" Foreground="#475569" Margin="0,0,0,8"/>
                             <DockPanel Margin="0,3">
-                                <TextBlock Text="💵 Doanh thu Tiền mặt (Cash):" FontSize="13" Foreground="#475569"/>
+                                <TextBlock Text="Doanh thu Tiền mặt (Cash):" FontSize="13" Foreground="#475569"/>
                                 <TextBlock Text="{Binding CashSalesText}" FontWeight="SemiBold" FontSize="13" Foreground="#1E293B" HorizontalAlignment="Right"/>
                             </DockPanel>
                             <DockPanel Margin="0,3">
-                                <TextBlock Text="💳 Doanh thu Thẻ (Card):" FontSize="13" Foreground="#475569"/>
+                                <TextBlock Text="Doanh thu Thẻ (Card):" FontSize="13" Foreground="#475569"/>
                                 <TextBlock Text="{Binding CardSalesText}" FontWeight="SemiBold" FontSize="13" Foreground="#1E293B" HorizontalAlignment="Right"/>
                             </DockPanel>
                             <DockPanel Margin="0,3">
-                                <TextBlock Text="📲 Doanh thu QR Chuyển khoản:" FontSize="13" Foreground="#475569"/>
+                                <TextBlock Text="Doanh thu QR Chuyển khoản:" FontSize="13" Foreground="#475569"/>
                                 <TextBlock Text="{Binding QrSalesText}" FontWeight="SemiBold" FontSize="13" Foreground="#1E293B" HorizontalAlignment="Right"/>
                             </DockPanel>
 
@@ -131,7 +131,7 @@
                                     <ColumnDefinition Width="12"/>
                                     <ColumnDefinition Width="1.4*"/>
                                 </Grid.ColumnDefinitions>
-                                <Button Grid.Column="0" Content="🖨️ In Z-Report" Click="PrintZReport_Click"
+                                <Button Grid.Column="0" Content="In Z-Report" Click="PrintZReport_Click"
                                         Background="#334155" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="44" Cursor="Hand" BorderThickness="0">
                                     <Button.Resources>
                                         <Style TargetType="Border">
@@ -139,7 +139,7 @@
                                         </Style>
                                     </Button.Resources>
                                 </Button>
-                                <Button Grid.Column="2" Content="🏁 Chốt Ca &amp; Xuất Báo Cáo" Command="{Binding CloseShiftCommand}"
+                                <Button Grid.Column="2" Content="Chốt Ca &amp; Xuất Báo Cáo" Command="{Binding CloseShiftCommand}"
                                         Background="#DC2626" Foreground="#FFFFFF" FontWeight="Bold" FontSize="14" Height="44" Cursor="Hand" BorderThickness="0">
                                     <Button.Resources>
                                         <Style TargetType="Border">

@@ -72,10 +72,10 @@ public class MainViewModel : ViewModelBase
 
     public string RoleBadgeText => _authService.CurrentUser?.Role switch
     {
-        UserRole.Admin => "👑 ADMIN",
-        UserRole.StoreManager => "👔 QUẢN LÝ",
-        UserRole.Cashier => "💵 THU NGÂN",
-        UserRole.HeadChef => "👨‍🍳 BẾP TRƯỞNG",
+        UserRole.Admin => "ADMIN",
+        UserRole.StoreManager => "QUẢN LÝ",
+        UserRole.Cashier => "THU NGÂN",
+        UserRole.HeadChef => "BẾP TRƯỞNG",
         _ => "NHÂN VIÊN"
     };
 

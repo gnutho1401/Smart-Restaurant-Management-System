@@ -62,9 +62,6 @@ public class LmStudioService : IAiService
         LoadConfigurationFromEnvironmentOrFile();
     }
 
-    public string LastUsedProvider { get; private set; } = "LM Studio (Cục bộ)";
-    public string GetLastUsedProvider() => LastUsedProvider;
-
     public void UpdateGeminiConfig(string apiKey, string? model = null)
     {
         _geminiApiKey = apiKey?.Trim();
@@ -243,7 +240,7 @@ public class LmStudioService : IAiService
                         Endpoint = endpoint,
                         ModelName = modelId,
                         LatencyMs = sw.ElapsedMilliseconds,
-                        Message = $"Kết nối thành công tới LM Studio ({endpoint})! Mô hình: '{modelId}', độ trễ: {sw.ElapsedMilliseconds}ms."
+                        Message = $"Kết nối thành công tới LM Studio ({endpoint}). Mô hình: '{modelId}', độ trễ: {sw.ElapsedMilliseconds}ms."
                     };
                 }
             }
@@ -277,7 +274,7 @@ public class LmStudioService : IAiService
                         Endpoint = "Google AI Studio API",
                         ModelName = _geminiModel,
                         LatencyMs = sw.ElapsedMilliseconds,
-                        Message = $"LM Studio chưa mở. Đang kết nối Google Gemini Cloud Backup! Mô hình: '{_geminiModel}', độ trễ: {sw.ElapsedMilliseconds}ms."
+                        Message = $"Đang kết nối Google Gemini Cloud Backup. Mô hình: '{_geminiModel}', độ trễ: {sw.ElapsedMilliseconds}ms."
                     };
                 }
             }
@@ -318,16 +315,10 @@ public class LmStudioService : IAiService
             .ToListAsync();
 
         string instruction =
-            "Bạn là Chuyên gia Tư vấn Ẩm thực (Head Sommelier & Gastronomy Consultant) của nhà hàng cao cấp SmartRestaurant.\n" +
-            "QUY TẮC TRÌNH BÀY SANG TRỌNG & CHUYÊN NGHIỆP:\n" +
-            "1. Phân nhóm thực đơn mạch lạc theo các tiêu đề: '### 🍽️ <Tên Nhóm Món>'.\n" +
-            "2. Với mỗi món ăn, trình bày rõ ràng:\n" +
-            "   • **<Tên Món>** — `<Giá> VND`\n" +
-            "     *Hương vị:* Mô tả cô đọng 1 câu lôi cuốn về sự kết hợp hương vị và độ tươi ngon.\n" +
-            "     💡 *Gợi ý dùng kèm:* Đề xuất 1 món hoặc đồ uống phối hợp hoàn hảo.\n" +
-            "3. Khi khách hỏi về nguyên liệu hoặc dị ứng (chay, hải sản, thịt bò, đậu phộng...): Đặt thẻ '[🚨 CẢNH BÁO DỊ ỨNG]' hoặc '[✅ AN TOÀN TUYỆT ĐỐI]' nổi bật.\n" +
-            "4. Tuyệt đối báo đúng tên món và giá niêm yết theo dữ liệu CSDL.\n" +
-            "5. Tránh văn phong liệt kê khô khan, sử dụng ngôn từ hiếu khách, tinh tế của nhà hàng cao cấp.";
+            "1. Tư vấn món ăn phù hợp với yêu cầu, sở thích hoặc chế độ ăn của khách hàng.\n" +
+            "2. Luôn báo đúng tên món và giá niêm yết theo dữ liệu CSDL.\n" +
+            "3. Khi khách hỏi về nguyên liệu hoặc dị ứng (chay, hải sản, bò, đậu phộng...), hãy đối chiếu trường 'Ingredients' để cảnh báo hoặc xác nhận an toàn tuyệt đối.\n" +
+            "4. Nếu khách hỏi món ngoài danh sách, thông báo lịch sự nhà hàng chưa có và đề xuất món thay thế tương tự.";
 
         string systemPrompt = ContextGroundingHelper.BuildGroundedSystemPrompt(liveMenu, instruction);
 
@@ -426,10 +417,9 @@ public class LmStudioService : IAiService
 
         string instruction =
             "Bạn là Giám đốc Vận hành Ẩm thực (F&B Director). Hãy phân tích báo cáo ma trận BCG Menu Engineering:\n" +
-            "1. Phân loại và đánh giá từng nhóm theo thẻ: '[⭐ Stars]', '[🐄 Plowhorses]', '[❓ Puzzles]', '[🐕 Dogs]'.\n" +
-            "2. Đưa ra chiến lược tài chính cụ thể cho từng nhóm: điều chỉnh giá, định lượng nguyên liệu (BOM), hay kỹ năng upselling của nhân viên.\n" +
-            "3. Đề xuất 3 hành động trọng tâm trong tuần để tối ưu hóa biên lợi nhuận đóng góp (Contribution Margin).\n" +
-            "Trình bày chuyên nghiệp theo tiêu đề markdown '###', súc tích và có tính thực thi cao.";
+            "1. Phân loại và đánh giá từng nhóm: Stars (Ngôi sao), Plowhorses (Bò sữa), Puzzles (Thử thách), Dogs (Chó mực).\n" +
+            "2. Đưa ra chiến lược cụ thể cho từng nhóm: điều chỉnh giá, định lượng nguyên liệu (BOM), hay kỹ năng upselling của nhân viên.\n" +
+            "3. Trình bày rõ ràng theo tiêu đề markdown, súc tích và có tính hành động cao.";
 
         string systemPrompt = ContextGroundingHelper.BuildGroundedSystemPrompt(matrixSnapshot, instruction);
 
@@ -478,53 +468,19 @@ public class LmStudioService : IAiService
     public async Task<string> PredictWeeklyReorderAsync()
     {
         var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
+        var recentOrderItems = await _context.OrderItems
+            .Where(oi => oi.Order != null && oi.Order.CreatedAt >= sevenDaysAgo && oi.Order.Status == "Completed")
+            .Include(oi => oi.MenuItem)
+                .ThenInclude(m => m!.Recipes)
+            .ToListAsync();
+
         var usageDict = new Dictionary<int, decimal>();
-
-        try
+        foreach (var oi in recentOrderItems)
         {
-            var recentOrderItems = await _context.OrderItems
-                .Where(oi => oi.Order != null && oi.Order.CreatedAt >= sevenDaysAgo && oi.Order.Status == "Completed")
-                .Include(oi => oi.MenuItem)
-                    .ThenInclude(m => m!.Recipes)
-                .ToListAsync();
-
-            foreach (var oi in recentOrderItems)
+            if (oi.MenuItem?.Recipes == null) continue;
+            foreach (var recipe in oi.MenuItem.Recipes)
             {
-                if (oi.MenuItem?.Recipes == null) continue;
-                foreach (var recipe in oi.MenuItem.Recipes)
-                {
-                    usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + (recipe.QuantityRequired * oi.Quantity);
-                }
-            }
-        }
-        catch
-        {
-            try
-            {
-                // Resilient projection fallback: Avoid selecting newly introduced OrderItems columns
-                var rawItems = await _context.Orders
-                    .Where(o => o.CreatedAt >= sevenDaysAgo && o.Status == "Completed")
-                    .SelectMany(o => o.OrderItems.Select(oi => new { oi.MenuItemId, oi.Quantity }))
-                    .ToListAsync();
-
-                var menuItemsWithRecipes = await _context.MenuItems
-                    .Include(m => m.Recipes)
-                    .ToDictionaryAsync(m => m.MenuItemId);
-
-                foreach (var oi in rawItems)
-                {
-                    if (menuItemsWithRecipes.TryGetValue(oi.MenuItemId, out var mi) && mi.Recipes != null)
-                    {
-                        foreach (var recipe in mi.Recipes)
-                        {
-                            usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + (recipe.QuantityRequired * oi.Quantity);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[PredictWeeklyReorderAsync] Fallback query notice: {ex.Message}");
+                usageDict[recipe.IngredientId] = usageDict.GetValueOrDefault(recipe.IngredientId) + (recipe.QuantityRequired * oi.Quantity);
             }
         }
 
@@ -546,15 +502,12 @@ public class LmStudioService : IAiService
         }).ToList();
 
         string instruction =
-            "Bạn là Giám đốc Quản lý Chuỗi Cung ứng (Supply Chain Director) của nhà hàng SmartRestaurant.\n" +
-            "QUY TẮC BÁO CÁO HẬU CẦN CHUẨN MỰC:\n" +
-            "1. Lập BẢNG TỔNG HỢP MARKDOWN cho các nguyên liệu cần lưu ý theo định dạng:\n" +
-            "| Nguyên Liệu | Tồn Kho Hiện Tại | Mức Tối Thiểu | Tiêu Thụ 7 Ngày | Đề Xuất Nhập | Trạng Thái |\n" +
-            "|---|---|---|---|---|---|\n" +
-            "Ở cột Trạng thái, hãy dùng thẻ: '[🚨 Khẩn cấp]', '[⚠️ Lưu ý]', hoặc '[✅ Đủ dùng]'.\n" +
-            "2. Đưa ra 2-3 gạch đầu dòng đánh giá xu hướng tiêu thụ nguyên liệu tươi sống (thịt bò Wagyu, tôm hùm, cá hồi).\n" +
-            "3. Đề xuất quy trình bảo quản tối ưu và kế hoạch đặt hàng với nhà cung cấp.\n" +
-            "4. Đi thẳng vào số liệu phân tích, không viết lời chào mở đầu dài dòng.";
+            "Bạn là Chuyên gia Quản lý Kho Vận và Cung ứng (Supply Chain Manager) của nhà hàng.\n" +
+            "Dựa trên dữ liệu tồn kho thực tế, ngưỡng an toàn và tốc độ tiêu thụ 7 ngày qua:\n" +
+            "1. Lập danh sách ưu tiên các nguyên liệu cần đặt hàng gấp trong 24-48 giờ tới.\n" +
+            "2. Đề xuất số lượng đặt hàng ước tính cho từng nguyên vật liệu để tránh đứt gãy phục vụ.\n" +
+            "3. Đưa ra lưu ý bảo quản nguyên liệu tươi sống (rau củ, thịt, gia vị).\n" +
+            "Trình bày chuyên nghiệp, gạch đầu dòng rõ ràng theo từng nhóm nguyên liệu.";
 
         string systemPrompt = ContextGroundingHelper.BuildGroundedSystemPrompt(stockSnapshot, instruction);
 
@@ -636,11 +589,8 @@ public class LmStudioService : IAiService
                 string? geminiResult = await TryCallGeminiBackupAsync(systemPrompt, userPrompt);
                 if (!string.IsNullOrEmpty(geminiResult))
                 {
-                    LastUsedProvider = $"Google Gemini Backup ({_geminiModel})";
                     return geminiResult;
                 }
-
-                LastUsedProvider = "Grounding CSDL Cục Bộ";
 
                 // Priority 3: Offline deterministic Grounding fallback
                 var offlineRec = GenerateOfflineFallbackRecommendation(userPrompt);
@@ -648,20 +598,20 @@ public class LmStudioService : IAiService
                 if (lastEx is TaskCanceledException)
                 {
                     string fallbackSection = !string.IsNullOrEmpty(offlineRec)
-                        ? $"\n\n📋 **PHÂN TÍCH DỰ PHÒNG NỘI BỘ (GROUNDING):**\n{offlineRec}"
+                        ? $"\n\n**PHÂN TÍCH DỰ PHÒNG NỘI BỘ (GROUNDING):**\n{offlineRec}"
                         : string.Empty;
 
-                    return $"⚠️ [Hết thời gian chờ] LM Studio phản hồi quá lâu (> 90 giây). Vui lòng kiểm tra tải GPU/CPU của máy tính hoặc khởi chạy lại file 'start_ai.bat'.{fallbackSection}";
+                    return $"[Hết thời gian chờ] LM Studio phản hồi quá lâu (> 90 giây). Vui lòng kiểm tra tải GPU/CPU của máy tính hoặc khởi chạy lại file 'start_ai.bat'.{fallbackSection}";
                 }
 
                 if (!string.IsNullOrEmpty(offlineRec))
                 {
-                    return "⚠️ [Chế độ Ngoại tuyến] Máy chủ LM Studio chưa được khởi động trên cổng 1235 hoặc 1234.\n" +
+                    return "[Chế độ Ngoại tuyến] Máy chủ LM Studio chưa được khởi động trên cổng 1235 hoặc 1234.\n" +
                            "Hệ thống đã tự động kích hoạt bộ lọc Grounding CSDL Cục bộ để hỗ trợ bạn:\n\n" +
                            offlineRec;
                 }
 
-                return "⚠️ [Chế độ Ngoại tuyến] Máy chủ LM Studio chưa được khởi động trên cổng 1235 hoặc 1234. " +
+                return "[Chế độ Ngoại tuyến] Máy chủ LM Studio chưa được khởi động trên cổng 1235 hoặc 1234. " +
                        "Vui lòng mở file 'start_ai.bat' trong thư mục dự án để kích hoạt mô hình Local AI.";
             }
 
@@ -674,7 +624,6 @@ public class LmStudioService : IAiService
                 var message = choices[0].GetProperty("message");
                 if (message.TryGetProperty("content", out var textContent))
                 {
-                    LastUsedProvider = $"LM Studio ({_targetModel})";
                     return textContent.GetString() ?? "Không nhận được phản hồi từ mô hình AI.";
                 }
             }
@@ -683,7 +632,7 @@ public class LmStudioService : IAiService
         }
         catch (Exception ex)
         {
-            return $"⚠️ [Lỗi AI]: {ex.Message}";
+            return $"[Lỗi AI]: {ex.Message}";
         }
     }
 
@@ -741,7 +690,6 @@ public class LmStudioService : IAiService
                             string reply = textElem.GetString() ?? string.Empty;
                             if (!string.IsNullOrWhiteSpace(reply))
                             {
-                                LastUsedProvider = $"Google Gemini Backup ({_geminiModel})";
                                 return reply.Trim();
                             }
                         }
@@ -762,7 +710,7 @@ public class LmStudioService : IAiService
         var lower = userPrompt.ToLower();
         if (lower.Contains("dị ứng") || lower.Contains("di ung") || lower.Contains("hải sản") || lower.Contains("hai san"))
         {
-            return "📌 CẢNH BÁO AN TOÀN DỊ ỨNG THỰC PHẨM:\n" +
+            return "CẢNH BÁO AN TOÀN DỊ ỨNG THỰC PHẨM:\n" +
                    "• Các món có chứa HẢI SẢN (TUYỆT ĐỐI TRÁNH):\n" +
                    "  - Tôm Hùm Nướng Phô Mai Đút Lò (680,000 VND - Chứa Tôm Hùm Alaska, Phô Mai)\n" +
                    "  - Cá Hồi Na Uy Áp Chảo Dầu Ô-liu (320,000 VND - Chứa Cá Hồi Na Uy, Dầu Ô-liu)\n\n" +
@@ -775,14 +723,14 @@ public class LmStudioService : IAiService
 
         if (lower.Contains("món chính") || lower.Contains("bò") || lower.Contains("wagyu"))
         {
-            return "🥩 GỢI Ý MÓN CHÍNH NỔI BẬT:\n" +
+            return "GỢI Ý MÓN CHÍNH NỔI BẬT:\n" +
                    "• Bò Wagyu Áp Chảo Sốt Tiêu Đen (450,000 VND): Bò Wagyu A5 thượng hạng kèm khoai tây vàng Đà Lạt sốt tiêu đen đậm đà.\n" +
                    "• Thức uống khuyên dùng kèm: Rượu Vang Đỏ Cabernet Sauvignon (250,000 VND).";
         }
 
         if (lower.Contains("bcg") || lower.Contains("ma trận") || lower.Contains("thực đơn") || lower.Contains("tối ưu lợi nhuận"))
         {
-            return "📈 **ĐÁNH GIÁ CHIẾN LƯỢC MA TRẬN BCG MENU:**\n" +
+            return "**ĐÁNH GIÁ CHIẾN LƯỢC MA TRẬN BCG MENU:**\n" +
                    "• **Stars (Bò Wagyu A5, Trà Ô Long):** Động lực tăng trưởng chủ lực. Giữ vững nguồn cung cấp nguyên liệu tươi mới và duy trì tiêu chuẩn chế biến khắt khe.\n" +
                    "• **Plowhorses (Súp Kem Nấm Truffle):** Lượng tiêu thụ cao, độ nhận diện tốt. Đề xuất chuẩn hóa định lượng nguyên liệu để nâng biên lợi nhuận lên thêm 4-6%.\n" +
                    "• **Puzzles (Tôm Hùm Nướng Phô Mai, Cá Hồi Na Uy):** Giá trị đơn cao nhưng tần suất gọi chưa tương xứng. Nhân viên phục vụ cần ưu tiên tư vấn mở đầu (suggestive selling).\n" +
@@ -791,7 +739,7 @@ public class LmStudioService : IAiService
 
         if (lower.Contains("cao điểm") || lower.Contains("lưu lượng") || lower.Contains("khung giờ") || lower.Contains("nhân sự"))
         {
-            return "⏰ **PHƯƠNG ÁN ĐIỀU PHỐI VẬN HÀNH CAO ĐIỂM:**\n" +
+            return "**PHƯƠNG ÁN ĐIỀU PHỐI VẬN HÀNH CAO ĐIỂM:**\n" +
                    "• **Khung giờ trưa (11:30 - 13:30):** Bố trí 2 nhân viên order trực tiếp, 1 thu ngân POS. Bếp chuẩn bị sẵn phần sơ chế để ra món dưới 10 phút.\n" +
                    "• **Khung giờ tối (18:00 - 20:30):** Giờ cao điểm đông nhất. Huy động tối đa 4 nhân viên phục vụ, ưu tiên phục vụ các bàn phòng VIP và đặt trước.\n" +
                    "• **Giờ thấp điểm (14:00 - 17:00):** Tận dụng kiểm kê tồn kho và nạp bổ sung nguyên liệu sơ chế cho line bếp.";
@@ -799,14 +747,14 @@ public class LmStudioService : IAiService
 
         if (lower.Contains("nhập kho") || lower.Contains("dự báo") || lower.Contains("tồn kho") || lower.Contains("kho"))
         {
-            return "📦 **KẾ HOẠCH BỔ SUNG NGUYÊN VẬT LIỆU KHO:**\n" +
+            return "**KẾ HOẠCH BỔ SUNG NGUYÊN VẬT LIỆU KHO:**\n" +
                    "• Theo dõi chặt chẽ lượng tiêu thụ Thịt Bò Wagyu A5 và Nấm Truffle do tần suất gọi món cao.\n" +
                    "• Các nguyên liệu rau củ và phụ liệu cần duy trì lịch nhập tươi định kỳ 2 ngày/lần để tránh hao hụt.";
         }
 
         if (lower.Contains("doanh thu") || lower.Contains("tài chính") || lower.Contains("xu hướng"))
         {
-            return "💰 **BÁO CÁO PHÂN TÍCH TÀI CHÍNH & XU HƯỚNG:**\n" +
+            return "**BÁO CÁO PHÂN TÍCH TÀI CHÍNH & XU HƯỚNG:**\n" +
                    "• Món chính chiếm tỷ trọng doanh thu cao nhất toàn hệ thống.\n" +
                    "• Đồ uống kèm đóng góp tỷ suất lợi nhuận biên cao nhất, cần khuyến khích nhân viên giới thiệu kèm mỗi đơn gọi món.";
         }
