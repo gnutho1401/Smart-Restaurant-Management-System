@@ -15,18 +15,34 @@ namespace SmartRestaurant.Services;
 /// </summary>
 public class KdsService : IKdsService
 {
-    private readonly RestaurantDbContext _context;
+    private readonly RestaurantDbContext? _context;
+    private readonly IDbContextFactory<RestaurantDbContext>? _contextFactory;
 
     public KdsService(RestaurantDbContext context)
     {
         _context = context;
     }
 
+    public KdsService(IDbContextFactory<RestaurantDbContext> contextFactory)
+    {
+        _contextFactory = contextFactory;
+    }
+
     public async Task<IEnumerable<OrderItem>> GetActiveKitchenTicketsAsync()
+    {
+        if (_contextFactory != null)
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            return await QueryTicketsInternalAsync(context);
+        }
+        return await QueryTicketsInternalAsync(_context!);
+    }
+
+    private static async Task<IEnumerable<OrderItem>> QueryTicketsInternalAsync(RestaurantDbContext context)
     {
         try
         {
-            return await _context.OrderItems
+            return await context.OrderItems
                 .AsNoTracking()
                 .Include(oi => oi.MenuItem)
                 .Include(oi => oi.Order)
@@ -37,10 +53,10 @@ public class KdsService : IKdsService
         }
         catch (Exception ex) when (ex.Message.Contains("Invalid column name") || ex.Message.Contains("CustomerId") || ex.Message.Contains("IsCancelled"))
         {
-            await DbInitializer.EnsureSchemaUpgradesAsync(_context);
+            await DbInitializer.EnsureSchemaUpgradesAsync(context);
             try
             {
-                return await _context.OrderItems
+                return await context.OrderItems
                     .AsNoTracking()
                     .Include(oi => oi.MenuItem)
                     .Include(oi => oi.Order)
@@ -59,14 +75,24 @@ public class KdsService : IKdsService
 
     public async Task<bool> UpdateTicketStatusAsync(int orderItemId, CookingStatus nextStatus)
     {
-        var item = await _context.OrderItems.FirstOrDefaultAsync(oi => oi.OrderItemId == orderItemId);
+        if (_contextFactory != null)
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            return await UpdateTicketStatusInternalAsync(context, orderItemId, nextStatus);
+        }
+        return await UpdateTicketStatusInternalAsync(_context!, orderItemId, nextStatus);
+    }
+
+    private static async Task<bool> UpdateTicketStatusInternalAsync(RestaurantDbContext context, int orderItemId, CookingStatus nextStatus)
+    {
+        var item = await context.OrderItems.FirstOrDefaultAsync(oi => oi.OrderItemId == orderItemId);
         if (item == null)
         {
             throw new KeyNotFoundException($"Kitchen ticket item ID {orderItemId} not found.");
         }
 
         item.CookingStatus = nextStatus;
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return true;
     }
 }

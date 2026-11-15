@@ -58,6 +58,10 @@ public class AsyncRelayCommand : IAsyncRelayCommand
                 IsExecuting = true;
                 await _execute();
             }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AsyncRelayCommand] Handled execution fault: {ex.Message}");
+            }
             finally
             {
                 IsExecuting = false;
@@ -67,7 +71,14 @@ public class AsyncRelayCommand : IAsyncRelayCommand
 
     public async void Execute(object? parameter)
     {
-        await ExecuteAsync(parameter);
+        try
+        {
+            await ExecuteAsync(parameter);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AsyncRelayCommand.Execute] Top-level fault caught: {ex.Message}");
+        }
     }
 }
 
@@ -115,6 +126,10 @@ public class AsyncRelayCommand<T> : IAsyncRelayCommand<T>
                 IsExecuting = true;
                 await _execute(parameter);
             }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AsyncRelayCommand<{typeof(T).Name}>] Handled execution fault: {ex.Message}");
+            }
             finally
             {
                 IsExecuting = false;
@@ -124,6 +139,13 @@ public class AsyncRelayCommand<T> : IAsyncRelayCommand<T>
 
     public async void Execute(object? parameter)
     {
-        await ExecuteAsync(parameter is T t ? t : default);
+        try
+        {
+            await ExecuteAsync(parameter is T t ? t : default);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AsyncRelayCommand<{typeof(T).Name}>.Execute] Top-level fault caught: {ex.Message}");
+        }
     }
 }

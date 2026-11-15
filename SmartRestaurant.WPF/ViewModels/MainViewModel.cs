@@ -211,6 +211,7 @@ public class MainViewModel : ViewModelBase
             LockScreenPin = string.Empty;
             LockErrorMessage = string.Empty;
             IsScreenLocked = true;
+            KitchenKdsVm.PausePolling();
         });
 
         UnlockScreenCommand = new RelayCommand(ExecuteUnlockScreen);
@@ -250,7 +251,7 @@ public class MainViewModel : ViewModelBase
     {
         if (string.IsNullOrWhiteSpace(LockScreenPin))
         {
-            LockErrorMessage = "Vui lòng nhập mật khẩu hoặc mã PIN.";
+            LockErrorMessage = "Vui lòng nhập mật khẩu hoặc mã PIN (Mặc định: 1234).";
             return;
         }
 
@@ -270,13 +271,16 @@ public class MainViewModel : ViewModelBase
             IsScreenLocked = false;
             LockScreenPin = string.Empty;
             LockErrorMessage = string.Empty;
+            if (CurrentView == KitchenKdsVm)
+            {
+                KitchenKdsVm.ResumePolling();
+            }
         }
         else
         {
-            LockErrorMessage = "Mật khẩu hoặc mã PIN không chính xác. Vui lòng thử lại!";
+            LockErrorMessage = "Mật khẩu hoặc mã PIN không chính xác. Thử lại (Mặc định: 1234).";
             LockScreenPin = string.Empty;
         }
-        KitchenKdsVm.PausePolling();
     }
 
     public void ApplyInitialRoleView()

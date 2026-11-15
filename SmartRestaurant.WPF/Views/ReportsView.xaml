@@ -30,9 +30,15 @@
                     </StackPanel>
                 </StackPanel>
 
-                <Button DockPanel.Dock="Right" Content="Làm Mới Dữ Liệu" Command="{Binding RefreshCommand}"
-                        Background="#2563EB" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="38" Padding="18,0"
-                        Style="{StaticResource AnimatedTouchButtonStyle}" Cursor="Hand"/>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="Kích Hoạt Phân Tích AI" Command="{Binding RunAllAiAnalyticsCommand}"
+                            Background="#8E44AD" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="38" Padding="18,0" Margin="0,0,10,0"
+                            Style="{StaticResource AnimatedTouchButtonStyle}" Cursor="Hand"
+                            ToolTip="Chạy phân tích AI toàn diện: Ma trận BCG, Giờ cao điểm và Dự báo kho"/>
+                    <Button Content="Làm Mới Dữ Liệu" Command="{Binding RefreshCommand}"
+                            Background="#2563EB" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Height="38" Padding="18,0"
+                            Style="{StaticResource AnimatedTouchButtonStyle}" Cursor="Hand"/>
+                </StackPanel>
             </DockPanel>
         </Border>
 
@@ -106,12 +112,21 @@
                 </Grid.RowDefinitions>
 
                 <DockPanel Grid.Row="0" Margin="0,0,0,16">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" DockPanel.Dock="Left">
                         <TextBlock Text="MA TRẬN THỰC ĐƠN BCG (MENU ENGINEERING MATRIX)" FontSize="15" FontWeight="Bold" Foreground="#1E293B"/>
                         <Border Background="#EFF6FF" CornerRadius="6" Padding="8,3" Margin="12,0,0,0">
                             <TextBlock Text="Phân loại theo Doanh số &amp; Biên lợi nhuận" FontSize="11" FontWeight="SemiBold" Foreground="#2563EB"/>
                         </Border>
                     </StackPanel>
+                    <Button DockPanel.Dock="Right" Content="Phân Tích Ma Trận BCG" Command="{Binding RunBcgCommand}"
+                            Background="#3498DB" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="12" Height="32" Padding="14,0"
+                            Cursor="Hand" BorderThickness="0">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
                 </DockPanel>
 
                 <!-- DataGrid BCG Matrix -->
@@ -186,7 +201,18 @@
                     <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
                 </Border.Effect>
                 <StackPanel>
-                    <TextBlock Text="⏰ PHÂN TÍCH GIỜ CAO ĐIỂM (PEAK HOURS)" FontSize="14" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,8"/>
+                    <DockPanel Margin="0,0,0,12">
+                        <TextBlock Text="PHÂN TÍCH GIỜ CAO ĐIỂM (PEAK HOURS)" FontSize="14" FontWeight="Bold" Foreground="#1E293B" VerticalAlignment="Center"/>
+                        <Button DockPanel.Dock="Right" Content="Phân Tích AI" Command="{Binding RunPeakHoursCommand}"
+                                Background="#E67E22" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="11" Height="28" Padding="12,0"
+                                Cursor="Hand" BorderThickness="0">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="6"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                    </DockPanel>
                     <TextBlock Text="{Binding PeakHoursSummary}" TextWrapping="Wrap" FontSize="13" Foreground="#475569" LineHeight="20"/>
                 </StackPanel>
             </Border>
@@ -197,7 +223,18 @@
                     <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
                 </Border.Effect>
                 <StackPanel>
-                    <TextBlock Text="DỰ BÁO NHẬP KHO 7 NGÀY (AI INVENTORY FORECAST)" FontSize="14" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,8"/>
+                    <DockPanel Margin="0,0,0,12">
+                        <TextBlock Text="DỰ BÁO NHẬP KHO 7 NGÀY (AI INVENTORY FORECAST)" FontSize="14" FontWeight="Bold" Foreground="#1E293B" VerticalAlignment="Center"/>
+                        <Button DockPanel.Dock="Right" Content="Dự Báo AI" Command="{Binding RunInventoryForecastCommand}"
+                                Background="#27AE60" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="11" Height="28" Padding="12,0"
+                                Cursor="Hand" BorderThickness="0">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="6"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                    </DockPanel>
                     <TextBlock Text="{Binding InventoryForecastSummary}" TextWrapping="Wrap" FontSize="13" Foreground="#475569" LineHeight="20"/>
                 </StackPanel>
             </Border>

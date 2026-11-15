@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using SmartRestaurant.Core.Entities;
 using SmartRestaurant.Core.Enums;
 using SmartRestaurant.Core.Interfaces;
 using SmartRestaurant.WPF.Common;
@@ -91,8 +92,19 @@ public class KitchenKdsViewModel : ViewModelBase, IDisposable
 
     public async Task LoadTicketsAsync()
     {
-        var rawTickets = await _kdsService.GetActiveKitchenTicketsAsync();
+        try
+        {
+            var rawTickets = (await _kdsService.GetActiveKitchenTicketsAsync()).ToList();
+            SyncTickets(rawTickets);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[KitchenKdsViewModel] LoadTicketsAsync error: {ex.Message}");
+        }
+    }
 
+    private void SyncTickets(List<OrderItem> rawTickets)
+    {
         var currentPendingIds = rawTickets
             .Where(t => t.CookingStatus == CookingStatus.Pending)
             .Select(t => t.OrderItemId)
@@ -251,16 +263,27 @@ public class KitchenKdsViewModel : ViewModelBase, IDisposable
                 {
                     if (!_isPollingActive) continue;
 
-                    if (Application.Current != null)
+                    try
                     {
-                        await Application.Current.Dispatcher.InvokeAsync(async () =>
+                        // 1. Fetch tickets completely on background worker thread (zero UI freeze)
+                        var rawTickets = (await _kdsService.GetActiveKitchenTicketsAsync()).ToList();
+
+                        // 2. Dispatch UI collection update and timer refresh to UI thread
+                        if (Application.Current != null)
                         {
-                            await LoadTicketsAsync();
-                            foreach (var ticket in Tickets)
+                            await Application.Current.Dispatcher.InvokeAsync(() =>
                             {
-                                ticket.RefreshTimer();
-                            }
-                        });
+                                SyncTickets(rawTickets);
+                                foreach (var ticket in Tickets)
+                                {
+                                    ticket.RefreshTimer();
+                                }
+                            });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[KdsPollingEngine] Polling warning: {ex.Message}");
                     }
                 }
             }

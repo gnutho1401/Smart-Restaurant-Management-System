@@ -14,6 +14,7 @@ namespace SmartRestaurant.WPF.ViewModels;
 
 /// <summary>
 /// ViewModel driving the Executive Business Intelligence & AI Analytics Dashboard.
+/// Implements on-demand AI execution so the admin page loads instantly without automatic AI delay.
 /// </summary>
 public class ReportsViewModel : ViewModelBase
 {
@@ -27,9 +28,10 @@ public class ReportsViewModel : ViewModelBase
     private decimal _averageOrderValue;
     private int _activeTablesCount;
     private int _lowStockCount;
-    private string _peakHoursSummary = "Đang tải dữ liệu...";
-    private string _inventoryForecastSummary = "Đang phân tích...";
+    private string _peakHoursSummary = "Chưa kích hoạt. Quản lý vui lòng nhấn 'Phân Tích AI' để tổng hợp khung giờ cao điểm và khuyến nghị điều phối.";
+    private string _inventoryForecastSummary = "Chưa kích hoạt. Quản lý vui lòng nhấn 'Dự Báo AI' để kích hoạt mô hình GenAI dự báo chuỗi cung ứng.";
     private bool _isLoading;
+    private bool _isAiRunning;
 
     private ObservableCollection<BcgItem> _bcgItems = new();
 
@@ -81,6 +83,12 @@ public class ReportsViewModel : ViewModelBase
         set => SetProperty(ref _isLoading, value);
     }
 
+    public bool IsAiRunning
+    {
+        get => _isAiRunning;
+        set => SetProperty(ref _isAiRunning, value);
+    }
+
     public ObservableCollection<BcgItem> BcgItems
     {
         get => _bcgItems;
@@ -88,6 +96,10 @@ public class ReportsViewModel : ViewModelBase
     }
 
     public IAsyncRelayCommand RefreshCommand { get; }
+    public IAsyncRelayCommand RunBcgCommand { get; }
+    public IAsyncRelayCommand RunPeakHoursCommand { get; }
+    public IAsyncRelayCommand RunInventoryForecastCommand { get; }
+    public IAsyncRelayCommand RunAllAiAnalyticsCommand { get; }
 
     public ReportsViewModel(
         RestaurantDbContext context,
@@ -101,6 +113,10 @@ public class ReportsViewModel : ViewModelBase
         _tableService = tableService;
 
         RefreshCommand = new AsyncRelayCommand(LoadDashboardAsync);
+        RunBcgCommand = new AsyncRelayCommand(RunBcgAnalysisAsync);
+        RunPeakHoursCommand = new AsyncRelayCommand(RunPeakHoursAnalysisAsync);
+        RunInventoryForecastCommand = new AsyncRelayCommand(RunInventoryForecastAnalysisAsync);
+        RunAllAiAnalyticsCommand = new AsyncRelayCommand(RunAllAiAnalyticsAsync);
     }
 
     public async Task LoadDashboardAsync()
@@ -130,29 +146,82 @@ public class ReportsViewModel : ViewModelBase
             var lowStock = await _inventoryService.GetLowStockAlertsAsync();
             LowStockCount = lowStock.Count();
 
-            // 3. Compute BCG Matrix with In-Place collection update to avoid visual tree re-allocation
+            // Note: Heavy AI analytics are on-demand per admin request to avoid UI blocking on navigation.
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ReportsViewModel] LoadDashboard error: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    public async Task RunBcgAnalysisAsync()
+    {
+        IsAiRunning = true;
+        try
+        {
             var bcgResult = await _analyticsEngine.ComputeBcgMatrixAsync();
             BcgItems.Clear();
             foreach (var item in bcgResult.Items)
             {
                 BcgItems.Add(item);
             }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[RunBcgAnalysisAsync] Error: {ex.Message}");
+        }
+        finally
+        {
+            IsAiRunning = false;
+        }
+    }
 
-            // 4. Peak hours analysis
+    public async Task RunPeakHoursAnalysisAsync()
+    {
+        PeakHoursSummary = "Đang tổng hợp dữ liệu giờ cao điểm và phân tích...";
+        IsAiRunning = true;
+        try
+        {
             var peakResult = await _analyticsEngine.ComputePeakHoursAsync();
             PeakHoursSummary = $"Khung giờ cao điểm: {peakResult.PrimaryPeakPeriod}\nKhuyến nghị: {peakResult.StaffingRecommendations}";
+        }
+        catch (Exception ex)
+        {
+            PeakHoursSummary = $"Lỗi phân tích giờ cao điểm: {ex.Message}";
+        }
+        finally
+        {
+            IsAiRunning = false;
+        }
+    }
 
-            // 5. Inventory forecast
+    public async Task RunInventoryForecastAnalysisAsync()
+    {
+        InventoryForecastSummary = "Đang kết nối mô hình GenAI dự báo chuỗi cung ứng 7 ngày...";
+        IsAiRunning = true;
+        try
+        {
             var forecastResult = await _analyticsEngine.ComputeWeeklyReorderForecastAsync();
             InventoryForecastSummary = forecastResult.AiLogisticsAdvisory;
         }
         catch (Exception ex)
         {
-            PeakHoursSummary = $"Lưu ý tải dữ liệu: {ex.Message}";
+            InventoryForecastSummary = $"Lỗi dự báo kho: {ex.Message}";
         }
         finally
         {
-            IsLoading = false;
+            IsAiRunning = false;
         }
+    }
+
+    public async Task RunAllAiAnalyticsAsync()
+    {
+        await RunBcgAnalysisAsync();
+        await RunPeakHoursAnalysisAsync();
+        await RunInventoryForecastAnalysisAsync();
     }
 }

@@ -27,6 +27,32 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // 0. Global Unhandled Exception Shielding (Resilience - Prevents silent crashes)
+        DispatcherUnhandledException += (s, args) =>
+        {
+            LogCrash("DispatcherUnhandledException", args.Exception);
+            args.Handled = true; // Prevent process exit
+            MessageBox.Show(
+                $"Đã xảy ra sự cố: {args.Exception.Message}\nHệ thống đã tự phục hồi an toàn.",
+                "Thông Báo Hệ Thống",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        };
+
+        AppDomain.CurrentDomain.UnhandledException += (s, args) =>
+        {
+            if (args.ExceptionObject is Exception ex)
+            {
+                LogCrash("AppDomain.UnhandledException", ex);
+            }
+        };
+
+        TaskScheduler.UnobservedTaskException += (s, args) =>
+        {
+            LogCrash("TaskScheduler.UnobservedTaskException", args.Exception);
+            args.SetObserved(); // Prevent background task tear-down
+        };
+
         // Explicit shutdown mode ensures smooth transition between MainWindow and LoginWindow upon logout
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
@@ -44,6 +70,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
+            LogCrash("DbInitializer.InitializeAsync", ex);
             MessageBox.Show(
                 $"Lưu ý khởi tạo cơ sở dữ liệu: {ex.Message}\nỨng dụng sẽ tiếp tục với cấu hình hiện tại.",
                 "Cảnh Báo Khởi Tạo Dữ Liệu",
@@ -53,6 +80,22 @@ public partial class App : Application
 
         // Launch Authentication Gateway
         ShowLoginGateway();
+    }
+
+    private static void LogCrash(string source, Exception ex)
+    {
+        try
+        {
+            string logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+            Directory.CreateDirectory(logDir);
+            string logFile = Path.Combine(logDir, "crash.log");
+            string entry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{source}] {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}\n\n";
+            File.AppendAllText(logFile, entry);
+        }
+        catch
+        {
+            // Logging should never throw
+        }
     }
 
     private void ShowLoginGateway()
@@ -133,7 +176,7 @@ public partial class App : Application
             }
         }
 
-        services.AddDbContext<RestaurantDbContext>(options =>
+        Action<DbContextOptionsBuilder> dbConfig = options =>
         {
             if (string.Equals(dbProvider, "SqlServer", StringComparison.OrdinalIgnoreCase))
             {
@@ -144,7 +187,10 @@ public partial class App : Application
                 options.UseInMemoryDatabase("SmartRestaurantDb")
                        .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning));
             }
-        });
+        };
+
+        services.AddDbContextFactory<RestaurantDbContext>(dbConfig);
+        services.AddTransient<RestaurantDbContext>(sp => sp.GetRequiredService<IDbContextFactory<RestaurantDbContext>>().CreateDbContext());
 
         // 2. HTTP Client for LM Studio Local LLM (UseProxy = false to avoid WPAD delay on localhost/127.0.0.1)
         services.AddSingleton<HttpClient>(sp =>
@@ -162,18 +208,18 @@ public partial class App : Application
 
         // 3. Domain Business & Security Services
         services.AddSingleton<IAuthService>(sp => new AuthService(sp.GetRequiredService<IServiceScopeFactory>()));
-        services.AddScoped<IStaffService, StaffService>();
-        services.AddScoped<ITableService, TableService>();
-        services.AddScoped<IMenuService, MenuService>();
-        services.AddScoped<IOrderService, OrderService>();
-        services.AddScoped<IInventoryService, InventoryService>();
-        services.AddScoped<IBillingService, BillingService>();
-        services.AddScoped<IKdsService, KdsService>();
-        services.AddScoped<ICustomerService, CustomerService>();
-        services.AddScoped<IShiftService, ShiftService>();
-        services.AddScoped<IAuditService, AuditService>();
-        services.AddScoped<IAiService, LmStudioService>();
-        services.AddScoped<AiAnalyticsEngine>();
+        services.AddTransient<IStaffService, StaffService>();
+        services.AddTransient<ITableService, TableService>();
+        services.AddTransient<IMenuService, MenuService>();
+        services.AddTransient<IOrderService, OrderService>();
+        services.AddTransient<IInventoryService, InventoryService>();
+        services.AddTransient<IBillingService, BillingService>();
+        services.AddTransient<IKdsService, KdsService>();
+        services.AddTransient<ICustomerService, CustomerService>();
+        services.AddTransient<IShiftService, ShiftService>();
+        services.AddTransient<IAuditService, AuditService>();
+        services.AddTransient<IAiService, LmStudioService>();
+        services.AddTransient<AiAnalyticsEngine>();
 
         // 4. ViewModels
         services.AddTransient<LoginViewModel>();

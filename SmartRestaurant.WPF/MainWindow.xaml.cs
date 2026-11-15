@@ -13,6 +13,7 @@ public partial class MainWindow : Window
 {
     private readonly MainViewModel _viewModel;
     private readonly DispatcherTimer _idleTimer;
+    private DateTime _lastActivityTime = DateTime.UtcNow;
 
     public MainWindow(MainViewModel viewModel)
     {
@@ -20,34 +21,41 @@ public partial class MainWindow : Window
         _viewModel = viewModel;
         DataContext = _viewModel;
 
-        // Auto-Lock Idle Monitor (3-minute inactivity timeout)
+        // Auto-Lock Idle Monitor (Checks every 10 seconds without stopping/starting timer on every mouse move)
         _idleTimer = new DispatcherTimer
         {
-            Interval = TimeSpan.FromMinutes(3)
+            Interval = TimeSpan.FromSeconds(10)
         };
         _idleTimer.Tick += (s, e) =>
         {
-            if (!_viewModel.IsScreenLocked)
+            if (!_viewModel.IsScreenLocked && DateTime.UtcNow - _lastActivityTime >= TimeSpan.FromMinutes(3))
             {
                 _viewModel.LockScreenCommand.Execute(null);
             }
         };
 
-        PreviewMouseMove += (s, e) => ResetIdleTimer();
-        PreviewMouseDown += (s, e) => ResetIdleTimer();
-        PreviewKeyDown += (s, e) => ResetIdleTimer();
-        PreviewTouchDown += (s, e) => ResetIdleTimer();
+        PreviewMouseMove += (s, e) => RecordActivity();
+        PreviewMouseDown += (s, e) => RecordActivity();
+        PreviewKeyDown += (s, e) => RecordActivity();
+        PreviewTouchDown += (s, e) => RecordActivity();
+
+        _viewModel.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(MainViewModel.IsScreenLocked) && _viewModel.IsScreenLocked)
+            {
+                Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() =>
+                {
+                    LockPasswordBox?.Focus();
+                }));
+            }
+        };
 
         Loaded += (s, e) => _idleTimer.Start();
         Closed += (s, e) => _idleTimer.Stop();
     }
 
-    private void ResetIdleTimer()
+    private void RecordActivity()
     {
-        if (_idleTimer.IsEnabled && !_viewModel.IsScreenLocked)
-        {
-            _idleTimer.Stop();
-            _idleTimer.Start();
-        }
+        _lastActivityTime = DateTime.UtcNow;
     }
 }

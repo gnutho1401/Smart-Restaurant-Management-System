@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:SmartRestaurant.WPF.ViewModels"
         xmlns:views="clr-namespace:SmartRestaurant.WPF.Views"
+        xmlns:common="clr-namespace:SmartRestaurant.WPF.Common"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance vm:MainViewModel}"
         Title="Smart Restaurant Management System - .NET 8 WPF &amp; Local GenAI (PRN212 Group 6)" 
@@ -292,9 +293,19 @@
                         </Border>
 
                         <!-- PIN / Password Display (Masked Dots) -->
-                        <TextBlock Text="Nhập mật khẩu hoặc mã PIN để mở khóa:" FontSize="12" Foreground="#CBD5E1" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                        <TextBlock Text="Nhập mật khẩu hoặc mã PIN để mở khóa:" FontSize="12" Foreground="#CBD5E1" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                        <TextBlock Text="(Mã PIN nhanh: 1234 hoặc mật khẩu đăng nhập)" FontSize="11" Foreground="#64748B" HorizontalAlignment="Center" Margin="0,0,0,8"/>
                         <Border Background="#0F172A" CornerRadius="10" Height="48" BorderBrush="#475569" BorderThickness="1" Margin="0,0,0,8" Padding="16,0">
-                            <TextBlock Text="{Binding LockScreenPin}" FontSize="24" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            <PasswordBox x:Name="LockPasswordBox"
+                                         common:PasswordBoxHelper.BindPassword="True"
+                                         common:PasswordBoxHelper.BoundPassword="{Binding LockScreenPin, Mode=TwoWay}"
+                                         FontSize="22" FontWeight="Bold" Foreground="#38BDF8"
+                                         Background="Transparent" BorderThickness="0"
+                                         HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                                <PasswordBox.InputBindings>
+                                    <KeyBinding Key="Enter" Command="{Binding UnlockScreenCommand}"/>
+                                </PasswordBox.InputBindings>
+                            </PasswordBox>
                         </Border>
 
                         <!-- Error Message -->
