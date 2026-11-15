@@ -33,23 +33,43 @@ public class AuditService : IAuditService
         string? newValue = null,
         string? details = null)
     {
-        var log = new AuditLog
+        try
         {
-            UserId = userId,
-            Username = string.IsNullOrWhiteSpace(username) ? "System" : username,
-            UserRole = string.IsNullOrWhiteSpace(userRole) ? "System" : userRole,
-            Action = action,
-            EntityName = entityName,
-            EntityId = entityId,
-            OldValue = oldValue,
-            NewValue = newValue,
-            Details = details,
-            MachineName = Environment.MachineName,
-            Timestamp = DateTime.UtcNow
-        };
+            var log = new AuditLog
+            {
+                UserId = userId,
+                Username = string.IsNullOrWhiteSpace(username) ? "System" : username,
+                UserRole = string.IsNullOrWhiteSpace(userRole) ? "System" : userRole,
+                Action = action,
+                EntityName = entityName,
+                EntityId = entityId,
+                OldValue = oldValue,
+                NewValue = newValue,
+                Details = details,
+                MachineName = Environment.MachineName,
+                Timestamp = DateTime.UtcNow
+            };
 
-        await _context.AuditLogs.AddAsync(log);
-        await _context.SaveChangesAsync();
+            await _context.AuditLogs.AddAsync(log);
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AuditService.LogAsync] Handled log exception: {ex.Message}");
+            if (_context.Database.IsSqlServer() && ex.Message.Contains("UserId"))
+            {
+                try
+                {
+                    await _context.Database.ExecuteSqlRawAsync(
+                        "IF COL_LENGTH('AuditLogs', 'UserId') IS NULL ALTER TABLE AuditLogs ADD UserId INT NULL;");
+                    await _context.SaveChangesAsync();
+                }
+                catch
+                {
+                    // Suppress secondary retry failure
+                }
+            }
+        }
     }
 
     public async Task<IEnumerable<AuditLog>> GetAuditLogsAsync(
@@ -58,32 +78,60 @@ public class AuditService : IAuditService
         string? action = null,
         string? entityName = null)
     {
-        var query = _context.AuditLogs.AsQueryable();
-
-        if (fromDate.HasValue)
+        try
         {
-            query = query.Where(a => a.Timestamp >= fromDate.Value);
-        }
+            var query = _context.AuditLogs.AsQueryable();
 
-        if (toDate.HasValue)
+            if (fromDate.HasValue)
+            {
+                query = query.Where(a => a.Timestamp >= fromDate.Value);
+            }
+
+            if (toDate.HasValue)
+            {
+                query = query.Where(a => a.Timestamp <= toDate.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(action))
+            {
+                query = query.Where(a => a.Action.Contains(action));
+            }
+
+            if (!string.IsNullOrWhiteSpace(entityName))
+            {
+                query = query.Where(a => a.EntityName == entityName);
+            }
+
+            return await query
+                .OrderByDescending(a => a.Timestamp)
+                .Take(200)
+                .ToListAsync();
+        }
+        catch (Exception ex)
         {
-            query = query.Where(a => a.Timestamp <= toDate.Value);
-        }
+            System.Diagnostics.Debug.WriteLine($"[AuditService.GetAuditLogsAsync] Query exception handled gracefully: {ex.Message}");
 
-        if (!string.IsNullOrWhiteSpace(action))
-        {
-            query = query.Where(a => a.Action.Contains(action));
-        }
+            // Self-healing migration for SQL Server if column UserId is missing
+            try
+            {
+                if (_context.Database.IsSqlServer() && ex.Message.Contains("UserId"))
+                {
+                    await _context.Database.ExecuteSqlRawAsync(
+                        "IF COL_LENGTH('AuditLogs', 'UserId') IS NULL ALTER TABLE AuditLogs ADD UserId INT NULL;");
 
-        if (!string.IsNullOrWhiteSpace(entityName))
-        {
-            query = query.Where(a => a.EntityName == entityName);
-        }
+                    return await _context.AuditLogs
+                        .OrderByDescending(a => a.Timestamp)
+                        .Take(200)
+                        .ToListAsync();
+                }
+            }
+            catch
+            {
+                // Suppress recovery failure
+            }
 
-        return await query
-            .OrderByDescending(a => a.Timestamp)
-            .Take(200)
-            .ToListAsync();
+            return Enumerable.Empty<AuditLog>();
+        }
     }
 }
 

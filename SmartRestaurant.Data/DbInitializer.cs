@@ -289,17 +289,26 @@ public static class DbInitializer
                     TotalSales DECIMAL(18,2) NOT NULL DEFAULT 0,
                     ActualCashEnd DECIMAL(18,2) NOT NULL DEFAULT 0,
                     CashVariance DECIMAL(18,2) NOT NULL DEFAULT 0,
+                    IsClosed BIT NOT NULL DEFAULT 0,
                     Status NVARCHAR(20) NOT NULL DEFAULT 'Open',
+                    Note NVARCHAR(500) NULL,
                     Notes NVARCHAR(500) NULL,
                     CONSTRAINT FK_WorkShifts_Users FOREIGN KEY (UserId) REFERENCES Users(UserId)
                 );
             END",
+
+            @"IF COL_LENGTH('WorkShifts', 'IsClosed') IS NULL
+                ALTER TABLE WorkShifts ADD IsClosed BIT NOT NULL DEFAULT 0;",
+
+            @"IF COL_LENGTH('WorkShifts', 'Note') IS NULL
+                ALTER TABLE WorkShifts ADD Note NVARCHAR(500) NULL;",
 
             // 5. AuditLogs table (Immutable append-only audit trail)
             @"IF OBJECT_ID('AuditLogs', 'U') IS NULL
             BEGIN
                 CREATE TABLE AuditLogs (
                     AuditLogId INT IDENTITY(1,1) PRIMARY KEY,
+                    UserId INT NULL,
                     Timestamp DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
                     Username NVARCHAR(50) NOT NULL,
                     UserRole NVARCHAR(30) NOT NULL,
@@ -313,6 +322,12 @@ public static class DbInitializer
                     Details NVARCHAR(1000) NULL
                 );
             END",
+
+            @"IF COL_LENGTH('AuditLogs', 'UserId') IS NULL
+                ALTER TABLE AuditLogs ADD UserId INT NULL;",
+
+            @"IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_AuditLogs_Timestamp' AND object_id = OBJECT_ID('AuditLogs'))
+                CREATE NONCLUSTERED INDEX IX_AuditLogs_Timestamp ON AuditLogs(Timestamp);",
 
             // 6. High-Performance Composite Indexes for Production Scale
             @"IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Orders_CreatedAt_Status' AND object_id = OBJECT_ID('Orders'))

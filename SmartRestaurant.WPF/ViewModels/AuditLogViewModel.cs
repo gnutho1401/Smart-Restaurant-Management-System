@@ -90,8 +90,14 @@ public class AuditLogViewModel : ViewModelBase
         try
         {
             var logs = await _auditService.GetAuditLogsAsync();
-            _allLogs = logs.ToList();
+            _allLogs = logs?.ToList() ?? new List<AuditLog>();
             OnPropertyChanged(nameof(TotalLogsCount));
+            ApplyFilter();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AuditLogViewModel] Load error: {ex.Message}");
+            _allLogs = new List<AuditLog>();
             ApplyFilter();
         }
         finally
