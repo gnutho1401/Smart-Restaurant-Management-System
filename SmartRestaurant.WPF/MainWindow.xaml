@@ -338,6 +338,15 @@
                             </Button.Resources>
                         </Button>
 
+                        <Button Content="Mở Khóa Nhanh (Mã PIN: 1234)" Command="{Binding QuickUnlockCommand}"
+                                Background="#334155" Foreground="#38BDF8" FontWeight="SemiBold" FontSize="12" Height="36" Width="260" Margin="0,0,0,8" Cursor="Hand" BorderThickness="0">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="8"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+
                         <Button Content="Đăng Xuất (Chuyển Ca Khác)" Command="{Binding LogoutCommand}"
                                 Background="Transparent" Foreground="#94A3B8" FontWeight="SemiBold" FontSize="12" Height="32" Cursor="Hand" BorderThickness="0"/>
                     </StackPanel>

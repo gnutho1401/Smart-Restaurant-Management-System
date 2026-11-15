@@ -107,19 +107,27 @@
                     <TextBlock Text="Tên Đăng Nhập" FontSize="12" FontWeight="Bold" Foreground="#34495E" Margin="0,0,0,6"/>
                     <Border Background="#F8F9FA" BorderBrush="#DCE4EC" BorderThickness="1" CornerRadius="8" Padding="10,4" Margin="0,0,0,14">
                         <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
-                                 FontSize="14" BorderThickness="0" Background="Transparent" VerticalAlignment="Center" Padding="4,4"/>
+                                 FontSize="14" BorderThickness="0" Background="Transparent" VerticalAlignment="Center" Padding="4,4">
+                            <TextBox.InputBindings>
+                                <KeyBinding Key="Enter" Command="{Binding LoginCommand}"/>
+                            </TextBox.InputBindings>
+                        </TextBox>
                     </Border>
 
                     <!-- Password Field -->
                     <TextBlock Text="Mật Khẩu" FontSize="12" FontWeight="Bold" Foreground="#34495E" Margin="0,0,0,6"/>
                     <Border Background="#F8F9FA" BorderBrush="#DCE4EC" BorderThickness="1" CornerRadius="8" Padding="10,4" Margin="0,0,0,20">
                         <PasswordBox common:PasswordBoxHelper.BindPassword="True"
-                                     common:PasswordBoxHelper.BoundPassword="{Binding Password, Mode=TwoWay}"
-                                     FontSize="14" BorderThickness="0" Background="Transparent" VerticalAlignment="Center" Padding="4,4"/>
+                                     common:PasswordBoxHelper.BoundPassword="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     FontSize="14" BorderThickness="0" Background="Transparent" VerticalAlignment="Center" Padding="4,4">
+                            <PasswordBox.InputBindings>
+                                <KeyBinding Key="Enter" Command="{Binding LoginCommand}"/>
+                            </PasswordBox.InputBindings>
+                        </PasswordBox>
                     </Border>
 
                     <!-- Login Button -->
-                    <Button Content="ĐĂNG NHẬP" Command="{Binding LoginCommand}" Height="44" Background="#E67E22" Foreground="#FFFFFF"
+                    <Button Content="ĐĂNG NHẬP" Command="{Binding LoginCommand}" IsDefault="True" Height="44" Background="#E67E22" Foreground="#FFFFFF"
                             FontWeight="Bold" FontSize="14" BorderThickness="0" Cursor="Hand" Margin="0,0,0,18">
                         <Button.Resources>
                             <Style TargetType="Border">

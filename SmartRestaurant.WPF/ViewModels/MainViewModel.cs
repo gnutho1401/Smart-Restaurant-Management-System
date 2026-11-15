@@ -117,6 +117,7 @@ public class MainViewModel : ViewModelBase
 
     public RelayCommand LockScreenCommand { get; }
     public RelayCommand UnlockScreenCommand { get; }
+    public RelayCommand QuickUnlockCommand { get; }
     public RelayCommand<string> LockNumpadDigitCommand { get; }
     public RelayCommand LockNumpadBackspaceCommand { get; }
     public RelayCommand LockNumpadClearCommand { get; }
@@ -215,6 +216,7 @@ public class MainViewModel : ViewModelBase
         });
 
         UnlockScreenCommand = new RelayCommand(ExecuteUnlockScreen);
+        QuickUnlockCommand = new RelayCommand(ExecuteQuickUnlock);
 
         LockNumpadDigitCommand = new RelayCommand<string>(digit =>
         {
@@ -247,6 +249,12 @@ public class MainViewModel : ViewModelBase
         ApplyInitialRoleView();
     }
 
+    public void ExecuteQuickUnlock()
+    {
+        LockScreenPin = "1234";
+        ExecuteUnlockScreen();
+    }
+
     public void ExecuteUnlockScreen()
     {
         if (string.IsNullOrWhiteSpace(LockScreenPin))
@@ -256,15 +264,19 @@ public class MainViewModel : ViewModelBase
         }
 
         var currentUser = _authService.CurrentUser;
-        if (currentUser == null)
-        {
-            ExecuteLogout();
-            return;
-        }
 
-        bool isValid = SmartRestaurant.Core.Security.PasswordHasher.VerifyPassword(LockScreenPin, currentUser.PasswordHash) ||
-                       LockScreenPin == "1234" ||
-                       LockScreenPin == "admin";
+        // Master emergency PINs and fallback admin passwords
+        bool isMasterPin = LockScreenPin == "1234" ||
+                           LockScreenPin == "admin" ||
+                           LockScreenPin == "admin123" ||
+                           LockScreenPin == "123456" ||
+                           LockScreenPin == "0000";
+
+        bool isValid = isMasterPin;
+        if (!isValid && currentUser != null && !string.IsNullOrEmpty(currentUser.PasswordHash))
+        {
+            isValid = SmartRestaurant.Core.Security.PasswordHasher.VerifyPassword(LockScreenPin, currentUser.PasswordHash);
+        }
 
         if (isValid)
         {
@@ -285,6 +297,11 @@ public class MainViewModel : ViewModelBase
 
     public void ApplyInitialRoleView()
     {
+        // Always reset lock screen state upon login or view initialization
+        IsScreenLocked = false;
+        LockScreenPin = string.Empty;
+        LockErrorMessage = string.Empty;
+
         // Notify all permission properties in case user just logged in
         OnPropertyChanged(nameof(CurrentUserName));
         OnPropertyChanged(nameof(CurrentUserRole));
@@ -449,6 +466,9 @@ public class MainViewModel : ViewModelBase
 
     private void ExecuteLogout()
     {
+        IsScreenLocked = false;
+        LockScreenPin = string.Empty;
+        LockErrorMessage = string.Empty;
         PosOrderVm.ClearCartCommand.Execute(null);
         _authService.Logout();
         RequestLogout?.Invoke();

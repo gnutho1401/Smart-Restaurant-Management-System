@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 
 namespace SmartRestaurant.WPF.Common;
 
@@ -13,7 +14,13 @@ public static class PasswordBoxHelper
             "BoundPassword",
             typeof(string),
             typeof(PasswordBoxHelper),
-            new FrameworkPropertyMetadata(string.Empty, OnBoundPasswordChanged));
+            new FrameworkPropertyMetadata(
+                string.Empty,
+                FrameworkPropertyMetadataOptions.BindsTwoWayByDefault,
+                OnBoundPasswordChanged,
+                null,
+                false,
+                UpdateSourceTrigger.PropertyChanged));
 
     public static readonly DependencyProperty BindPasswordProperty =
         DependencyProperty.RegisterAttached(
@@ -53,12 +60,12 @@ public static class PasswordBoxHelper
         {
             if ((bool)box.GetValue(BindPasswordProperty))
             {
-                box.PasswordChanged -= HandlePasswordChanged;
                 if (!GetUpdatingPassword(box))
                 {
-                    box.Password = (string)e.NewValue;
+                    box.PasswordChanged -= HandlePasswordChanged;
+                    box.Password = (string)e.NewValue ?? string.Empty;
+                    box.PasswordChanged += HandlePasswordChanged;
                 }
-                box.PasswordChanged += HandlePasswordChanged;
             }
         }
     }

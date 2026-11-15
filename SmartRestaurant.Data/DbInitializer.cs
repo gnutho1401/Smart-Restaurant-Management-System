@@ -26,6 +26,19 @@ public static class DbInitializer
         // Check if data already exists
         if (await context.DiningAreas.AnyAsync())
         {
+            // Ensure Staff Users exist even if partial database already exists
+            if (!await context.Users.AnyAsync())
+            {
+                var defaultUsers = new List<User>
+                {
+                    new() { Username = "admin", PasswordHash = Core.Security.PasswordHasher.HashPassword("admin123"), FullName = "Hồ Thăng Tùng (Admin)", Role = UserRole.Admin },
+                    new() { Username = "manager", PasswordHash = Core.Security.PasswordHasher.HashPassword("manager123"), FullName = "Lương Đức Tín (Quản Lý)", Role = UserRole.StoreManager },
+                    new() { Username = "cashier", PasswordHash = Core.Security.PasswordHasher.HashPassword("cashier123"), FullName = "Phan Trần Hoàng Bảo (Thu Ngân)", Role = UserRole.Cashier },
+                    new() { Username = "chef", PasswordHash = Core.Security.PasswordHasher.HashPassword("chef123"), FullName = "Nguyễn Văn Bếp Trưởng (Bếp)", Role = UserRole.HeadChef }
+                };
+                context.Users.AddRange(defaultUsers);
+                await context.SaveChangesAsync();
+            }
             return; // DB already seeded
         }
 
@@ -182,15 +195,18 @@ public static class DbInitializer
         await context.SaveChangesAsync();
 
         // 7. Seed Staff Users
-        var users = new List<User>
+        if (!await context.Users.AnyAsync())
         {
-            new() { Username = "admin", PasswordHash = Core.Security.PasswordHasher.HashPassword("admin123"), FullName = "Hồ Thăng Tùng (Admin)", Role = UserRole.Admin },
-            new() { Username = "manager", PasswordHash = Core.Security.PasswordHasher.HashPassword("manager123"), FullName = "Lương Đức Tín (Quản Lý)", Role = UserRole.StoreManager },
-            new() { Username = "cashier", PasswordHash = Core.Security.PasswordHasher.HashPassword("cashier123"), FullName = "Phan Trần Hoàng Bảo (Thu Ngân)", Role = UserRole.Cashier },
-            new() { Username = "chef", PasswordHash = Core.Security.PasswordHasher.HashPassword("chef123"), FullName = "Nguyễn Văn Bếp Trưởng (Bếp)", Role = UserRole.HeadChef }
-        };
-        context.Users.AddRange(users);
-        await context.SaveChangesAsync();
+            var users = new List<User>
+            {
+                new() { Username = "admin", PasswordHash = Core.Security.PasswordHasher.HashPassword("admin123"), FullName = "Hồ Thăng Tùng (Admin)", Role = UserRole.Admin },
+                new() { Username = "manager", PasswordHash = Core.Security.PasswordHasher.HashPassword("manager123"), FullName = "Lương Đức Tín (Quản Lý)", Role = UserRole.StoreManager },
+                new() { Username = "cashier", PasswordHash = Core.Security.PasswordHasher.HashPassword("cashier123"), FullName = "Phan Trần Hoàng Bảo (Thu Ngân)", Role = UserRole.Cashier },
+                new() { Username = "chef", PasswordHash = Core.Security.PasswordHasher.HashPassword("chef123"), FullName = "Nguyễn Văn Bếp Trưởng (Bếp)", Role = UserRole.HeadChef }
+            };
+            context.Users.AddRange(users);
+            await context.SaveChangesAsync();
+        }
 
         // 8. Seed Sample Loyalty Member Customers
         var customers = new List<Customer>

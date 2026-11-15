@@ -115,6 +115,9 @@ public partial class App : Application
         loginVm.LoginSuccess += (user) =>
         {
             var mainVm = ServiceProvider.GetRequiredService<MainViewModel>();
+            mainVm.IsScreenLocked = false;
+            mainVm.LockScreenPin = string.Empty;
+            mainVm.LockErrorMessage = string.Empty;
             mainVm.ApplyInitialRoleView();
 
             var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
