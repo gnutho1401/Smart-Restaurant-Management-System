@@ -26,17 +26,21 @@ public static class DbInitializer
         // Check if data already exists
         if (await context.DiningAreas.AnyAsync())
         {
-            // Ensure Staff Users exist even if partial database already exists
-            if (!await context.Users.AnyAsync())
+            // Ensure all 4 Staff Users exist even if partial database already exists
+            var existingUsernames = (await context.Users.Select(u => u.Username.ToLower()).ToListAsync()).ToHashSet();
+            var missingUsers = new List<User>();
+            if (!existingUsernames.Contains("admin"))
+                missingUsers.Add(new() { Username = "admin", PasswordHash = Core.Security.PasswordHasher.HashPassword("admin123"), FullName = "Hồ Thăng Tùng (Admin)", Role = UserRole.Admin });
+            if (!existingUsernames.Contains("manager"))
+                missingUsers.Add(new() { Username = "manager", PasswordHash = Core.Security.PasswordHasher.HashPassword("manager123"), FullName = "Lương Đức Tín (Quản Lý)", Role = UserRole.StoreManager });
+            if (!existingUsernames.Contains("cashier"))
+                missingUsers.Add(new() { Username = "cashier", PasswordHash = Core.Security.PasswordHasher.HashPassword("cashier123"), FullName = "Phan Trần Hoàng Bảo (Thu Ngân)", Role = UserRole.Cashier });
+            if (!existingUsernames.Contains("chef"))
+                missingUsers.Add(new() { Username = "chef", PasswordHash = Core.Security.PasswordHasher.HashPassword("chef123"), FullName = "Nguyễn Văn Bếp Trưởng (Bếp)", Role = UserRole.HeadChef });
+
+            if (missingUsers.Count > 0)
             {
-                var defaultUsers = new List<User>
-                {
-                    new() { Username = "admin", PasswordHash = Core.Security.PasswordHasher.HashPassword("admin123"), FullName = "Hồ Thăng Tùng (Admin)", Role = UserRole.Admin },
-                    new() { Username = "manager", PasswordHash = Core.Security.PasswordHasher.HashPassword("manager123"), FullName = "Lương Đức Tín (Quản Lý)", Role = UserRole.StoreManager },
-                    new() { Username = "cashier", PasswordHash = Core.Security.PasswordHasher.HashPassword("cashier123"), FullName = "Phan Trần Hoàng Bảo (Thu Ngân)", Role = UserRole.Cashier },
-                    new() { Username = "chef", PasswordHash = Core.Security.PasswordHasher.HashPassword("chef123"), FullName = "Nguyễn Văn Bếp Trưởng (Bếp)", Role = UserRole.HeadChef }
-                };
-                context.Users.AddRange(defaultUsers);
+                context.Users.AddRange(missingUsers);
                 await context.SaveChangesAsync();
             }
             return; // DB already seeded

@@ -47,8 +47,16 @@ public class LoginViewModel : ViewModelBase
     public string ErrorMessage
     {
         get => _errorMessage;
-        set => SetProperty(ref _errorMessage, value);
+        set
+        {
+            if (SetProperty(ref _errorMessage, value))
+            {
+                OnPropertyChanged(nameof(HasErrorMessage));
+            }
+        }
     }
+
+    public bool HasErrorMessage => !string.IsNullOrWhiteSpace(_errorMessage);
 
     public bool IsBusy
     {
@@ -122,6 +130,7 @@ public class LoginViewModel : ViewModelBase
                 Password = "chef123";
                 break;
         }
+        ErrorMessage = string.Empty;
     }
 }
 
