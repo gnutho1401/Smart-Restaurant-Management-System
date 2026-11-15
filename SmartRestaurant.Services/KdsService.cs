@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using SmartRestaurant.Core.Entities;
 using SmartRestaurant.Core.Enums;
 using SmartRestaurant.Core.Interfaces;
@@ -23,6 +24,7 @@ public class KdsService : IKdsService
         _context = context;
     }
 
+    [ActivatorUtilitiesConstructor]
     public KdsService(IDbContextFactory<RestaurantDbContext> contextFactory)
     {
         _contextFactory = contextFactory;

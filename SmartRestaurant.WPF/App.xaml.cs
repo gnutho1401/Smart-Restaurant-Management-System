@@ -217,7 +217,7 @@ public partial class App : Application
         services.AddTransient<IOrderService, OrderService>();
         services.AddTransient<IInventoryService, InventoryService>();
         services.AddTransient<IBillingService, BillingService>();
-        services.AddTransient<IKdsService, KdsService>();
+        services.AddTransient<IKdsService>(sp => new KdsService(sp.GetRequiredService<IDbContextFactory<RestaurantDbContext>>()));
         services.AddTransient<ICustomerService, CustomerService>();
         services.AddTransient<IShiftService, ShiftService>();
         services.AddTransient<IAuditService, AuditService>();
